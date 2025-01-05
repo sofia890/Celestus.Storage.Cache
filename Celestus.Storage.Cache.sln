@@ -1,11 +1,17 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.12.35514.174 d17.12
+VisualStudioVersion = 17.12.35514.174
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Celestus.Storage.Cache", "Celestus.Storage.Cache\Celestus.Storage.Cache.csproj", "{77344011-E26E-4357-A4A5-FBB8F6FD3293}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Celestus.Storage.Cache.Test", "Celestus.Storage.Cache.Test\Celestus.Storage.Cache.Test.csproj", "{6E5C440A-6525-4937-A7C3-CC3C212F2E2F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Celestus.Storage.Cache.Generator", "Celestus.Storage.Cache.Generator\Celestus.Storage.Cache.Generator.csproj", "{3B5623F1-A561-4001-903D-1114BDD8466D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Celestus.Storage.Cache.Attributes", "Celestus.Storage.Cache.Attributes\Celestus.Storage.Cache.Attributes.csproj", "{E97FF990-FB57-43F7-9700-AF5B8806C30F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Celestus.Storage.Cache.PerformanceTest", "Celestus.Storage.Cache.PerformanceTest\Celestus.Storage.Cache.PerformanceTest.csproj", "{9263221D-4E09-47E4-909F-7304579DEE7F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +27,18 @@ Global
 		{6E5C440A-6525-4937-A7C3-CC3C212F2E2F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6E5C440A-6525-4937-A7C3-CC3C212F2E2F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6E5C440A-6525-4937-A7C3-CC3C212F2E2F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3B5623F1-A561-4001-903D-1114BDD8466D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3B5623F1-A561-4001-903D-1114BDD8466D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3B5623F1-A561-4001-903D-1114BDD8466D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3B5623F1-A561-4001-903D-1114BDD8466D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E97FF990-FB57-43F7-9700-AF5B8806C30F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E97FF990-FB57-43F7-9700-AF5B8806C30F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E97FF990-FB57-43F7-9700-AF5B8806C30F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E97FF990-FB57-43F7-9700-AF5B8806C30F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9263221D-4E09-47E4-909F-7304579DEE7F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9263221D-4E09-47E4-909F-7304579DEE7F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9263221D-4E09-47E4-909F-7304579DEE7F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9263221D-4E09-47E4-909F-7304579DEE7F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
