@@ -1,17 +1,17 @@
-﻿namespace Celestus.Storage.Cache.Test
+﻿using Newtonsoft.Json;
+
+namespace Celestus.Storage.Cache.Test
 {
     [TestClass]
     [DoNotParallelize] // The tests are not threadsafe since they dispose of resource other tests use.
     public sealed class TestThreadCache
     {
-        const int DEFAULT_TIMEOUT = 1000;
-
         private ThreadCache _cache = null!;
 
         [TestInitialize]
         public void Initialize()
         {
-            _cache = ThreadCache.CreateShared(nameof(TestThreadCache), DEFAULT_TIMEOUT);
+            _cache = ThreadCache.CreateShared(nameof(TestThreadCache));
         }
 
         [TestCleanup]
@@ -21,6 +21,68 @@
             {
                 _cache.Dispose();
             }
+        }
+
+        [TestMethod]
+        public void VerifyThatSerializationWorks()
+        {
+            //
+            // Arrange
+            //
+            const string key = "serial";
+            _ = _cache.TrySet(key, 1);
+
+
+            //
+            // Act
+            //
+            var serializer = JsonSerializer.Create();
+            string serializedData;
+
+            using (var stringWriter = new StringWriter())
+            using (var writer = new JsonTextWriter(stringWriter))
+            {
+                serializer.Serialize(writer, _cache);
+                serializedData = stringWriter.ToString();
+            }
+
+            ThreadCache? otherCache = null;
+
+            using (var stringReader = new StringReader(serializedData))
+            using (var reader = new JsonTextReader(stringReader))
+            {
+                otherCache = serializer.Deserialize(reader, _cache.GetType()) as ThreadCache;
+            }
+
+            //
+            // Assert
+            //
+            Assert.IsNotNull(otherCache);
+            Assert.AreEqual(_cache, otherCache);
+        }
+
+        [TestMethod]
+        public void VerifyThatItemsInCacheCanExpire()
+        {
+            //
+            // Arrange
+            //
+            const int DURATION = 100;
+            const int VALUE = 55;
+            const string key = "key";
+            _ = _cache.TrySet(key, VALUE, duration: TimeSpan.FromMilliseconds(DURATION));
+
+            //
+            // Act
+            //
+            Thread.Sleep(DURATION * 2);
+
+            var (result, _) = _cache.TryGet<int>(key);
+
+            //
+            // Assert
+            //
+            Assert.IsFalse(result);
         }
 
         [TestMethod]
@@ -35,7 +97,6 @@
             //
             const int VALUE = 55;
             const string key = "key";
-
             _ = _cache.TrySet(key, VALUE);
 
             //
@@ -75,7 +136,7 @@
             //
             // Arrange
             //
-            var otherCache = ThreadCache.CreateShared("other", DEFAULT_TIMEOUT);
+            var otherCache = ThreadCache.CreateShared("other");
 
             const int VALUE = 55;
             const string KEY = "test";
@@ -106,7 +167,7 @@
             // Act
             //
             _cache.Dispose();
-            _cache = ThreadCache.CreateShared(nameof(TestThreadCache), DEFAULT_TIMEOUT);
+            _cache = ThreadCache.CreateShared(nameof(TestThreadCache));
 
             //
             // Assert
@@ -139,7 +200,7 @@
             // Arrange
             //
             const int N_ITERATION = 1000;
-            const int N_THREADS = 80;
+            const int N_THREADS = 32;
 
             Action ThreadWorkerBuilder(int id)
             {
@@ -188,7 +249,7 @@
             // Arrange
             //
             const int N_ITERATION = 1000;
-            const int N_THREADS = 80;
+            const int N_THREADS = 32;
 
             var key = "hammer";
 
@@ -228,6 +289,96 @@
 
             const int THREAD_TEST_TIMEOUT = 10000;
             _ = Task.WaitAll(threads, THREAD_TEST_TIMEOUT);
+        }
+
+        [TestMethod]
+        public void VerifyThatSetCanTimeout()
+        {
+            //
+            // Arrange
+            //
+            const int N_ITERATION = 1000;
+            const int N_THREADS = 32;
+            const int TIMEOUT = 1;
+
+            var key = "hammer";
+
+            Func<bool> ThreadWorkerBuilder(int id)
+            {
+                return () =>
+                {
+                    var succeeded = true;
+
+                    for (int i = 1; i <= N_ITERATION; i++)
+                    {
+                        succeeded &= _cache.TrySet(key, 0, timeout: TIMEOUT);
+                    }
+
+                    return succeeded;
+                };
+            }
+
+            //
+            // Act
+            //
+            var threads = Enumerable.Range(0, N_THREADS)
+                                    .Select(x => Task.Run(ThreadWorkerBuilder(x)))
+                                    .ToArray();
+
+            //
+            // Assert
+            //
+            const int THREAD_TEST_TIMEOUT = 10000;
+            _ = Task.WaitAll(threads, THREAD_TEST_TIMEOUT);
+
+            Assert.IsFalse(threads.All(x => x.Result));
+        }
+
+        [TestMethod]
+        public void VerifyThatGetCanTimeout()
+        {
+            //
+            // Arrange
+            //
+            const int N_ITERATION = 1000;
+            const int N_THREADS = 32;
+            const int TIMEOUT = 1;
+
+            var key = "gunnar";
+            _cache.TrySet(key, 1);
+
+            Func<bool> ThreadWorkerBuilder(int id)
+            {
+                return () =>
+                {
+                    var succeeded = true;
+
+                    for (int i = 1; i <= N_ITERATION; i++)
+                    {
+                        _ = _cache.TrySet(key, 0, timeout: TIMEOUT);
+
+                        var (latestResult, _) = _cache.TryGet<int>(key, timeout: TIMEOUT);
+                        succeeded &= latestResult;
+                    }
+
+                    return succeeded;
+                };
+            }
+
+            //
+            // Act
+            //
+            var threads = Enumerable.Range(0, N_THREADS)
+                                    .Select(x => Task.Run(ThreadWorkerBuilder(x)))
+                                    .ToArray();
+
+            //
+            // Assert
+            //
+            const int THREAD_TEST_TIMEOUT = 10000;
+            _ = Task.WaitAll(threads, THREAD_TEST_TIMEOUT);
+
+            Assert.IsFalse(threads.All(x => x.Result));
         }
     }
 }

@@ -2,6 +2,7 @@
 
 namespace Celestus.Storage.Cache
 {
+    [Serializable]
     public class ThreadCache : IDisposable, ISerializable
     {
         #region Factory Pattern
@@ -15,62 +16,67 @@ namespace Celestus.Storage.Cache
             }
         }
 
-        public static ThreadCache CreateShared(string key, int timeout)
+        public static ThreadCache CreateShared(string key = "", bool tracked = true)
         {
-            lock (nameof(ThreadCache))
+            var usedKey = (key.Length > 0) ? key : Guid.NewGuid().ToString();
+
+            if (tracked)
             {
-                if (_caches.TryGetValue(key, out var cache) && !cache.IsDisposed)
+                lock (nameof(ThreadCache))
                 {
-                    return cache;
-                }
-                else
-                {
-                    cache = new ThreadCache(key, timeout);
-                    cache.OnDisposed += RemoveDisposedCache;
+                    if (_caches.TryGetValue(usedKey, out var cache) && !cache.IsDisposed)
+                    {
+                        return cache;
+                    }
+                    else
+                    {
+                        cache = new ThreadCache(usedKey);
+                        cache.OnDisposed += RemoveDisposedCache;
 
-                    _caches[key] = cache;
+                        _caches[usedKey] = cache;
 
-                    return cache;
+                        return cache;
+                    }
                 }
             }
+            else
+            {
+                return new ThreadCache(usedKey);
+            }
+
         }
         #endregion
-        private record CacheEntry(DateTime Expiration, object? Data);
 
         readonly ReaderWriterLockSlim _lock = new();
-        readonly Dictionary<string, CacheEntry> _storage = [];
+
+        protected Cache _cache;
 
         public bool IsDisposed { get; set; } = false;
         private event EventHandler<string>? OnDisposed;
 
-        readonly private string Key;
-        readonly private int Timeout;
+        readonly protected string _key;
 
-        private ThreadCache(string key, int timeout)
+        private ThreadCache(string key)
         {
-            Key = key;
-            Timeout = timeout;
+            _cache = new Cache();
 
-            if (Timeout == 0)
-            {
-                throw new ArgumentException($"{nameof(timeout)} cannot be zero.");
-            }
+            _key = key;
         }
 
-        public bool TrySet<DataType>(string key, DataType value, TimeSpan? duration = null)
+        private ThreadCache()
         {
-            if (_lock.TryEnterWriteLock(Timeout))
+            _cache = new Cache();
+
+            _key = string.Empty;
+        }
+
+        public bool TrySet<DataType>(string key, DataType value, TimeSpan? duration = null, int timeout = -1)
+        {
+            if (_lock.TryEnterWriteLock(timeout))
             {
                 try
                 {
-                    DateTime expiratonDate = DateTime.MaxValue;
-
-                    if (duration != null && duration != TimeSpan.Zero)
-                    {
-                        _ = DateTime.Now.Add((TimeSpan)duration);
-                    }
-
-                    _storage[key] = new(expiratonDate, value);
+                    _cache.Set(key, value, duration);
 
                     return true;
                 }
@@ -84,9 +90,9 @@ namespace Celestus.Storage.Cache
                 return false;
             }
         }
-        public (bool result, DataType? data) TryGet<DataType>(string key)
+        public (bool result, DataType? data) TryGet<DataType>(string key, int timeout = -1)
         {
-            if (!_lock.TryEnterReadLock(Timeout))
+            if (!_lock.TryEnterReadLock(timeout))
             {
                 return (false, default);
             }
@@ -94,22 +100,7 @@ namespace Celestus.Storage.Cache
             {
                 try
                 {
-                    if (!_storage.TryGetValue(key, out var entry))
-                    {
-                        return (false, default);
-                    }
-                    else if (entry.Expiration < DateTime.Now)
-                    {
-                        return (false, default);
-                    }
-                    else if (entry.Data is not DataType data)
-                    {
-                        return (false, default);
-                    }
-                    else
-                    {
-                        return (true, data);
-                    }
+                    return _cache.TryGet<DataType>(key);
                 }
                 finally
                 {
@@ -123,7 +114,7 @@ namespace Celestus.Storage.Cache
         {
             if (!IsDisposed)
             {
-                OnDisposed?.Invoke(this, Key);
+                OnDisposed?.Invoke(this, _key);
 
                 if (disposing)
                 {
@@ -142,32 +133,26 @@ namespace Celestus.Storage.Cache
         #endregion
 
         #region ISerializable
-        public void GetObjectData(SerializationInfo info, StreamingContext context)
+        void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            info.AddValue("Key", Key);
-            info.AddValue("Timeout", Timeout);
-            info.AddValue("Storage", _storage);
+            info.AddValue("Cache", _cache);
+            info.AddValue("Key", _key);
         }
 
         protected ThreadCache(SerializationInfo info, StreamingContext context)
         {
-            Key = info.GetString("Key") ?? throw new SerializationException("Key cannot be null");
+            var cacheObject = info.GetValue("Cache", typeof(Cache));
 
-            Timeout = info.GetInt32("Timeout");
-
-            if (Timeout == 0)
+            if (cacheObject is Cache cache)
             {
-                throw new SerializationException($"{nameof(Timeout)} cannot be 0.");
-            }
-
-            if (info.GetValue("Storage", typeof(Dictionary<string, CacheEntry>)) is Dictionary<string, CacheEntry> storage)
-            {
-                _storage = storage;
+                _cache = cache;
             }
             else
             {
-                throw new SerializationException($"Storage is not a {nameof(Dictionary<string, CacheEntry>)}.");
+                throw new SerializationException($"Cache is not a {typeof(Cache)}.");
             }
+
+            _key = info.GetString("Key") ?? throw new SerializationException("Key cannot be null");
         }
         #endregion
     }
