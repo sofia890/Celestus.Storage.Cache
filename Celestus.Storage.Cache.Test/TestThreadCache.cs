@@ -302,7 +302,7 @@ namespace Celestus.Storage.Cache.Test
             //
 
             /* We do not care about anything but that nothing crashes.
-             * There is no way to assert on the final value due to race condtions
+             * There is no way to assert on the final value due to race conditions
              * between threads. */
 
             const int THREAD_TEST_TIMEOUT = 10000;
