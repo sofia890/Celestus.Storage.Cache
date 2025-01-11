@@ -1,5 +1,4 @@
-﻿using Celestus.Storage.Cache;
-using Celestus.Storage.Cache.PerformanceTest;
+﻿using Celestus.Storage.Cache.PerformanceTest;
 using System.Diagnostics;
 
 for (int j = 0; j < 300; j++)
