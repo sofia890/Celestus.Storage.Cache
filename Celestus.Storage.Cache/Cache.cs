@@ -136,6 +136,11 @@ namespace Celestus.Storage.Cache
         {
             return Equals(obj as Cache);
         }
+
+        public override int GetHashCode()
+        {
+            return _storage.Aggregate(0, (a, b) => HashCode.Combine(a, b));
+        }
         #endregion
     }
 }
