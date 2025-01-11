@@ -215,7 +215,6 @@ namespace Celestus.Storage.Cache.Generator
                           NamespaceContext namespaceContext,
                           DeclarationInfo classInfo)
         {
-            var cacheKey = $"{namespaceContext.path}{classInfo.name}";
             var indentation = GetIndentation(namespaceContext.depth);
 
             var builder = new StringBuilder();
@@ -227,13 +226,13 @@ namespace Celestus.Storage.Cache.Generator
 
             if (HasStaticMethods(classDeclaration))
             {
-                _ = builder.AppendLine($"{indentation}    readonly static private ThreadCache _staticThreadCache = ThreadCache.CreateShared(key: \"{cacheKey}\", tracked: false);");
+                _ = builder.AppendLine($"{indentation}    readonly static private ThreadCache _staticThreadCache = new();");
                 _ = builder.AppendLine($"{indentation}    public static ThreadCache StaticThreadCache => _staticThreadCache;");
             }
 
             if (HasNonStaticMethods(classDeclaration))
             {
-                _ = builder.AppendLine($"{indentation}    readonly private ThreadCache _threadCache = ThreadCache.CreateShared(tracked: false);");
+                _ = builder.AppendLine($"{indentation}    readonly private ThreadCache _threadCache = new();");
                 _ = builder.AppendLine($"{indentation}    public ThreadCache ThreadCache => _threadCache;");
             }
 

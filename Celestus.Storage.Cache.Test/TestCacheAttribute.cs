@@ -4,31 +4,23 @@ using System.Diagnostics;
 namespace Celestus.Storage.Cache.Test
 {
     [TestClass]
-    [DoNotParallelize] // The tests are not threadsafe since they dispose of resource other tests use.
     public sealed class TestCacheAttribute
     {
-        private SimpleClass _simpleClass = null!;
-
-        [TestInitialize]
-        public void Initialize()
-        {
-            _simpleClass = new SimpleClass();
-        }
-
         [TestMethod]
         public void VerifyThatCachingResultsSaveTime()
         {
             //
             // Arrange
             //
+            SimpleClass simpleClass = new();
 
             //
             // Act
             //
             var stopwatch = new Stopwatch();
             stopwatch.Start();
-            _ = _simpleClass.SleepBeforeCalculationCached((1, 2), out _);
-            _ = _simpleClass.SleepBeforeCalculationCached((1, 2), out _);
+            _ = simpleClass.SleepBeforeCalculationCached((1, 2), out _);
+            _ = simpleClass.SleepBeforeCalculationCached((1, 2), out _);
             stopwatch.Stop();
 
             //
@@ -43,6 +35,7 @@ namespace Celestus.Storage.Cache.Test
             //
             // Arrange
             //
+            SimpleClass simpleClass = new();
             var other = new SimpleClass();
 
             //
@@ -50,7 +43,7 @@ namespace Celestus.Storage.Cache.Test
             //
             var stopwatch = new Stopwatch();
             stopwatch.Start();
-            _ = _simpleClass.SleepBeforeCalculationCached((1, 2), out _);
+            _ = simpleClass.SleepBeforeCalculationCached((1, 2), out _);
             _ = other.SleepBeforeCalculationCached((1, 2), out _);
             stopwatch.Stop();
 
@@ -66,13 +59,14 @@ namespace Celestus.Storage.Cache.Test
             //
             // Arrange
             //
+            SimpleClass simpleClass = new();
 
             //
             // Act
             //
             const int A = 30;
             const int B = 15;
-            var returned = _simpleClass.CalculateCached((A, B), out var c);
+            var returned = simpleClass.CalculateCached((A, B), out var c);
 
             //
             // Assert
@@ -89,14 +83,15 @@ namespace Celestus.Storage.Cache.Test
             //
             // Arrange
             //
+            SimpleClass simpleClass = new();
 
             //
             // Act
             //
             const int A = 30;
             const int B = 15;
-            _ = _simpleClass.CalculateCached((A, B), out var _);
-            var returned2 = _simpleClass.CalculateCached((A, B), out var c2);
+            _ = simpleClass.CalculateCached((A, B), out var _);
+            var returned2 = simpleClass.CalculateCached((A, B), out var c2);
 
             //
             // Assert
@@ -113,6 +108,7 @@ namespace Celestus.Storage.Cache.Test
             //
             // Arrange
             //
+            SimpleClass simpleClass = new();
 
             //
             // Act
@@ -136,17 +132,18 @@ namespace Celestus.Storage.Cache.Test
             //
             // Arrange
             //
+            SimpleClass simpleClass = new();
 
             //
             // Act
             //
             const int A1 = 30;
             const int B1 = 15;
-            var returned1 = _simpleClass.CalculateCached((A1, B1), out var c1);
+            var returned1 = simpleClass.CalculateCached((A1, B1), out var c1);
 
             const int A2 = 45;
             const int B2 = 5;
-            var returned2 = _simpleClass.CalculateCached((A2, B2), out var c2);
+            var returned2 = simpleClass.CalculateCached((A2, B2), out var c2);
 
             //
             // Assert

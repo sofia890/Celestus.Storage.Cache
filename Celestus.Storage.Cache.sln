@@ -13,6 +13,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Celestus.Storage.Cache.Attr
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Celestus.Storage.Cache.PerformanceTest", "Celestus.Storage.Cache.PerformanceTest\Celestus.Storage.Cache.PerformanceTest.csproj", "{9263221D-4E09-47E4-909F-7304579DEE7F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Celestus.Serialization", "Celestus.Serialization\Celestus.Serialization.csproj", "{89ECF54B-95AC-4477-88B6-4D6D64F4A6AD}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,6 +41,10 @@ Global
 		{9263221D-4E09-47E4-909F-7304579DEE7F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9263221D-4E09-47E4-909F-7304579DEE7F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9263221D-4E09-47E4-909F-7304579DEE7F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{89ECF54B-95AC-4477-88B6-4D6D64F4A6AD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{89ECF54B-95AC-4477-88B6-4D6D64F4A6AD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{89ECF54B-95AC-4477-88B6-4D6D64F4A6AD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{89ECF54B-95AC-4477-88B6-4D6D64F4A6AD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
