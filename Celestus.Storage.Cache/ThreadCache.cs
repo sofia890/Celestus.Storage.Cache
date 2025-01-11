@@ -3,12 +3,12 @@
 namespace Celestus.Storage.Cache
 {
     [Serializable]
-    public class ThreadCache : IDisposable, ISerializable, IEquatable<ThreadCache>
+    public class ThreadCache : ISerializable, IEquatable<ThreadCache>
     {
         #region Factory Pattern
         readonly static Dictionary<string, ThreadCache> _caches = [];
 
-        private static void RemoveDisposedCache(object? sender, string key)
+        private static void RemoveDisposedCache(object? _, string key)
         {
             lock (nameof(ThreadCache))
             {
@@ -24,14 +24,13 @@ namespace Celestus.Storage.Cache
             {
                 lock (nameof(ThreadCache))
                 {
-                    if (_caches.TryGetValue(usedKey, out var cache) && !cache.IsDisposed)
+                    if (_caches.TryGetValue(usedKey, out var cache))
                     {
                         return cache;
                     }
                     else
                     {
                         cache = new ThreadCache(usedKey);
-                        cache.OnDisposed += RemoveDisposedCache;
 
                         _caches[usedKey] = cache;
 
@@ -47,12 +46,9 @@ namespace Celestus.Storage.Cache
         }
         #endregion
 
-        readonly ReaderWriterLockSlim _lock = new();
+        readonly ReaderWriterLock _lock = new();
 
         protected Cache _cache;
-
-        public bool IsDisposed { get; set; } = false;
-        private event EventHandler<string>? OnDisposed;
 
         readonly protected string _key;
 
@@ -72,65 +68,46 @@ namespace Celestus.Storage.Cache
 
         public bool TrySet<DataType>(string key, DataType value, TimeSpan? duration = null, int timeout = -1)
         {
-            if (_lock.TryEnterWriteLock(timeout))
+            try
             {
-                try
-                {
-                    _cache.Set(key, value, duration);
+                _lock.AcquireWriterLock(timeout);
 
-                    return true;
-                }
-                finally
-                {
-                    _lock.ExitWriteLock();
-                }
+                _cache.Set(key, value, duration);
+
+                return true;
             }
-            else
+            catch (ApplicationException)
             {
                 return false;
+            }
+            finally
+            {
+                if (_lock.IsWriterLockHeld)
+                {
+                    _lock.ReleaseWriterLock();
+                }
             }
         }
         public (bool result, DataType? data) TryGet<DataType>(string key, int timeout = -1)
         {
-            if (!_lock.TryEnterReadLock(timeout))
+            try
+            {
+                _lock.AcquireReaderLock(timeout);
+
+                return _cache.TryGet<DataType>(key);
+            }
+            catch (ApplicationException)
             {
                 return (false, default);
             }
-            else
+            finally
             {
-                try
+                if (_lock.IsReaderLockHeld)
                 {
-                    return _cache.TryGet<DataType>(key);
-                }
-                finally
-                {
-                    _lock.ExitReadLock();
+                    _lock.ReleaseReaderLock();
                 }
             }
         }
-
-        #region IDisposable
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!IsDisposed)
-            {
-                OnDisposed?.Invoke(this, _key);
-
-                if (disposing)
-                {
-                    _lock.Dispose();
-                }
-
-                IsDisposed = true;
-            }
-        }
-
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-        #endregion
 
         #region ISerializable
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
