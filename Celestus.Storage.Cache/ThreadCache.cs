@@ -1,5 +1,4 @@
-﻿using System;
-using System.Runtime.Serialization;
+﻿using System.Runtime.Serialization;
 
 namespace Celestus.Storage.Cache
 {
@@ -138,7 +137,6 @@ namespace Celestus.Storage.Cache
         {
             info.AddValue("Cache", _cache);
             info.AddValue("Key", _key);
-            info.AddValue("ones", (1L, typeof(long)), typeof(long));
         }
 
         protected ThreadCache(SerializationInfo info, StreamingContext context)
