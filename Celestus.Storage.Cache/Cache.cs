@@ -1,18 +1,21 @@
-﻿using System.Text.Json.Serialization;
+﻿using Celestus.Serialization;
+using System.Text.Json.Serialization;
 
 namespace Celestus.Storage.Cache
 {
     [JsonConverter(typeof(CacheJsonConverter))]
-    public class Cache(Dictionary<string, CacheEntry> storge)
+    public class Cache(string key, Dictionary<string, CacheEntry> storge)
     {
         #region Factory Pattern
         readonly static Dictionary<string, Cache> _caches = [];
 
-        public static Cache CreateShared(string key)
+        public static Cache CreateShared(string key = "")
         {
+            var usedKey = (key.Length > 0) ? key : Guid.NewGuid().ToString();
+
             lock (nameof(Cache))
             {
-                if (_caches.TryGetValue(key, out var cache))
+                if (_caches.TryGetValue(usedKey, out var cache))
                 {
                     return cache;
                 }
@@ -20,7 +23,7 @@ namespace Celestus.Storage.Cache
                 {
                     cache = new Cache();
 
-                    _caches[key] = cache;
+                    _caches[usedKey] = cache;
 
                     return cache;
                 }
@@ -28,9 +31,16 @@ namespace Celestus.Storage.Cache
         }
         #endregion
 
-        readonly internal Dictionary<string, CacheEntry> _storage = storge;
+        internal Dictionary<string, CacheEntry> _storage = storge;
 
-        public Cache() : this([])
+        public string Key { get; init; } = key;
+
+        public Cache(string key) : this(key, [])
+        {
+
+        }
+
+        public Cache() : this(string.Empty, [])
         {
 
         }
@@ -51,6 +61,7 @@ namespace Celestus.Storage.Cache
         {
             _storage[key] = new(expiraton, value);
         }
+
         public (bool result, DataType? data) TryGet<DataType>(string key)
         {
             if (!_storage.TryGetValue(key, out var entry))
@@ -68,6 +79,32 @@ namespace Celestus.Storage.Cache
             else
             {
                 return (true, data);
+            }
+        }
+
+        public void SaveToFile(Uri path)
+        {
+            Serialize.SaveToFile(this, path);
+        }
+
+        public static Cache? TryCreateFromFile(Uri path)
+        {
+            return Serialize.TryCreateFromFile<Cache>(path);
+        }
+
+        public bool TryLoadFromFile(Uri path)
+        {
+            var loadedData = Serialize.TryCreateFromFile<Cache>(path);
+
+            if (loadedData == null)
+            {
+                return false;
+            }
+            else
+            {
+                _storage = loadedData._storage;
+
+                return true;
             }
         }
 

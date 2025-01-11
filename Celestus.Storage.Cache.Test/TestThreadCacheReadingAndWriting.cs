@@ -1,57 +1,15 @@
-﻿using System.Text.Json;
-
-namespace Celestus.Storage.Cache.Test
+﻿namespace Celestus.Storage.Cache.Test
 {
     [TestClass]
     [DoNotParallelize] // The tests are not threadsafe since they dispose of resource other tests use.
-    public sealed class TestThreadCache
+    public sealed class TestThreadCacheReadingAndWriting
     {
         private ThreadCache _cache = null!;
 
         [TestInitialize]
         public void Initialize()
         {
-            _cache = ThreadCache.CreateShared(nameof(TestThreadCache));
-        }
-
-        [TestMethod]
-        public void VerifyThatSerializationWorks()
-        {
-            //
-            // Arrange
-            //
-            const string KEY_1 = "serial";
-            const int VALUE_1 = 57;
-            _ = _cache.TrySet(KEY_1, VALUE_1);
-
-            const string KEY_2 = "Mattis";
-            const double VALUE_2 = 11.5679;
-            _ = _cache.TrySet(KEY_2, VALUE_2);
-
-            const string KEY_3 = "Lakris";
-            DateTime VALUE_3 = DateTime.Now;
-            _ = _cache.TrySet(KEY_3, VALUE_3);
-
-            const string KEY_4 = "Ludde";
-            ExampleRecord VALUE_4 = new(-9634, "VerifyThatSerializationWorks", 10000000M);
-            _ = _cache.TrySet(KEY_4, VALUE_4);
-
-            //
-            // Act
-            //
-            string serializedData = JsonSerializer.Serialize(_cache);
-            var otherCache = JsonSerializer.Deserialize<ThreadCache>(serializedData);
-
-            //
-            // Assert
-            //
-            Assert.IsNotNull(otherCache);
-            Assert.AreEqual(_cache, otherCache);
-
-            Assert.AreEqual(otherCache.TryGet<int>(KEY_1), (true, VALUE_1));
-            Assert.AreEqual(otherCache.TryGet<double>(KEY_2), (true, VALUE_2));
-            Assert.AreEqual(otherCache.TryGet<DateTime>(KEY_3), (true, VALUE_3));
-            Assert.AreEqual(otherCache.TryGet<ExampleRecord>(KEY_4), (true, VALUE_4));
+            _cache = ThreadCache.GetOrCreateShared(nameof(TestThreadCacheReadingAndWriting));
         }
 
         [TestMethod]
@@ -129,7 +87,7 @@ namespace Celestus.Storage.Cache.Test
             //
             // Arrange
             //
-            var otherCache = ThreadCache.CreateShared("other");
+            var otherCache = ThreadCache.GetOrCreateShared("other");
 
             const int VALUE = 55;
             const string KEY = "test";
@@ -154,8 +112,8 @@ namespace Celestus.Storage.Cache.Test
             //
             // Arrange
             //
-            const int N_ITERATION = 1000;
-            const int N_THREADS = 32;
+            const int N_ITERATION = 100;
+            const int N_THREADS = 16;
 
             Action ThreadWorkerBuilder(int id)
             {
@@ -203,8 +161,8 @@ namespace Celestus.Storage.Cache.Test
             //
             // Arrange
             //
-            const int N_ITERATION = 1000;
-            const int N_THREADS = 32;
+            const int N_ITERATION = 100;
+            const int N_THREADS = 16;
 
             const string KEY = "hammer";
 

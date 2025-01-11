@@ -32,7 +32,7 @@ namespace Celestus.Storage.Cache
 
                         switch (propertyName)
                         {
-                            case nameof(ThreadCache._key):
+                            case nameof(ThreadCache.Key):
                                 key = reader.GetString();
                                 break;
 
@@ -50,19 +50,14 @@ namespace Celestus.Storage.Cache
                 throw new JsonException($"Invalid JSON for {nameof(ThreadCache)}.");
             }
 
-            var threadCache = new ThreadCache(key)
-            {
-                _cache = cache
-            };
-
-            return threadCache;
+            return new ThreadCache(key, cache);
         }
 
         public override void Write(Utf8JsonWriter writer, ThreadCache value, JsonSerializerOptions options)
         {
             writer.WriteStartObject();
 
-            writer.WriteString(nameof(ThreadCache._key), value._key);
+            writer.WriteString(nameof(ThreadCache.Key), value.Key);
             writer.WritePropertyName(nameof(ThreadCache._cache));
             JsonSerializer.Serialize(writer, value._cache, options);
 
