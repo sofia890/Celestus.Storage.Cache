@@ -1,9 +1,10 @@
-﻿using System.Runtime.Serialization;
+﻿using System;
+using System.Runtime.Serialization;
 
 namespace Celestus.Storage.Cache
 {
     [Serializable]
-    public class ThreadCache : IDisposable, ISerializable
+    public class ThreadCache : IDisposable, ISerializable, IEquatable<ThreadCache>
     {
         #region Factory Pattern
         readonly static Dictionary<string, ThreadCache> _caches = [];
@@ -137,6 +138,7 @@ namespace Celestus.Storage.Cache
         {
             info.AddValue("Cache", _cache);
             info.AddValue("Key", _key);
+            info.AddValue("ones", (1L, typeof(long)), typeof(long));
         }
 
         protected ThreadCache(SerializationInfo info, StreamingContext context)
@@ -153,6 +155,20 @@ namespace Celestus.Storage.Cache
             }
 
             _key = info.GetString("Key") ?? throw new SerializationException("Key cannot be null");
+        }
+        #endregion
+
+        #region IEquatable
+        public bool Equals(ThreadCache? other)
+        {
+            return other != null &&
+                _cache.Equals(other._cache) &&
+                _key.Equals(other._key);
+        }
+
+        public override bool Equals(object? obj)
+        {
+            return Equals(obj as ThreadCache);
         }
         #endregion
     }
