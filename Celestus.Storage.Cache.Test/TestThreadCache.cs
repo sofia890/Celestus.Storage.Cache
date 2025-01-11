@@ -15,15 +15,6 @@ namespace Celestus.Storage.Cache.Test
             _cache = ThreadCache.CreateShared(nameof(TestThreadCache));
         }
 
-        [TestCleanup]
-        public void Cleanup()
-        {
-            if (!_cache.IsDisposed)
-            {
-                _cache.Dispose();
-            }
-        }
-
         [TestMethod]
         public void VerifyThatSerializationWorks()
         {
@@ -165,50 +156,12 @@ namespace Celestus.Storage.Cache.Test
             //
             _ = otherCache.TrySet(KEY, VALUE + 1);
             var otherResult = otherCache.TryGet<int>(KEY);
-            otherCache.Dispose();
 
             //
             // Assert
             //
             Assert.IsTrue(_cache.TryGet<int>(KEY) is (true, VALUE));
             Assert.IsTrue(otherResult is (true, VALUE + 1));
-        }
-
-        [TestMethod]
-        public void VerifyThatNewCacheIsCreatedAfterFirstIsDisposed()
-        {
-            //
-            // Arrange
-            //
-
-            //
-            // Act
-            //
-            _cache.Dispose();
-            _cache = ThreadCache.CreateShared(nameof(TestThreadCache));
-
-            //
-            // Assert
-            //
-            Assert.IsFalse(_cache.IsDisposed);
-        }
-
-        [TestMethod]
-        public void VerifyThatCacheCanBeDisposed()
-        {
-            //
-            // Arrange
-            //
-
-            //
-            // Act
-            //
-            _cache.Dispose();
-
-            //
-            // Assert
-            //
-            Assert.IsTrue(_cache.IsDisposed);
         }
 
         [TestMethod]

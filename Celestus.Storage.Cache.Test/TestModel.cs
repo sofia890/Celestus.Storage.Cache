@@ -8,6 +8,8 @@ namespace Celestus.Storage.Cache.PerformanceTest
     {
         public partial class SimpleClass
         {
+            readonly int _justAnotherVariable = 0;
+
             public const int CALCULATE_TIMEOUT = 100;
             public const int CALCULATE_WITTH_SLEEP_TIMEOUT = 300;
             public const int CALCULATION_SLEEP = 250;
@@ -15,7 +17,7 @@ namespace Celestus.Storage.Cache.PerformanceTest
             [Cache(timeoutInMilliseconds: CALCULATE_TIMEOUT)]
             public int Calculate((int a, int b) inData, out int c)
             {
-                return CalculateStatic(inData, out c);
+                return _justAnotherVariable + CalculateStatic(inData, out c);
             }
 
             [Cache(timeoutInMilliseconds: CALCULATE_TIMEOUT)]

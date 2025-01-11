@@ -15,11 +15,6 @@ namespace Celestus.Storage.Cache.Test
             _simpleClass = new SimpleClass();
         }
 
-        [TestCleanup]
-        public void Cleanup()
-        {
-        }
-
         [TestMethod]
         public void VerifyThatCachingResultsSaveTime()
         {
