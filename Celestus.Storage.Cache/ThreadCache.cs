@@ -170,6 +170,11 @@ namespace Celestus.Storage.Cache
         {
             return Equals(obj as ThreadCache);
         }
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(_cache, _key);
+        }
         #endregion
     }
 }
