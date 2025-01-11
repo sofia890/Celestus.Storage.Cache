@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using Celestus.Storage.Cache.PerformanceTest;
+using Newtonsoft.Json;
 
 namespace Celestus.Storage.Cache.Test
 {
@@ -29,9 +30,21 @@ namespace Celestus.Storage.Cache.Test
             //
             // Arrange
             //
-            const string key = "serial";
-            _ = _cache.TrySet(key, 1);
+            const string KEY_1 = "serial";
+            const int VALUE_1 = 57;
+            _ = _cache.TrySet(KEY_1, VALUE_1);
 
+            const string KEY_2 = "Mattis";
+            const double VALUE_2 = 11.5679;
+            _ = _cache.TrySet(KEY_2, VALUE_2);
+
+            const string KEY_3 = "Lakris";
+            DateTime VALUE_3 = DateTime.Now;
+            _ = _cache.TrySet(KEY_3, VALUE_3);
+
+            const string KEY_4 = "Ludde";
+            ExampleRecord VALUE_4 = new(-9634, "VerifyThatSerializationWorks", 10000000M);
+            _ = _cache.TrySet(KEY_4, VALUE_4);
 
             //
             // Act
@@ -59,6 +72,11 @@ namespace Celestus.Storage.Cache.Test
             //
             Assert.IsNotNull(otherCache);
             Assert.AreEqual(_cache, otherCache);
+
+            Assert.AreEqual(otherCache.TryGet<int>(KEY_1), (true, VALUE_1));
+            Assert.AreEqual(otherCache.TryGet<double>(KEY_2), (true, VALUE_2));
+            Assert.AreEqual(otherCache.TryGet<DateTime>(KEY_3), (true, VALUE_3));
+            Assert.AreEqual(otherCache.TryGet<ExampleRecord>(KEY_4), (true, VALUE_4));
         }
 
         [TestMethod]
@@ -69,15 +87,15 @@ namespace Celestus.Storage.Cache.Test
             //
             const int DURATION = 100;
             const int VALUE = 55;
-            const string key = "key";
-            _ = _cache.TrySet(key, VALUE, duration: TimeSpan.FromMilliseconds(DURATION));
+            const string KEY = "key";
+            _ = _cache.TrySet(KEY, VALUE, duration: TimeSpan.FromMilliseconds(DURATION));
 
             //
             // Act
             //
             Thread.Sleep(DURATION * 2);
 
-            var (result, _) = _cache.TryGet<int>(key);
+            var (result, _) = _cache.TryGet<int>(KEY);
 
             //
             // Assert
@@ -96,13 +114,13 @@ namespace Celestus.Storage.Cache.Test
             // Act
             //
             const int VALUE = 55;
-            const string key = "key";
-            _ = _cache.TrySet(key, VALUE);
+            const string KEY = "key";
+            _ = _cache.TrySet(KEY, VALUE);
 
             //
             // Assert
             //
-            Assert.IsTrue(_cache.TryGet<int>(key) is (true, VALUE));
+            Assert.IsTrue(_cache.TryGet<int>(KEY) is (true, VALUE));
         }
 
         [TestMethod]
@@ -251,18 +269,18 @@ namespace Celestus.Storage.Cache.Test
             const int N_ITERATION = 1000;
             const int N_THREADS = 32;
 
-            var key = "hammer";
+            const string KEY = "hammer";
 
             Action ThreadWorkerBuilder(int id)
             {
                 return () =>
                 {
-                    _ = _cache.TrySet(key, id);
+                    _ = _cache.TrySet(KEY, id);
 
                     for (int i = 1; i <= N_ITERATION; i++)
                     {
-                        var (result, value) = _cache.TryGet<int>(key);
-                        _ = _cache.TrySet(key, value * (i + 1));
+                        var (result, value) = _cache.TryGet<int>(KEY);
+                        _ = _cache.TrySet(KEY, value * (i + 1));
                     }
                 };
             }
@@ -301,7 +319,7 @@ namespace Celestus.Storage.Cache.Test
             const int N_THREADS = 32;
             const int TIMEOUT = 1;
 
-            var key = "hammer";
+            const string KEY = "spike";
 
             Func<bool> ThreadWorkerBuilder(int id)
             {
@@ -311,7 +329,7 @@ namespace Celestus.Storage.Cache.Test
 
                     for (int i = 1; i <= N_ITERATION; i++)
                     {
-                        succeeded &= _cache.TrySet(key, 0, timeout: TIMEOUT);
+                        succeeded &= _cache.TrySet(KEY, 0, timeout: TIMEOUT);
                     }
 
                     return succeeded;
@@ -341,11 +359,11 @@ namespace Celestus.Storage.Cache.Test
             // Arrange
             //
             const int N_ITERATION = 1000;
-            const int N_THREADS = 32;
+            const int N_THREADS = 64;
             const int TIMEOUT = 1;
 
-            var key = "gunnar";
-            _cache.TrySet(key, 1);
+            const string KEY = "gunnar";
+            _cache.TrySet(KEY, 1);
 
             Func<bool> ThreadWorkerBuilder(int id)
             {
@@ -355,9 +373,9 @@ namespace Celestus.Storage.Cache.Test
 
                     for (int i = 1; i <= N_ITERATION; i++)
                     {
-                        _ = _cache.TrySet(key, 0, timeout: TIMEOUT);
+                        _ = _cache.TrySet(KEY, 0, timeout: TIMEOUT);
 
-                        var (latestResult, _) = _cache.TryGet<int>(key, timeout: TIMEOUT);
+                        var (latestResult, _) = _cache.TryGet<int>(KEY, timeout: TIMEOUT);
                         succeeded &= latestResult;
                     }
 
