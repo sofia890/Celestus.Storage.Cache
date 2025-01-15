@@ -1,5 +1,4 @@
-﻿using Celestus.Storage.Cache.PerformanceTest;
-using Newtonsoft.Json;
+﻿using System.Text.Json;
 
 namespace Celestus.Storage.Cache.Test
 {
@@ -40,23 +39,8 @@ namespace Celestus.Storage.Cache.Test
             //
             // Act
             //
-            var serializer = JsonSerializer.Create();
-            string serializedData;
-
-            using (var stringWriter = new StringWriter())
-            using (var writer = new JsonTextWriter(stringWriter))
-            {
-                serializer.Serialize(writer, _cache);
-                serializedData = stringWriter.ToString();
-            }
-
-            ThreadCache? otherCache = null;
-
-            using (var stringReader = new StringReader(serializedData))
-            using (var reader = new JsonTextReader(stringReader))
-            {
-                otherCache = serializer.Deserialize(reader, _cache.GetType()) as ThreadCache;
-            }
+            string serializedData = JsonSerializer.Serialize(_cache);
+            var otherCache = JsonSerializer.Deserialize<ThreadCache>(serializedData);
 
             //
             // Assert
@@ -316,7 +300,7 @@ namespace Celestus.Storage.Cache.Test
             const int TIMEOUT = 1;
 
             const string KEY = "gunnar";
-            _cache.TrySet(KEY, 1);
+            _ = _cache.TrySet(KEY, 1);
 
             Func<bool> ThreadWorkerBuilder(int id)
             {
