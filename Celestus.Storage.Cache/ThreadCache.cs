@@ -1,9 +1,9 @@
-﻿using System.Runtime.Serialization;
+﻿using System.Text.Json.Serialization;
 
 namespace Celestus.Storage.Cache
 {
-    [Serializable]
-    public class ThreadCache : ISerializable, IEquatable<ThreadCache>
+    [JsonConverter(typeof(ThreadCacheJsonConverter))]
+    public class ThreadCache : IDisposable
     {
         #region Factory Pattern
         readonly static Dictionary<string, ThreadCache> _caches = [];
@@ -48,18 +48,18 @@ namespace Celestus.Storage.Cache
 
         readonly ReaderWriterLock _lock = new();
 
-        protected Cache _cache;
+        internal Cache _cache;
 
-        readonly protected string _key;
+        readonly internal string _key;
 
-        private ThreadCache(string key)
+        public ThreadCache(string key)
         {
             _cache = new Cache();
 
             _key = key;
         }
 
-        private ThreadCache()
+        public ThreadCache()
         {
             _cache = new Cache();
 
@@ -108,30 +108,6 @@ namespace Celestus.Storage.Cache
                 }
             }
         }
-
-        #region ISerializable
-        void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
-        {
-            info.AddValue("Cache", _cache);
-            info.AddValue("Key", _key);
-        }
-
-        protected ThreadCache(SerializationInfo info, StreamingContext context)
-        {
-            var cacheObject = info.GetValue("Cache", typeof(Cache));
-
-            if (cacheObject is Cache cache)
-            {
-                _cache = cache;
-            }
-            else
-            {
-                throw new SerializationException($"Cache is not a {typeof(Cache)}.");
-            }
-
-            _key = info.GetString("Key") ?? throw new SerializationException("Key cannot be null");
-        }
-        #endregion
 
         #region IEquatable
         public bool Equals(ThreadCache? other)

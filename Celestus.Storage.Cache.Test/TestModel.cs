@@ -1,6 +1,6 @@
 ﻿using Celestus.Storage.Cache.Attributes;
 
-namespace Celestus.Storage.Cache.PerformanceTest
+namespace Celestus.Storage.Cache.Test
 {
     public record ExampleRecord(int A, string B, decimal C);
 
