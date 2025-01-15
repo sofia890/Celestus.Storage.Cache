@@ -1,4 +1,4 @@
-﻿using Celestus.Storage.Cache.PerformanceTest.ExtraNamespaceToCheckNested;
+﻿using Celestus.Storage.Cache.Test.ExtraNamespaceToCheckNested;
 using System.Diagnostics;
 
 namespace Celestus.Storage.Cache.Test

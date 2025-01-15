@@ -3,7 +3,7 @@
 namespace Celestus.Storage.Cache
 {
     [JsonConverter(typeof(ThreadCacheJsonConverter))]
-    public class ThreadCache : IDisposable
+    public class ThreadCache
     {
         #region Factory Pattern
         readonly static Dictionary<string, ThreadCache> _caches = [];
