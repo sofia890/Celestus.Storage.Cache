@@ -219,26 +219,26 @@ namespace Celestus.Storage.Cache.Generator
             var indentation = GetIndentation(namespaceContext.depth);
 
             var builder = new StringBuilder();
-            builder.AppendLine($"using Celestus.Storage.Cache;");
-            builder.AppendLine($"");
-            builder.AppendLine($"{namespaceContext.header}");
-            builder.AppendLine($"{indentation}{classInfo.modifiers} class {classInfo.name}");
-            builder.AppendLine($"{indentation}{{");
+            _ = builder.AppendLine($"using Celestus.Storage.Cache;");
+            _ = builder.AppendLine($"");
+            _ = builder.AppendLine($"{namespaceContext.header}");
+            _ = builder.AppendLine($"{indentation}{classInfo.modifiers} class {classInfo.name}");
+            _ = builder.AppendLine($"{indentation}{{");
 
             if (HasStaticMethods(classDeclaration))
             {
-                builder.AppendLine($"{indentation}    readonly static private ThreadCache _staticThreadCache = ThreadCache.CreateShared(key: \"{cacheKey}\", tracked: false);");
-                builder.AppendLine($"{indentation}    public static ThreadCache StaticThreadCache => _staticThreadCache;");
+                _ = builder.AppendLine($"{indentation}    readonly static private ThreadCache _staticThreadCache = ThreadCache.CreateShared(key: \"{cacheKey}\", tracked: false);");
+                _ = builder.AppendLine($"{indentation}    public static ThreadCache StaticThreadCache => _staticThreadCache;");
             }
 
             if (HasNonStaticMethods(classDeclaration))
             {
-                builder.AppendLine($"{indentation}    readonly private ThreadCache _threadCache = ThreadCache.CreateShared(tracked: false);");
-                builder.AppendLine($"{indentation}    public ThreadCache ThreadCache => _threadCache;");
+                _ = builder.AppendLine($"{indentation}    readonly private ThreadCache _threadCache = ThreadCache.CreateShared(tracked: false);");
+                _ = builder.AppendLine($"{indentation}    public ThreadCache ThreadCache => _threadCache;");
             }
 
-            builder.AppendLine($"{indentation}}}");
-            builder.AppendLine($"{namespaceContext.footer}");
+            _ = builder.AppendLine($"{indentation}}}");
+            _ = builder.AppendLine($"{namespaceContext.footer}");
 
             var sourceCode = builder.ToString();
 
@@ -315,12 +315,12 @@ namespace Celestus.Storage.Cache.Generator
 
             if (methodDeclaration.ReturnType.GetType() != typeof(void))
             {
-                outputTuple.Append($", {methodDeclaration.ReturnType} returnValue");
+                _ = outputTuple.Append($", {methodDeclaration.ReturnType} returnValue");
             }
 
             foreach (var parameter in outParameters)
             {
-                outputTuple.Append($", {parameter.Type} {GetName(parameter)}");
+                _ = outputTuple.Append($", {parameter.Type} {GetName(parameter)}");
             }
 
             return $"({outputTuple.ToString().Substring(2)})";
@@ -379,16 +379,16 @@ namespace Celestus.Storage.Cache.Generator
 
             if (IsStatic(methodDeclaration))
             {
-                inputCheck.AppendLine($"{indentation}var hashCode = 0;");
+                _ = inputCheck.AppendLine($"{indentation}var hashCode = 0;");
             }
             else
             {
-                inputCheck.AppendLine($"{indentation}var hashCode = GetHashCode();");
+                _ = inputCheck.AppendLine($"{indentation}var hashCode = GetHashCode();");
             }
 
             for (int i = 0; i < inputParameters.Count; i++)
             {
-                inputCheck.AppendLine($"{indentation}hashCode ^= {GetName(inputParameters[i])}.GetHashCode();");
+                _ = inputCheck.AppendLine($"{indentation}hashCode ^= {GetName(inputParameters[i])}.GetHashCode();");
             }
 
             return inputCheck.ToString().TrimEnd();
@@ -400,7 +400,7 @@ namespace Celestus.Storage.Cache.Generator
 
             foreach (var parameter in outParameters)
             {
-                variableAssigment.Append($", {GetName(parameter)}");
+                _ = variableAssigment.Append($", {GetName(parameter)}");
             }
 
             return variableAssigment.ToString().Substring(2);
@@ -413,7 +413,7 @@ namespace Celestus.Storage.Cache.Generator
             foreach (var parameter in outParameters)
             {
                 var parameterName = GetName(parameter);
-                variableAssigment.AppendLine($"{indentation}{parameterName} = value.{parameterName};");
+                _ = variableAssigment.AppendLine($"{indentation}{parameterName} = value.{parameterName};");
             }
 
             return variableAssigment.ToString().TrimEnd();
