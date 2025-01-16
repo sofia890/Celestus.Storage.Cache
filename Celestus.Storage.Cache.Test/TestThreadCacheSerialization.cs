@@ -1,7 +1,7 @@
 ﻿namespace Celestus.Storage.Cache.Test
 {
     [TestClass]
-    [DoNotParallelize] // The tests are not threadsafe since they dispose of resource other tests use.
+    [DoNotParallelize] // The tests are not thread safe since they dispose of resource other tests use.
     public sealed class TestThreadCacheSerialization
     {
         private ThreadCache _cache = null!;
@@ -48,6 +48,7 @@
             // Assert
             //
             Assert.IsNotNull(otherCache);
+            Assert.AreNotEqual(string.Empty, otherCache.Key);
             Assert.AreEqual(_cache, otherCache);
             Assert.AreEqual(_cache.GetHashCode(), otherCache.GetHashCode());
 
@@ -55,6 +56,34 @@
             Assert.AreEqual(otherCache.TryGet<double>(KEY_2), (true, VALUE_2));
             Assert.AreEqual(otherCache.TryGet<DateTime>(KEY_3), (true, VALUE_3));
             Assert.AreEqual(otherCache.TryGet<ExampleRecord>(KEY_4), (true, VALUE_4));
+        }
+
+        [TestMethod]
+        public void VerifyThatCacheIsNotLoadedWhenKeysDiffer()
+        {
+            //
+            // Arrange
+            //
+            ThreadCache cacheOne = new("SomeKey");
+
+            const string KEY_1 = "Janta";
+            const Decimal VALUE_1 = 598888899663145M;
+            _ = cacheOne.TrySet(KEY_1, VALUE_1);
+
+            var path = new Uri(Path.GetTempFileName());
+            cacheOne.SaveToFile(path);
+
+            //
+            // Act
+            //
+            ThreadCache cacheTwo = new("anotherKey");
+            bool loaded = cacheTwo.TryLoadFromFile(path);
+
+            //
+            // Assert
+            //
+            Assert.IsFalse(loaded);
+            Assert.AreEqual(cacheTwo.TryGet<int>(KEY_1), (false, default));
         }
 
         [TestMethod]

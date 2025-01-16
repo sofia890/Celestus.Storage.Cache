@@ -78,7 +78,7 @@ namespace Celestus.Storage.Cache.Test
         }
 
         [TestMethod]
-        public void VerifyThatCachedDataIsCorrectOnFollowupHit()
+        public void VerifyThatCachedDataIsCorrectOnFollowUpHit()
         {
             //
             // Arrange
@@ -108,7 +108,6 @@ namespace Celestus.Storage.Cache.Test
             //
             // Arrange
             //
-            SimpleClass simpleClass = new();
 
             //
             // Act

@@ -1,7 +1,7 @@
 ﻿namespace Celestus.Storage.Cache.Test
 {
     [TestClass]
-    [DoNotParallelize] // The tests are not threadsafe since they dispose of resource other tests use.
+    [DoNotParallelize] // The tests are not thread safe since they dispose of resource other tests use.
     public sealed class TestThreadCacheReadingAndWriting
     {
         private ThreadCache _cache = null!;

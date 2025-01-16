@@ -23,22 +23,22 @@ namespace Celestus.Storage.Cache
                         break;
 
                     case JsonTokenType.PropertyName:
-                        if (reader.GetString() is not string propertyName)
-                        {
-                            continue;
-                        }
-
-                        _ = reader.Read();
-
-                        switch (propertyName)
+                        switch (reader.GetString())
                         {
                             case nameof(ThreadCache.Key):
+                                _ = reader.Read();
+
                                 key = reader.GetString();
                                 break;
 
                             case nameof(ThreadCache._cache):
+                                _ = reader.Read();
+
                                 cache = JsonSerializer.Deserialize<Cache>(ref reader, options);
                                 break;
+
+                            default:
+                                throw new JsonException($"Invalid JSON for {nameof(ThreadCache)}.");
                         }
 
                         break;

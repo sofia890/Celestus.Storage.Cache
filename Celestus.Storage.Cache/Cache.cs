@@ -9,7 +9,7 @@ namespace Celestus.Storage.Cache
         #region Factory Pattern
         readonly static Dictionary<string, Cache> _caches = [];
 
-        public static Cache CreateShared(string key = "")
+        public static Cache GetOrCreateShared(string key = "")
         {
             var usedKey = (key.Length > 0) ? key : Guid.NewGuid().ToString();
 
@@ -47,19 +47,19 @@ namespace Celestus.Storage.Cache
 
         public void Set<DataType>(string key, DataType value, TimeSpan? duration = null)
         {
-            long expiraton = long.MaxValue;
+            long expiration = long.MaxValue;
 
             if (duration != null && duration != TimeSpan.Zero)
             {
-                expiraton = DateTime.Now.Ticks + (duration?.Ticks ?? 0);
+                expiration = DateTime.Now.Ticks + (duration?.Ticks ?? 0);
             }
 
-            Set(key, value, expiraton);
+            Set(key, value, expiration);
         }
 
-        public void Set<DataType>(string key, DataType value, long expiraton)
+        public void Set<DataType>(string key, DataType value, long expiration)
         {
-            _storage[key] = new(expiraton, value);
+            _storage[key] = new(expiration, value);
         }
 
         public (bool result, DataType? data) TryGet<DataType>(string key)
