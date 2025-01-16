@@ -9,7 +9,7 @@ namespace Celestus.Storage.Cache
         {
             if (reader.TokenType != JsonTokenType.StartObject)
             {
-                throw new JsonException($"Invalid JSON for {nameof(ThreadCache)}.");
+                throw new JsonException($"Invalid JSON for {nameof(Cache)}.");
             }
 
             string? key = null;
@@ -23,22 +23,22 @@ namespace Celestus.Storage.Cache
                         break;
 
                     case JsonTokenType.PropertyName:
-                        if (reader.GetString() is not string propertyName)
-                        {
-                            continue;
-                        }
-
-                        _ = reader.Read();
-
-                        switch (propertyName)
+                        switch (reader.GetString())
                         {
                             case nameof(Cache.Key):
+                                _ = reader.Read();
+
                                 key = reader.GetString();
                                 break;
 
                             case nameof(Cache._storage):
+                                _ = reader.Read();
+
                                 storage = JsonSerializer.Deserialize<Dictionary<string, CacheEntry>>(ref reader, options);
                                 break;
+
+                            default:
+                                throw new JsonException($"Invalid JSON for {nameof(Cache)}.");
                         }
 
                         break;
@@ -47,7 +47,7 @@ namespace Celestus.Storage.Cache
 
             if (key == null || storage == null)
             {
-                throw new JsonException($"Invalid JSON for {nameof(ThreadCache)}.");
+                throw new JsonException($"Invalid JSON for {nameof(Cache)}.");
             }
 
             return new Cache(key, storage);

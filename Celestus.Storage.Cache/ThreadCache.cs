@@ -170,8 +170,8 @@ namespace Celestus.Storage.Cache
         public bool Equals(ThreadCache? other)
         {
             return other != null &&
-                _cache.Equals(other._cache) &&
-                Key.Equals(other.Key);
+                   _cache.Equals(other._cache) &&
+                   Key.Equals(other.Key);
         }
 
         public override bool Equals(object? obj)

@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 
 namespace Celestus.Storage.Cache
 {
-    internal class CacheEntryJsonConverter : JsonConverter<CacheEntry>
+    public class CacheEntryJsonConverter : JsonConverter<CacheEntry>
     {
         const string TYPE_PROPERTY_NAME = "Type";
 
@@ -64,6 +64,9 @@ namespace Celestus.Storage.Cache
 
                                     data = JsonSerializer.Deserialize(ref reader, type, options);
                                     break;
+
+                                default:
+                                    throw new JsonException($"Invalid JSON for {nameof(CacheEntry)}.");
                             }
                         }
 

@@ -1,8 +1,8 @@
-﻿namespace Celestus.Storage.Cache.Test
+namespace Celestus.Storage.Cache.Test
 {
     [TestClass]
     [DoNotParallelize] // The tests are not thread safe since they dispose of resource other tests use.
-    public sealed class TestThreadCacheSharedCreation
+    public sealed class TestCacheSharedCreation
     {
         [TestMethod]
         public void VerifyThatSharedCacheCreatesKeyWhenNotProvided()
@@ -14,7 +14,7 @@
             //
             // Act
             //
-            var cache = ThreadCache.GetOrCreateShared();
+            var cache = Cache.GetOrCreateShared();
 
             //
             // Assert
