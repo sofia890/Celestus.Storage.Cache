@@ -26,7 +26,7 @@
             //
             // Act
             //
-            Thread.Sleep(DURATION * 2);
+            System.Threading.Thread.Sleep(DURATION * 2);
 
             var (result, _) = _cache.TryGet<int>(KEY);
 
