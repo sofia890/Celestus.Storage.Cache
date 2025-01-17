@@ -9,7 +9,7 @@
         [TestInitialize]
         public void Initialize()
         {
-            _cache = ThreadCache.GetOrCreateShared(nameof(TestThreadCacheReadingAndWriting));
+            _cache = new();
         }
 
         [TestMethod]

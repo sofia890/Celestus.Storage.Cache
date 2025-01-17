@@ -1,4 +1,5 @@
 ﻿using Celestus.Serialization;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace Celestus.Storage.Cache
@@ -6,8 +7,77 @@ namespace Celestus.Storage.Cache
     [JsonConverter(typeof(CacheJsonConverter))]
     public class Cache(string key, Dictionary<string, CacheEntry> storge)
     {
+
+        public class CacheJsonConverter : JsonConverter<Cache>
+        {
+            public override Cache Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            {
+                if (reader.TokenType != JsonTokenType.StartObject)
+                {
+                    throw new JsonException($"Invalid JSON for {nameof(Cache)}.");
+                }
+
+                string? key = null;
+                Dictionary<string, CacheEntry>? storage = null;
+
+                while (reader.Read())
+                {
+                    switch (reader.TokenType)
+                    {
+                        case JsonTokenType.EndObject:
+                            break;
+
+                        case JsonTokenType.PropertyName:
+                            switch (reader.GetString())
+                            {
+                                case nameof(Key):
+                                    _ = reader.Read();
+
+                                    key = reader.GetString();
+                                    break;
+
+                                case nameof(_storage):
+                                    _ = reader.Read();
+
+                                    storage = JsonSerializer.Deserialize<Dictionary<string, CacheEntry>>(ref reader, options);
+                                    break;
+
+                                default:
+                                    throw new JsonException($"Invalid JSON for {nameof(Cache)}.");
+                            }
+
+                            break;
+                    }
+                }
+
+                if (key == null || storage == null)
+                {
+                    throw new JsonException($"Invalid JSON for {nameof(Cache)}.");
+                }
+
+                return new Cache(key, storage);
+            }
+
+            public override void Write(Utf8JsonWriter writer, Cache value, JsonSerializerOptions options)
+            {
+                writer.WriteStartObject();
+
+                writer.WriteString(nameof(Key), value.Key);
+
+                writer.WritePropertyName(nameof(_storage));
+                JsonSerializer.Serialize(writer, value._storage, options);
+
+                writer.WriteEndObject();
+            }
+        }
+
         #region Factory Pattern
         readonly static Dictionary<string, Cache> _caches = [];
+
+        public static bool IsLoaded(string key)
+        {
+            return _caches.ContainsKey(key);
+        }
 
         public static Cache GetOrCreateShared(string key = "")
         {
@@ -21,7 +91,7 @@ namespace Celestus.Storage.Cache
                 }
                 else
                 {
-                    cache = new Cache();
+                    cache = new Cache(usedKey);
 
                     _caches[usedKey] = cache;
 
@@ -29,9 +99,37 @@ namespace Celestus.Storage.Cache
                 }
             }
         }
+
+        public static Cache? UpdateOrLoadSharedFromFile(Uri path)
+        {
+            if (TryCreateFromFile(path) is not Cache loadedCache)
+            {
+                return null;
+            }
+            else if (IsLoaded(loadedCache.Key))
+            {
+                lock (nameof(Cache))
+                {
+                    var cache = _caches[loadedCache.Key];
+
+                    cache._storage = loadedCache._storage;
+
+                    return cache;
+                }
+            }
+            else
+            {
+                lock (nameof(ThreadCache))
+                {
+                    _caches[loadedCache.Key] = loadedCache;
+                }
+
+                return loadedCache;
+            }
+        }
         #endregion
 
-        internal Dictionary<string, CacheEntry> _storage = storge;
+        Dictionary<string, CacheEntry> _storage = storge;
 
         public string Key { get; init; } = key;
 
