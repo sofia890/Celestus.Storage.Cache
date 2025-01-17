@@ -18,7 +18,7 @@
             //
             // Arrange
             //
-            const int N_ITERATION = 100;
+            const int N_ITERATION = 1000;
             const int N_THREADS = 32;
             const int TIMEOUT = 1;
 
@@ -121,7 +121,7 @@
                     (path, _) => ThreadCache.UpdateOrLoadSharedFromFile(path, timeout: 1) == null),
 
                 secondary: (
-                    nrOfThreads: 8,
+                    nrOfThreads: 16,
                     () => longKey,
                     (key, _) => _cache.TrySet(key, 0, timeout: 10000)),
 
