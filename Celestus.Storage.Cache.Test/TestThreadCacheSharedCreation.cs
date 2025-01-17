@@ -4,6 +4,33 @@
     [DoNotParallelize] // The tests are not thread safe since they dispose of resource other tests use.
     public sealed class TestThreadCacheSharedCreation
     {
+
+        [TestMethod]
+        public void VerifyThatSharedCachesWithDifferentKeysAreUnique()
+        {
+            //
+            // Arrange
+            //
+            var cache = ThreadCache.GetOrCreateShared(nameof(VerifyThatSharedCachesWithDifferentKeysAreUnique));
+            var otherCache = ThreadCache.GetOrCreateShared(new Guid().ToString());
+
+            const int VALUE = 55;
+            const string KEY = "test";
+            _ = cache.TrySet(KEY, VALUE);
+
+            //
+            // Act
+            //
+            _ = otherCache.TrySet(KEY, VALUE + 1);
+            var otherResult = otherCache.TryGet<int>(KEY);
+
+            //
+            // Assert
+            //
+            Assert.IsTrue(cache.TryGet<int>(KEY) is (true, VALUE));
+            Assert.IsTrue(otherResult is (true, VALUE + 1));
+        }
+
         [TestMethod]
         public void VerifyThatSharedCacheCreatesKeyWhenNotProvided()
         {
