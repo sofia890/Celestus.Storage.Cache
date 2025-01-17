@@ -4,11 +4,32 @@ using System.Text.Json.Serialization;
 
 namespace Celestus.Storage.Cache
 {
+    public class CacheLock : IDisposable
+    {
+        private readonly ReaderWriterLock _lock;
+        public CacheLock(ReaderWriterLock cacheLock, int timeout = -1)
+        {
+            _lock = cacheLock;
+            _lock.AcquireWriterLock(timeout);
+        }
+        public void Dispose()
+        {
+            GC.SuppressFinalize(this);
+
+            if (_lock.IsWriterLockHeld)
+            {
+                _lock.ReleaseWriterLock();
+            }
+        }
+    }
+
     [JsonConverter(typeof(ThreadCacheJsonConverter))]
     public class ThreadCache(string key, Cache cache)
     {
         public class ThreadCacheJsonConverter : JsonConverter<ThreadCache>
         {
+            const int DEFAULT_LOCK_TIMEOUT = 10000;
+
             public override ThreadCache? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
             {
                 if (reader.TokenType != JsonTokenType.StartObject)
@@ -64,19 +85,9 @@ namespace Celestus.Storage.Cache
                 writer.WriteString(nameof(Key), value.Key);
                 writer.WritePropertyName(nameof(_cache));
 
-                try
+                using (value.Lock(DEFAULT_LOCK_TIMEOUT))
                 {
-                    const int DEFAULT_TIMEOUT = 10000;
-                    value._lock.AcquireWriterLock(DEFAULT_TIMEOUT);
-
                     JsonSerializer.Serialize(writer, value._cache, options);
-                }
-                finally
-                {
-                    if (value._lock.IsWriterLockHeld)
-                    {
-                        value._lock.ReleaseWriterLock();
-                    }
                 }
 
                 writer.WriteEndObject();
@@ -168,6 +179,11 @@ namespace Celestus.Storage.Cache
 
         public ThreadCache() : this(string.Empty, new())
         {
+        }
+
+        public CacheLock Lock(int timeout = -1)
+        {
+            return new CacheLock(_lock, timeout);
         }
 
         public bool TrySet<DataType>(string key, DataType value, TimeSpan? duration = null, int timeout = -1)

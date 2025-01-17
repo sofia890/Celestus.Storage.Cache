@@ -31,10 +31,21 @@ namespace Celestus.Storage.Cache.Test
             [Cache(timeoutInMilliseconds: CALCULATE_WITTH_SLEEP_TIMEOUT)]
             public int SleepBeforeCalculation((int a, int b) inData, out int c)
             {
-                Thread.Sleep(CALCULATION_SLEEP);
+                System.Threading.Thread.Sleep(CALCULATION_SLEEP);
 
                 return Calculate(inData, out c);
             }
+        }
+    }
+
+    public static class ThreadTimeout
+    {
+        public static ReturnType DoWhileLocked<ReturnType>(ThreadCache cache, Func<ReturnType> action, int timeout = -1)
+        {
+            return Thread.DoUntil(() => cache.Lock(),
+                                  (cacheLock) => cacheLock.Dispose(),
+                                  action,
+                                  timeout);
         }
     }
 }
