@@ -1,5 +1,3 @@
-using System;
-
 namespace Celestus.Storage.Cache.Test
 {
     [TestClass]
