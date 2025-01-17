@@ -1,11 +1,89 @@
 ﻿using Celestus.Serialization;
+using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Threading;
 
 namespace Celestus.Storage.Cache
 {
     [JsonConverter(typeof(ThreadCacheJsonConverter))]
     public class ThreadCache(string key, Cache cache)
     {
+        public class ThreadCacheJsonConverter : JsonConverter<ThreadCache>
+        {
+            public override ThreadCache? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            {
+                if (reader.TokenType != JsonTokenType.StartObject)
+                {
+                    throw new JsonException($"Invalid JSON for {nameof(ThreadCache)}.");
+                }
+
+                string? key = null;
+                Cache? cache = null;
+
+                while (reader.Read())
+                {
+                    switch (reader.TokenType)
+                    {
+                        case JsonTokenType.EndObject:
+                            break;
+
+                        case JsonTokenType.PropertyName:
+                            switch (reader.GetString())
+                            {
+                                case nameof(Key):
+                                    _ = reader.Read();
+
+                                    key = reader.GetString();
+                                    break;
+
+                                case nameof(_cache):
+                                    _ = reader.Read();
+
+                                    cache = JsonSerializer.Deserialize<Cache>(ref reader, options);
+                                    break;
+
+                                default:
+                                    throw new JsonException($"Invalid JSON for {nameof(ThreadCache)}.");
+                            }
+
+                            break;
+                    }
+                }
+
+                if (key == null || cache == null)
+                {
+                    throw new JsonException($"Invalid JSON for {nameof(ThreadCache)}.");
+                }
+
+                return new ThreadCache(key, cache);
+            }
+
+            public override void Write(Utf8JsonWriter writer, ThreadCache value, JsonSerializerOptions options)
+            {
+                writer.WriteStartObject();
+
+                writer.WriteString(nameof(Key), value.Key);
+                writer.WritePropertyName(nameof(_cache));
+
+                try
+                {
+                    const int DEFAULT_TIMEOUT = 10000;
+                    value._lock.AcquireWriterLock(DEFAULT_TIMEOUT);
+
+                    JsonSerializer.Serialize(writer, value._cache, options);
+                }
+                finally
+                {
+                    if (value._lock.IsWriterLockHeld)
+                    {
+                        value._lock.ReleaseWriterLock();
+                    }
+                }
+
+                writer.WriteEndObject();
+            }
+        }
+
         #region Factory Pattern
         readonly static Dictionary<string, ThreadCache> _caches = [];
 
@@ -81,7 +159,7 @@ namespace Celestus.Storage.Cache
 
         readonly ReaderWriterLock _lock = new();
 
-        internal Cache _cache = cache;
+        Cache _cache = cache;
 
         public string Key { get; init; } = key;
 

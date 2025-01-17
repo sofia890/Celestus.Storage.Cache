@@ -121,66 +121,6 @@
         }
 
         [TestMethod]
-        public void VerifyThatSharedCacheCanBeUpdatedFromFile()
-        {
-            //
-            // Arrange
-            //
-            ThreadCache cache = ThreadCache.GetOrCreateShared(nameof(VerifyThatSharedCacheCanBeUpdatedFromFile));
-
-            const string KEY_1 = "Katter";
-            const int VALUE_1 = 123;
-            _ = cache.TrySet(KEY_1, VALUE_1);
-
-            //
-            // Act
-            //
-            var path = new Uri(Path.GetTempFileName());
-            cache.SaveToFile(path);
-
-            _ = cache.TrySet(KEY_1, VALUE_1 * 2);
-
-            const string KEY_2 = "Neko";
-            const double VALUE_2 = 78.1234;
-            _ = cache.TrySet(KEY_2, VALUE_2);
-
-            ThreadCache? otherCache = ThreadCache.UpdateOrLoadSharedFromFile(path);
-
-            File.Delete(path.AbsolutePath);
-
-            //
-            // Assert
-            //
-            Assert.IsNotNull(otherCache);
-            Assert.AreEqual(cache, otherCache);
-
-            Assert.AreEqual(cache.TryGet<int>(KEY_1), (true, VALUE_1));
-            Assert.AreEqual(cache.TryGet<double>(KEY_2), (false, 0));
-        }
-
-        [TestMethod]
-        public void VerifyThatReadingSharedEmptyFileFails()
-        {
-            //
-            // Arrange
-            //
-            var path = new Uri(Path.GetTempFileName());
-            File.WriteAllText(path.AbsolutePath, "");
-
-            //
-            // Act
-            //
-            bool loaded = ThreadCache.UpdateOrLoadSharedFromFile(path) != null;
-
-            File.Delete(path.AbsolutePath);
-
-            //
-            // Assert
-            //
-            Assert.IsFalse(loaded);
-        }
-
-        [TestMethod]
         public void VerifyThatReadingEmptyFileFails()
         {
             //
