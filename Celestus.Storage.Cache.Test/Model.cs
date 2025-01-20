@@ -1,5 +1,4 @@
 ﻿using Celestus.Storage.Cache.Attributes;
-using System.Threading;
 
 namespace Celestus.Storage.Cache.Test
 {

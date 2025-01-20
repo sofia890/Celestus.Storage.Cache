@@ -168,7 +168,7 @@ namespace Celestus.Storage.Cache.Generator
             var parameters = GetParameters(methodDeclaration);
             var outputParameters = GetOutputParameters(methodDeclaration);
             var tupleDeclaration = GetOutputTuple(methodDeclaration, outputParameters);
-            var tupleOutVariableAssigment = GetOutputTupleOutVariableAssignment(outputParameters);
+            var tupleOutVariableAssignment = GetOutputTupleOutVariableAssignment(outputParameters);
             var timeout = GetCacheTimeout(context, methodDeclaration);
             var cacheStore = GetCacheStore(methodDeclaration);
 
@@ -176,7 +176,7 @@ namespace Celestus.Storage.Cache.Generator
             var indentationDeeper = indentation + "            ";
 
             var hacCodeInputParameters = GetHashCodeForInputParameters(methodDeclaration, indentation + "        ");
-            var outVariableAssigment = GetOutVariableAssigment(outputParameters, indentationDeeper);
+            var outVariableAssignment = GetOutVariableAssignment(outputParameters, indentationDeeper);
 
             string sourceCode =
                 $$"""
@@ -190,14 +190,14 @@ namespace Celestus.Storage.Cache.Generator
                     {{indentation}}        
                     {{indentation}}        if ({{cacheStore}}.TryGet<{{tupleDeclaration}}>(uniqueKey, timeout: {{timeout}}) is not (result: true, var value))
                     {{indentation}}        {
-                    {{indentation}}            value = ({{methodIdentifier}}({{parameters}}), {{tupleOutVariableAssigment}});
+                    {{indentation}}            value = ({{methodIdentifier}}({{parameters}}), {{tupleOutVariableAssignment}});
                     {{indentation}}            
                     {{indentation}}            // Avoid throwing an exception if TrySet(...) fails. Just try next time the value is fetched.
                     {{indentation}}            _ = {{cacheStore}}.TrySet(uniqueKey, value, timeout: {{timeout}});
                     {{indentation}}        }
                     {{indentation}}        else
                     {{indentation}}        {
-                    {{outVariableAssigment}}
+                    {{outVariableAssignment}}
                     {{indentation}}        }
                     {{indentation}}        
                     {{indentation}}        return value.returnValue;
@@ -395,31 +395,31 @@ namespace Celestus.Storage.Cache.Generator
 
         private string GetOutputTupleOutVariableAssignment(List<ParameterSyntax> outParameters)
         {
-            StringBuilder variableAssigment = new();
+            StringBuilder variableAssignment = new();
 
             foreach (var parameter in outParameters)
             {
-                _ = variableAssigment.Append($", {GetName(parameter)}");
+                _ = variableAssignment.Append($", {GetName(parameter)}");
             }
 
-            return variableAssigment.ToString().Substring(2);
+            return variableAssignment.ToString().Substring(2);
         }
 
-        private string GetOutVariableAssigment(List<ParameterSyntax> outParameters, string indentation)
+        private string GetOutVariableAssignment(List<ParameterSyntax> outParameters, string indentation)
         {
-            StringBuilder variableAssigment = new();
+            StringBuilder variableAssignment = new();
 
             foreach (var parameter in outParameters)
             {
                 var parameterName = GetName(parameter);
-                _ = variableAssigment.AppendLine($"{indentation}{parameterName} = value.{parameterName};");
+                _ = variableAssignment.AppendLine($"{indentation}{parameterName} = value.{parameterName};");
             }
 
-            return variableAssigment.ToString().TrimEnd();
+            return variableAssignment.ToString().TrimEnd();
         }
         private string GetCacheTimeout(SourceProductionContext context, MethodDeclarationSyntax methodDeclaration)
         {
-            var errorMessge = string.Empty;
+            var errorMessage = string.Empty;
 
             foreach (var attributeListOuter in methodDeclaration.AttributeLists)
             {
@@ -439,18 +439,18 @@ namespace Celestus.Storage.Cache.Generator
                         {
                             if (attributeValue.Expression is not LiteralExpressionSyntax literal)
                             {
-                                errorMessge = $"Timeout attribute parameter only support " +
-                                              $"literal expressions. defaulting to {CacheAttribute.DEFAULT_TIMEOUT}.";
+                                errorMessage = $"Timeout attribute parameter only support " +
+                                               $"literal expressions. defaulting to {CacheAttribute.DEFAULT_TIMEOUT}.";
                             }
                             else if (literal.Token.Value is not int literalValue)
                             {
-                                errorMessge = $"Timeout attribute parameter should be an " +
-                                              $"integer, defaulting to {CacheAttribute.DEFAULT_TIMEOUT}.";
+                                errorMessage = $"Timeout attribute parameter should be an " +
+                                               $"integer, defaulting to {CacheAttribute.DEFAULT_TIMEOUT}.";
                             }
                             else if (literalValue < -1)
                             {
-                                errorMessge = $"Timeout attribute parameter should be an " +
-                                              $"larger than -2, defaulting to {CacheAttribute.DEFAULT_TIMEOUT}.";
+                                errorMessage = $"Timeout attribute parameter should be an " +
+                                               $"larger than -2, defaulting to {CacheAttribute.DEFAULT_TIMEOUT}.";
                             }
                             else
                             {
@@ -461,12 +461,12 @@ namespace Celestus.Storage.Cache.Generator
                 }
             }
 
-            if (errorMessge.Length > 0)
+            if (errorMessage.Length > 0)
             {
                 context.ReportDiagnostic(Diagnostic.Create(
                     id: "CacheTimeout",
                     category: "ArgumentException",
-                    message: errorMessge,
+                    message: errorMessage,
                     severity: DiagnosticSeverity.Error,
                     defaultSeverity: DiagnosticSeverity.Error,
                     isEnabledByDefault: true,
