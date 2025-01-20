@@ -1,24 +1,24 @@
 ﻿using Celestus.Storage.Cache.PerformanceTest;
 using System.Diagnostics;
 
-for (int j = 0; j < 300; j++)
+static TimeSpan Test()
 {
-    List<double> results = [];
+    var stopwatchNormalCall = new Stopwatch();
+    stopwatchNormalCall.Start();
+    _ = SimpleClass.Calculate((1, 2), out _);
+    stopwatchNormalCall.Stop();
 
-    for (int i = 0; i < 100000; i++)
-    {
-        var stopwatch2 = new Stopwatch();
-        stopwatch2.Start();
-        _ = SimpleClass.Calculate((1, 2), out _);
-        stopwatch2.Stop();
+    var stopwatchCachedCall = new Stopwatch();
+    stopwatchCachedCall.Start();
+    _ = SimpleClass.CalculateCached((1, 2), out _);
+    stopwatchCachedCall.Stop();
 
-        var stopwatch = new Stopwatch();
-        stopwatch.Start();
-        _ = SimpleClass.CalculateCached((1, 2), out _);
-        stopwatch.Stop();
-
-        results.Add(stopwatch.Elapsed.TotalMicroseconds - stopwatch2.Elapsed.TotalMicroseconds);
-    }
-
-    Console.WriteLine(results[5..].Average());
+    return TimeSpan.FromTicks(stopwatchCachedCall.ElapsedTicks - stopwatchNormalCall.ElapsedTicks);
 }
+
+var measurements = Measure.Run(Test, iterationsPerThread: 1000, nrOfThreads: 4).Select(x => x.Ticks);
+
+var average = Measure.Average(measurements, nrOfValuesToSkipAtEachExtreme: 100);
+TimeSpan averageTimeSpan = TimeSpan.FromTicks(average);
+
+Console.WriteLine($"Average extra processing time for cached is {averageTimeSpan} ({averageTimeSpan.TotalMicroseconds} µs)");
