@@ -1,6 +1,5 @@
 using System.Text.Json;
 using static Celestus.Storage.Cache.Cache;
-using static Celestus.Storage.Cache.CacheEntry;
 
 namespace Celestus.Storage.Cache.Test
 {

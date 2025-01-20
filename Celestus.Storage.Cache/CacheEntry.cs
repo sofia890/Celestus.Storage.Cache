@@ -78,7 +78,7 @@ namespace Celestus.Storage.Cache
                     }
                 }
 
-                End:
+            End:
                 if (expiration == 0 || data == null)
                 {
                     throw new JsonException($"Invalid JSON for {nameof(CacheEntry)}.");
