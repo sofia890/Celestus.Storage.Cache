@@ -1,10 +1,11 @@
 using System.Text.Json;
 using static Celestus.Storage.Cache.Cache;
+using static Celestus.Storage.Cache.CacheEntry;
 
 namespace Celestus.Storage.Cache.Test
 {
     [TestClass]
-    public class CacheJsonConverterTests
+    public class TestCacheJsonConverter
     {
         [TestMethod]
         public void Read_ShouldThrowJsonException_WhenTokenTypeIsNotStartObject()
