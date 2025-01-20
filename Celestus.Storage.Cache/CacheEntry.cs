@@ -25,8 +25,9 @@ namespace Celestus.Storage.Cache
                 {
                     switch (reader.TokenType)
                     {
+                        default:
                         case JsonTokenType.EndObject:
-                            return new CacheEntry(expiration, data);
+                            goto End;
 
                         case JsonTokenType.PropertyName:
                             if (reader.GetString() is not string propertyName)
@@ -54,14 +55,14 @@ namespace Celestus.Storage.Cache
                                         }
                                         break;
 
-                                    case nameof(CacheEntry.Expiration):
+                                    case nameof(Expiration):
                                         expiration = reader.GetInt64();
                                         break;
 
-                                    case nameof(CacheEntry.Data):
+                                    case nameof(Data):
                                         if (type == null)
                                         {
-                                            throw new JsonException($"{TYPE_PROPERTY_NAME} has to be before {nameof(CacheEntry.Data)} " +
+                                            throw new JsonException($"{TYPE_PROPERTY_NAME} has to be before {nameof(Data)} " +
                                                                     $"for {nameof(CacheEntry)}.");
                                         }
 
@@ -77,7 +78,13 @@ namespace Celestus.Storage.Cache
                     }
                 }
 
-                throw new JsonException($"Invalid JSON for {nameof(CacheEntry)}.");
+                End:
+                if (expiration == 0 || data == null)
+                {
+                    throw new JsonException($"Invalid JSON for {nameof(CacheEntry)}.");
+                }
+
+                return new CacheEntry(expiration, data);
             }
 
             public override void Write(Utf8JsonWriter writer, CacheEntry value, JsonSerializerOptions options)
@@ -97,10 +104,10 @@ namespace Celestus.Storage.Cache
                     JsonSerializer.Serialize(writer, string.Empty, options);
                 }
 
-                writer.WritePropertyName(nameof(CacheEntry.Expiration));
+                writer.WritePropertyName(nameof(Expiration));
                 writer.WriteNumberValue(value.Expiration);
 
-                writer.WritePropertyName(nameof(CacheEntry.Data));
+                writer.WritePropertyName(nameof(Data));
                 JsonSerializer.Serialize(writer, value.Data, options);
 
                 writer.WriteEndObject();

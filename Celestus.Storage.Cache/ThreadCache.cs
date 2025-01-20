@@ -44,8 +44,9 @@ namespace Celestus.Storage.Cache
                 {
                     switch (reader.TokenType)
                     {
+                        default:
                         case JsonTokenType.EndObject:
-                            break;
+                            goto End;
 
                         case JsonTokenType.PropertyName:
                             switch (reader.GetString())
@@ -70,6 +71,7 @@ namespace Celestus.Storage.Cache
                     }
                 }
 
+                End:
                 if (key == null || cache == null)
                 {
                     throw new JsonException($"Invalid JSON for {nameof(ThreadCache)}.");
