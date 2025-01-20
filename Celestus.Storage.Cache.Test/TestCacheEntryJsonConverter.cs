@@ -4,7 +4,7 @@ using static Celestus.Storage.Cache.CacheEntry;
 namespace Celestus.Storage.Cache.Test
 {
     [TestClass]
-    public class CacheEntryJsonConverterTests
+    public class TestCacheEntryJsonConverter
     {
         [TestMethod]
         public void Read_InvalidJson_ThrowsJsonException()
