@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text;
 using System.Threading;
 
@@ -169,8 +170,22 @@ namespace Celestus.Storage.Cache.Generator
             var outputParameters = GetOutputParameters(methodDeclaration);
             var tupleDeclaration = GetOutputTuple(methodDeclaration, outputParameters);
             var tupleOutVariableAssignment = GetOutputTupleOutVariableAssignment(outputParameters);
-            var timeout = GetCacheTimeout(context, methodDeclaration);
+            var cacheAttributes = GetCacheAttributes(context, methodDeclaration.AttributeLists);
             var cacheStore = GetCacheStore(methodDeclaration);
+
+            string timeout = $"{CacheAttribute.DEFAULT_TIMEOUT}";
+
+            if (cacheAttributes.TryGetValue("timeoutInMilliseconds", out var timeoutInMilliseconds))
+            {
+                timeout = timeoutInMilliseconds;
+            }
+
+            string uniqueKeyBase = methodIdentifier;
+
+            if (cacheAttributes.TryGetValue("key", out var key))
+            {
+                uniqueKeyBase = key;
+            }
 
             var indentation = GetIndentation(namespaceContext.depth);
             var indentationDeeper = indentation + "            ";
@@ -186,7 +201,7 @@ namespace Celestus.Storage.Cache.Generator
                     {{indentation}}    {{methodModifiers}} {{returnType}} {{methodIdentifier}}Cached{{parameterDeclarations}}
                     {{indentation}}    {
                     {{hacCodeInputParameters}}
-                    {{indentation}}        var uniqueKey = $"{{methodIdentifier}}-{hashCode}";
+                    {{indentation}}        var uniqueKey = $"{{uniqueKeyBase}}-{hashCode}";
                     {{indentation}}        
                     {{indentation}}        if ({{cacheStore}}.TryGet<{{tupleDeclaration}}>(uniqueKey, timeout: {{timeout}}) is not (result: true, var value))
                     {{indentation}}        {
@@ -215,6 +230,16 @@ namespace Celestus.Storage.Cache.Generator
                           NamespaceContext namespaceContext,
                           DeclarationInfo classInfo)
         {
+
+            var cacheAttributes = GetCacheAttributes(context, classDeclaration.AttributeLists);
+
+            string uniqueKey = string.Empty;
+
+            if (cacheAttributes.TryGetValue("key", out var key))
+            {
+                uniqueKey = key;
+            }
+
             var indentation = GetIndentation(namespaceContext.depth);
 
             var builder = new StringBuilder();
@@ -226,13 +251,13 @@ namespace Celestus.Storage.Cache.Generator
 
             if (HasStaticMethods(classDeclaration))
             {
-                _ = builder.AppendLine($"{indentation}    readonly static private ThreadCache _staticThreadCache = new();");
+                _ = builder.AppendLine($"{indentation}    readonly static private ThreadCache _staticThreadCache = new({uniqueKey});");
                 _ = builder.AppendLine($"{indentation}    public static ThreadCache StaticThreadCache => _staticThreadCache;");
             }
 
             if (HasNonStaticMethods(classDeclaration))
             {
-                _ = builder.AppendLine($"{indentation}    readonly private ThreadCache _threadCache = new();");
+                _ = builder.AppendLine($"{indentation}    readonly private ThreadCache _threadCache = new({uniqueKey});");
                 _ = builder.AppendLine($"{indentation}    public ThreadCache ThreadCache => _threadCache;");
             }
 
@@ -417,44 +442,37 @@ namespace Celestus.Storage.Cache.Generator
 
             return variableAssignment.ToString().TrimEnd();
         }
-        private string GetCacheTimeout(SourceProductionContext context, MethodDeclarationSyntax methodDeclaration)
+        private Dictionary<string, string> GetCacheAttributes(
+            SourceProductionContext context,
+            SyntaxList<AttributeListSyntax> attributeLists)
         {
             var errorMessage = string.Empty;
 
-            foreach (var attributeListOuter in methodDeclaration.AttributeLists)
+            Dictionary<string, string> foundCacheArguments = [];
+
+            foreach (var attributeListOuter in attributeLists)
             {
                 foreach (var attribute in attributeListOuter.Attributes)
                 {
                     if (attribute.Name is IdentifierNameSyntax name &&
                         name.Identifier.ValueText == "Cache")
                     {
-                        var arguments = attribute.ArgumentList.Arguments;
-                        var attributeValue = arguments.First();
+                        var argumentList = attribute.ArgumentList.Arguments;
 
-                        if (attributeValue.Expression is IdentifierNameSyntax variableName)
+                        foreach (var argument in argumentList)
                         {
-                            return variableName.Identifier.ValueText;
-                        }
-                        else
-                        {
-                            if (attributeValue.Expression is not LiteralExpressionSyntax literal)
+                            if (argument.NameColon is not NameColonSyntax nameColonSyntax ||
+                                !TryGetName(nameColonSyntax, out var attributeName))
                             {
-                                errorMessage = $"Timeout attribute parameter only support " +
-                                               $"literal expressions. defaulting to {CacheAttribute.DEFAULT_TIMEOUT}.";
+                                errorMessage = $"Could not determine which Cache attribute '{argument}' belongs to.";
                             }
-                            else if (literal.Token.Value is not int literalValue)
+                            else if (argument.Expression is IdentifierNameSyntax variableName)
                             {
-                                errorMessage = $"Timeout attribute parameter should be an " +
-                                               $"integer, defaulting to {CacheAttribute.DEFAULT_TIMEOUT}.";
+                                foundCacheArguments.Add(attributeName, variableName.Identifier.ValueText);
                             }
-                            else if (literalValue < -1)
+                            else 
                             {
-                                errorMessage = $"Timeout attribute parameter should be an " +
-                                               $"larger than -2, defaulting to {CacheAttribute.DEFAULT_TIMEOUT}.";
-                            }
-                            else
-                            {
-                                return literalValue.ToString();
+                                foundCacheArguments.Add(attributeName, argument.Expression.ToString());
                             }
                         }
                     }
@@ -474,7 +492,7 @@ namespace Celestus.Storage.Cache.Generator
                 );
             }
 
-            return CacheAttribute.DEFAULT_TIMEOUT.ToString();
+            return foundCacheArguments;
         }
 
         private string GetCacheStore(MethodDeclarationSyntax methodDeclaration)
@@ -514,6 +532,13 @@ namespace Celestus.Storage.Cache.Generator
         {
             var value = node.Identifier.Value;
             name = value?.ToString() ?? string.Empty;
+
+            return name != string.Empty;
+        }
+
+        private bool TryGetName(NameColonSyntax nameColonSyntax, out string name)
+        {
+            name = nameColonSyntax.Name.ToString();
 
             return name != string.Empty;
         }

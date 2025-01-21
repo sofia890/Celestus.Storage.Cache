@@ -145,6 +145,11 @@ namespace Celestus.Storage.Cache
 
         }
 
+        public Cache(Cache other) : this(other.Key, new(other._storage))
+        {
+
+        }
+
         public void Set<DataType>(string key, DataType value, TimeSpan? duration = null)
         {
             long expiration = long.MaxValue;

@@ -4,6 +4,11 @@ namespace Celestus.Storage.Cache.Test
 {
     public record ExampleRecord(int A, string B, decimal C);
 
+    public static class Bah
+    {
+        public const int Value = 5;
+    }
+
     namespace ExtraNamespaceToCheckNested
     {
         public partial class SimpleClass
@@ -14,7 +19,7 @@ namespace Celestus.Storage.Cache.Test
             public const int CALCULATE_WITTH_SLEEP_TIMEOUT = 50;
             public const int CALCULATION_SLEEP = 25;
 
-            [Cache(timeoutInMilliseconds: CALCULATE_TIMEOUT)]
+            [Cache(timeoutInMilliseconds: Bah.Value + 5, key: "keyTest" + "55")]
             public int Calculate((int a, int b) inData, out int c)
             {
                 return _justAnotherVariable + CalculateStatic(inData, out c);
