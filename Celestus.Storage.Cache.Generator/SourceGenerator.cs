@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Text;
 using System.Threading;
 
@@ -470,7 +469,7 @@ namespace Celestus.Storage.Cache.Generator
                             {
                                 foundCacheArguments.Add(attributeName, variableName.Identifier.ValueText);
                             }
-                            else 
+                            else
                             {
                                 foundCacheArguments.Add(attributeName, argument.Expression.ToString());
                             }
