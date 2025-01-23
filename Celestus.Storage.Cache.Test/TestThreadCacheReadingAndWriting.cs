@@ -167,16 +167,13 @@
                 thread.Start();
             }
 
+            const int THREAD_TEST_TIMEOUT = 10000;
+            _ = Task.WaitAll(threads, THREAD_TEST_TIMEOUT);
+
             //
             // Assert
             //
-
-            /* We do not care about anything but that nothing crashes.
-             * There is no way to assert on the final value due to race conditions
-             * between threads. */
-
-            const int THREAD_TEST_TIMEOUT = 10000;
-            _ = Task.WaitAll(threads, THREAD_TEST_TIMEOUT);
+            Assert.AreEqual((true, N_ITERATION * N_THREADS), _cache.TryGet<int>(KEY));
         }
     }
 }
