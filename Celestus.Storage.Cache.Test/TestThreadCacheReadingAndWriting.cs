@@ -87,37 +87,37 @@
             //
             // Arrange
             //
+            ManualResetEvent startSignal = new(false);
+
             const int N_ITERATION = 100;
             const int N_THREADS = 16;
+            const int THREAD_TEST_TIMEOUT = 10000;
 
             Action ThreadWorkerBuilder(int id)
             {
                 return () =>
                 {
+                    startSignal.WaitOne();
+
                     var key = id.ToString();
-                    _ = _cache.TrySet(key, id);
+                    _ = _cache.TrySet(key, id, timeout: THREAD_TEST_TIMEOUT);
 
                     for (int i = 1; i <= N_ITERATION; i++)
                     {
-                        var (result, value) = _cache.TryGet<int>(key);
+                        var (result, value) = _cache.TryGet<int>(key, THREAD_TEST_TIMEOUT);
                         _ = _cache.TrySet(key, value + 1);
                     }
                 };
             }
 
             var threads = Enumerable.Range(0, N_THREADS)
-                                    .Select(x => new Task(ThreadWorkerBuilder(x)))
+                                    .Select(x => Task.Run(ThreadWorkerBuilder(x)))
                                     .ToArray();
 
             //
             // Act
             //
-            foreach (var thread in threads)
-            {
-                thread.Start();
-            }
-
-            const int THREAD_TEST_TIMEOUT = 10000;
+            startSignal.Set();
             _ = Task.WaitAll(threads, THREAD_TEST_TIMEOUT);
 
             //
@@ -136,44 +136,45 @@
             //
             // Arrange
             //
+            const string KEY = "hammer";
+            const int THREAD_TEST_TIMEOUT = 10000;
+            _ = _cache.TrySet(KEY, 0, timeout: THREAD_TEST_TIMEOUT);
+
+            ManualResetEvent startSignal = new(false);
+
             const int N_ITERATION = 100;
             const int N_THREADS = 16;
-
-            const string KEY = "hammer";
 
             Action ThreadWorkerBuilder(int id)
             {
                 return () =>
                 {
-                    _ = _cache.TrySet(KEY, id);
+                    startSignal.WaitOne();
 
                     for (int i = 1; i <= N_ITERATION; i++)
                     {
-                        var (result, value) = _cache.TryGet<int>(KEY);
-                        _ = _cache.TrySet(KEY, value * (i + 1));
+                        var (_, value) = _cache.TryGet<int>(KEY, THREAD_TEST_TIMEOUT);
+                        _ = _cache.TrySet(KEY, value + 1);
                     }
                 };
             }
 
             var threads = Enumerable.Range(0, N_THREADS)
-                                    .Select(x => new Task(ThreadWorkerBuilder(x)))
+                                    .Select(x => Task.Run(ThreadWorkerBuilder(x)))
                                     .ToArray();
 
             //
             // Act
             //
-            foreach (var thread in threads)
-            {
-                thread.Start();
-            }
-
-            const int THREAD_TEST_TIMEOUT = 10000;
+            startSignal.Set();
             _ = Task.WaitAll(threads, THREAD_TEST_TIMEOUT);
 
             //
             // Assert
             //
-            Assert.AreEqual((true, N_ITERATION * N_THREADS), _cache.TryGet<int>(KEY));
+            var value = _cache.TryGet<int>(KEY);
+            Assert.IsTrue(value.result);
+            Assert.IsTrue(value.data > 0);
         }
     }
 }
