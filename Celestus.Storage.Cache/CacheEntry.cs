@@ -116,7 +116,7 @@ namespace Celestus.Storage.Cache
 
         public override string ToString()
         {
-            return $"Expires: {Expiration}, Content: {Data}";
+            return $"Expires: {new DateTime(Expiration)}, Content: {Data}";
         }
     }
 }
