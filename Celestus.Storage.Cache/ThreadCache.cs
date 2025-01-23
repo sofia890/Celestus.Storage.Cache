@@ -171,8 +171,7 @@ namespace Celestus.Storage.Cache
 
         readonly ReaderWriterLock _lock = new();
 
-        Cache[] _cache = [cache, new(cache)];
-        int _activeIndex = 0;
+        Cache _cache = cache;
 
         public string Key { get; init; } = key;
 
@@ -191,35 +190,45 @@ namespace Celestus.Storage.Cache
 
         public bool TrySet<DataType>(string key, DataType value, TimeSpan? duration = null, int timeout = -1)
         {
-            lock (_cache)
+            try
             {
-                var nextIndex = (_activeIndex + 1) % _cache.Length;
-                _cache[nextIndex].Set(key, value, duration);
+                _lock.AcquireWriterLock(timeout);
 
-                try
-                {
-                    _lock.AcquireWriterLock(timeout);
+                _cache.Set(key, value, duration);
 
-                    _activeIndex = nextIndex;
-
-                    return true;
-                }
-                catch (ApplicationException)
+                return true;
+            }
+            catch (ApplicationException)
+            {
+                return false;
+            }
+            finally
+            {
+                if (_lock.IsWriterLockHeld)
                 {
-                    return false;
-                }
-                finally
-                {
-                    if (_lock.IsWriterLockHeld)
-                    {
-                        _lock.ReleaseWriterLock();
-                    }
+                    _lock.ReleaseWriterLock();
                 }
             }
         }
         public (bool result, DataType? data) TryGet<DataType>(string key, int timeout = -1)
         {
-            return _cache[_activeIndex].TryGet<DataType>(key);
+            try
+            {
+                _lock.AcquireReaderLock(timeout);
+
+                return _cache.TryGet<DataType>(key);
+            }
+            catch (ApplicationException)
+            {
+                return (false, default);
+            }
+            finally
+            {
+                if (_lock.IsReaderLockHeld)
+                {
+                    _lock.ReleaseReaderLock();
+                }
+            }
         }
 
         public void SaveToFile(Uri path)
