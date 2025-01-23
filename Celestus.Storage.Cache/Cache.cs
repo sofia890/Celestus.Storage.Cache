@@ -145,18 +145,13 @@ namespace Celestus.Storage.Cache
 
         }
 
-        public Cache(Cache other) : this(other.Key, new(other._storage))
-        {
-
-        }
-
         public void Set<DataType>(string key, DataType value, TimeSpan? duration = null)
         {
             long expiration = long.MaxValue;
 
-            if (duration != null && duration != TimeSpan.Zero)
+            if (duration is TimeSpan timeDuration)
             {
-                expiration = DateTime.Now.Ticks + (duration?.Ticks ?? 0);
+                expiration = DateTime.Now.Ticks + timeDuration.Ticks;
             }
 
             Set(key, value, expiration);
@@ -179,7 +174,7 @@ namespace Celestus.Storage.Cache
             }
             else if (entry.Data is not DataType data)
             {
-                return (false, default);
+                return (entry.Data == null, default);
             }
             else
             {

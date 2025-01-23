@@ -1,4 +1,6 @@
-﻿namespace Celestus.Storage.Cache.Test
+﻿using System.Data.SqlTypes;
+
+namespace Celestus.Storage.Cache.Test
 {
     [TestClass]
     [DoNotParallelize] // The tests are not thread safe since they dispose of resource other tests use.
@@ -53,7 +55,27 @@
             //
             // Assert
             //
-            Assert.IsTrue(_cache.TryGet<int>(KEY) is (true, VALUE));
+            Assert.AreEqual((true, VALUE), _cache.TryGet<int>(KEY));
+        }
+
+        [TestMethod]
+        public void VerifyThatCacheCanHoldNullValues()
+        {
+            //
+            // Arrange
+            //
+
+            //
+            // Act
+            //
+            const string? VALUE = null;
+            const string KEY = "key";
+            _ = _cache.TrySet(KEY, VALUE);
+
+            //
+            // Assert
+            //
+            Assert.AreEqual((true, VALUE), _cache.TryGet<string?>(KEY));
         }
 
         [TestMethod]
@@ -78,7 +100,7 @@
             //
             // Assert
             //
-            Assert.IsTrue(_cache.TryGet<int>(KEY) is (true, VALUE + 4));
+            Assert.AreEqual((true, VALUE + 4), _cache.TryGet<int>(KEY));
         }
 
         [TestMethod]

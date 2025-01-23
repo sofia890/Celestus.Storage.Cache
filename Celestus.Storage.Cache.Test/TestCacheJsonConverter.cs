@@ -7,28 +7,28 @@ namespace Celestus.Storage.Cache.Test
     public class TestCacheJsonConverter
     {
         [TestMethod]
-        public void Read_ShouldThrowJsonException_WhenTokenTypeIsNotStartObject()
+        public void VerifyThatInvalidJsonCausesCrash()
         {
             var json = "\"Invalid JSON\"";
             Assert.ThrowsException<JsonException>(() => ExceptionHelper.Deserialize<CacheJsonConverter, Cache>(json));
         }
 
         [TestMethod]
-        public void Read_ShouldThrowJsonException_WhenPropertyNameIsInvalid()
+        public void VerifyThatUnexpectedPropertyNameCausesCrash()
         {
             var json = "{\"InvalidProperty\":\"value\"}";
             Assert.ThrowsException<JsonException>(() => ExceptionHelper.Deserialize<CacheJsonConverter, Cache>(json));
         }
 
         [TestMethod]
-        public void Read_ShouldThrowJsonException_WhenStorageIsMissing()
+        public void VerifyThatMissingStorageCausesCrash()
         {
             var json = "{\"Key\":\"key\"}";
             Assert.ThrowsException<JsonException>(() => ExceptionHelper.Deserialize<CacheJsonConverter, Cache>(json));
         }
 
         [TestMethod]
-        public void Read_ShouldThrowJsonException_WhenKeyIsMissing()
+        public void VerifyThatMissingKeyCausesCrash()
         {
             var json = "{\"_storage\":null}";
             Assert.ThrowsException<JsonException>(() => ExceptionHelper.Deserialize<CacheJsonConverter, Cache>(json));

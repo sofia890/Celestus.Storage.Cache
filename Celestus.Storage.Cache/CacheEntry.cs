@@ -18,7 +18,7 @@ namespace Celestus.Storage.Cache
                 }
 
                 Type? type = null;
-                long expiration = 0;
+                long? expiration = null;
                 object? data = null;
 
                 while (reader.Read())
@@ -30,48 +30,43 @@ namespace Celestus.Storage.Cache
                             goto End;
 
                         case JsonTokenType.PropertyName:
-                            if (reader.GetString() is not string propertyName)
+                            var propertyName = reader.GetString();
+
+                            _ = reader.Read();
+
+                            switch (propertyName)
                             {
-                                throw new JsonException($"Invalid JSON for {nameof(CacheEntry)}.");
-                            }
-                            else
-                            {
-                                _ = reader.Read();
-
-                                switch (propertyName)
-                                {
-                                    case TYPE_PROPERTY_NAME:
-                                        if (JsonSerializer.Deserialize<string>(ref reader, options) is not string typeString)
-                                        {
-                                            throw new JsonException($"Invalid JSON for {nameof(CacheEntry)}.");
-                                        }
-                                        else if (Type.GetType(typeString) is not Type parsedType)
-                                        {
-                                            throw new JsonException($"Invalid JSON for {nameof(CacheEntry)}.");
-                                        }
-                                        else
-                                        {
-                                            type = parsedType;
-                                        }
-                                        break;
-
-                                    case nameof(Expiration):
-                                        expiration = reader.GetInt64();
-                                        break;
-
-                                    case nameof(Data):
-                                        if (type == null)
-                                        {
-                                            throw new JsonException($"{TYPE_PROPERTY_NAME} has to be before {nameof(Data)} " +
-                                                                    $"for {nameof(CacheEntry)}.");
-                                        }
-
-                                        data = JsonSerializer.Deserialize(ref reader, type, options);
-                                        break;
-
-                                    default:
+                                case TYPE_PROPERTY_NAME:
+                                    if (JsonSerializer.Deserialize<string>(ref reader, options) is not string typeString)
+                                    {
                                         throw new JsonException($"Invalid JSON for {nameof(CacheEntry)}.");
-                                }
+                                    }
+                                    else if (Type.GetType(typeString) is not Type parsedType)
+                                    {
+                                        throw new JsonException($"Invalid JSON for {nameof(CacheEntry)}.");
+                                    }
+                                    else
+                                    {
+                                        type = parsedType;
+                                    }
+                                    break;
+
+                                case nameof(Expiration):
+                                    expiration = reader.GetInt64();
+                                    break;
+
+                                case nameof(Data):
+                                    if (type == null)
+                                    {
+                                        throw new JsonException($"{TYPE_PROPERTY_NAME} has to be before {nameof(Data)} " +
+                                                                $"for {nameof(CacheEntry)}.");
+                                    }
+
+                                    data = JsonSerializer.Deserialize(ref reader, type, options);
+                                    break;
+
+                                default:
+                                    throw new JsonException($"Invalid JSON for {nameof(CacheEntry)}.");
                             }
 
                             break;
@@ -79,12 +74,14 @@ namespace Celestus.Storage.Cache
                 }
 
             End:
-                if (expiration == 0 || data == null)
+                if (expiration == null || data == null)
                 {
                     throw new JsonException($"Invalid JSON for {nameof(CacheEntry)}.");
                 }
-
-                return new CacheEntry(expiration, data);
+                else
+                {
+                    return new CacheEntry((long)expiration, data);
+                }
             }
 
             public override void Write(Utf8JsonWriter writer, CacheEntry value, JsonSerializerOptions options)
@@ -101,7 +98,7 @@ namespace Celestus.Storage.Cache
                 }
                 else
                 {
-                    JsonSerializer.Serialize(writer, string.Empty, options);
+                    writer.WriteNullValue();
                 }
 
                 writer.WritePropertyName(nameof(Expiration));
@@ -112,11 +109,6 @@ namespace Celestus.Storage.Cache
 
                 writer.WriteEndObject();
             }
-        }
-
-        public override string ToString()
-        {
-            return $"Expires: {new DateTime(Expiration)}, Content: {Data}";
         }
     }
 }
