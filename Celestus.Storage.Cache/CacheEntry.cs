@@ -113,5 +113,10 @@ namespace Celestus.Storage.Cache
                 writer.WriteEndObject();
             }
         }
+
+        public override string ToString()
+        {
+            return $"Expires: {Expiration}, Content: {Data}";
+        }
     }
 }
