@@ -200,7 +200,8 @@ namespace Celestus.Storage.Cache.Generator
                     {{indentation}}    {{methodModifiers}} {{returnType}} {{methodIdentifier}}Cached{{parameterDeclarations}}
                     {{indentation}}    {
                     {{hacCodeInputParameters}}
-                    {{indentation}}        var uniqueKey = $"{{uniqueKeyBase}}-{hashCode}";
+                    {{indentation}}        var uniqueKeyBase = {{uniqueKeyBase}};
+                    {{indentation}}        var uniqueKey = $"{uniqueKeyBase}-{hashCode}";
                     {{indentation}}        
                     {{indentation}}        if ({{cacheStore}}.TryGet<{{tupleDeclaration}}>(uniqueKey, timeout: {{timeout}}) is not (result: true, var value))
                     {{indentation}}        {
@@ -223,13 +224,11 @@ namespace Celestus.Storage.Cache.Generator
             context.AddSource($"{namespaceContext.path}{classInfo.name}.{methodIdentifier}.g.cs", sourceCode.Trim());
         }
 
-
         void ProcessClass(SourceProductionContext context,
                           ClassDeclarationSyntax classDeclaration,
                           NamespaceContext namespaceContext,
                           DeclarationInfo classInfo)
         {
-
             var cacheAttributes = GetCacheAttributes(context, classDeclaration.AttributeLists);
 
             string uniqueKey = string.Empty;
