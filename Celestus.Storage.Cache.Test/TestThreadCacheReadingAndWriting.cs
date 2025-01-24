@@ -1,34 +1,27 @@
 ﻿namespace Celestus.Storage.Cache.Test
 {
     [TestClass]
-    [DoNotParallelize] // The tests are not thread safe since they dispose of resource other tests use.
     public sealed class TestThreadCacheReadingAndWriting
     {
-        private ThreadCache _cache = null!;
-
-        [TestInitialize]
-        public void Initialize()
-        {
-            _cache = new();
-        }
-
         [TestMethod]
         public void VerifyThatItemsInCacheCanExpire()
         {
             //
             // Arrange
             //
+            var cache = new ThreadCache();
+
             const int DURATION = 10;
             const int VALUE = 55;
             const string KEY = "key";
-            _ = _cache.TrySet(KEY, VALUE, duration: TimeSpan.FromMilliseconds(DURATION));
+            _ = cache.TrySet(KEY, VALUE, duration: TimeSpan.FromMilliseconds(DURATION));
 
             //
             // Act
             //
             System.Threading.Thread.Sleep(DURATION * 2);
 
-            var (result, _) = _cache.TryGet<int>(KEY);
+            var (result, _) = cache.TryGet<int>(KEY);
 
             //
             // Assert
@@ -42,18 +35,19 @@
             //
             // Arrange
             //
+            var cache = new ThreadCache();
 
             //
             // Act
             //
             const int VALUE = 55;
             const string KEY = "key";
-            _ = _cache.TrySet(KEY, VALUE);
+            _ = cache.TrySet(KEY, VALUE);
 
             //
             // Assert
             //
-            Assert.AreEqual((true, VALUE), _cache.TryGet<int>(KEY));
+            Assert.AreEqual((true, VALUE), cache.TryGet<int>(KEY));
         }
 
         [TestMethod]
@@ -62,18 +56,19 @@
             //
             // Arrange
             //
+            var cache = new ThreadCache();
 
             //
             // Act
             //
             const string? VALUE = null;
             const string KEY = "key";
-            _ = _cache.TrySet(KEY, VALUE);
+            _ = cache.TrySet(KEY, VALUE);
 
             //
             // Assert
             //
-            Assert.AreEqual((true, VALUE), _cache.TryGet<string?>(KEY));
+            Assert.AreEqual((true, VALUE), cache.TryGet<string?>(KEY));
         }
 
         [TestMethod]
@@ -82,6 +77,7 @@
             //
             // Arrange
             //
+            var cache = new ThreadCache();
 
             //
             // Act
@@ -89,16 +85,16 @@
             const int VALUE = 55;
             const string KEY = "test";
 
-            _ = _cache.TrySet(KEY, VALUE);
-            _ = _cache.TrySet(KEY, VALUE + 1);
-            _ = _cache.TrySet(KEY, VALUE + 2);
-            _ = _cache.TrySet(KEY, VALUE + 3);
-            _ = _cache.TrySet(KEY, VALUE + 4);
+            _ = cache.TrySet(KEY, VALUE);
+            _ = cache.TrySet(KEY, VALUE + 1);
+            _ = cache.TrySet(KEY, VALUE + 2);
+            _ = cache.TrySet(KEY, VALUE + 3);
+            _ = cache.TrySet(KEY, VALUE + 4);
 
             //
             // Assert
             //
-            Assert.AreEqual((true, VALUE + 4), _cache.TryGet<int>(KEY));
+            Assert.AreEqual((true, VALUE + 4), cache.TryGet<int>(KEY));
         }
 
         [TestMethod]
@@ -107,6 +103,8 @@
             //
             // Arrange
             //
+            var cache = new ThreadCache();
+
             ManualResetEvent startSignal = new(false);
 
             const int N_ITERATION = 100;
@@ -120,12 +118,12 @@
                     startSignal.WaitOne();
 
                     var key = id.ToString();
-                    _ = _cache.TrySet(key, id, timeout: THREAD_TEST_TIMEOUT);
+                    _ = cache.TrySet(key, id, timeout: THREAD_TEST_TIMEOUT);
 
                     for (int i = 1; i <= N_ITERATION; i++)
                     {
-                        var (result, value) = _cache.TryGet<int>(key, THREAD_TEST_TIMEOUT);
-                        _ = _cache.TrySet(key, value + 1);
+                        var (result, value) = cache.TryGet<int>(key, THREAD_TEST_TIMEOUT);
+                        _ = cache.TrySet(key, value + 1);
                     }
                 };
             }
@@ -146,7 +144,7 @@
             for (int i = 0; i < N_THREADS; i++)
             {
                 var key = i.ToString();
-                Assert.AreEqual(N_ITERATION + i, _cache.TryGet<int>(key).data);
+                Assert.AreEqual(N_ITERATION + i, cache.TryGet<int>(key).data);
             }
         }
 
@@ -156,9 +154,11 @@
             //
             // Arrange
             //
+            var cache = new ThreadCache();
+
             const string KEY = "hammer";
             const int THREAD_TEST_TIMEOUT = 10000;
-            _ = _cache.TrySet(KEY, 0, timeout: THREAD_TEST_TIMEOUT);
+            _ = cache.TrySet(KEY, 0, timeout: THREAD_TEST_TIMEOUT);
 
             ManualResetEvent startSignal = new(false);
 
@@ -173,8 +173,8 @@
 
                     for (int i = 1; i <= N_ITERATION; i++)
                     {
-                        var (_, value) = _cache.TryGet<int>(KEY, THREAD_TEST_TIMEOUT);
-                        _ = _cache.TrySet(KEY, value + 1);
+                        var (_, value) = cache.TryGet<int>(KEY, THREAD_TEST_TIMEOUT);
+                        _ = cache.TrySet(KEY, value + 1);
                     }
                 };
             }
@@ -192,9 +192,7 @@
             //
             // Assert
             //
-            var value = _cache.TryGet<int>(KEY);
-            Assert.IsTrue(value.result);
-            Assert.IsTrue(value.data > 0);
+            Assert.IsTrue(cache.TryGet<int>(KEY) is (true, > 0));
         }
     }
 }

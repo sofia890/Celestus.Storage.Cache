@@ -1,4 +1,4 @@
-﻿using Celestus.Storage.Cache.Test.ExtraNamespaceToCheckNested;
+﻿using Celestus.Storage.Cache.Test.Model.ExtraNamespaceToCheckNested;
 using System.Diagnostics;
 
 namespace Celestus.Storage.Cache.Test
@@ -7,6 +7,7 @@ namespace Celestus.Storage.Cache.Test
     public sealed class TestCacheAttribute
     {
         [TestMethod]
+        [DoNotParallelize] // Timing tests become unreliable when run in parallel.
         public void VerifyThatCachingResultsSaveTime()
         {
             //

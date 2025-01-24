@@ -5,11 +5,13 @@ using System.Text.Json.Serialization;
 namespace Celestus.Storage.Cache
 {
     [JsonConverter(typeof(CacheJsonConverter))]
-    public class Cache(string key, Dictionary<string, CacheEntry> storge)
+    public class Cache
     {
-
         public class CacheJsonConverter : JsonConverter<Cache>
         {
+            const string TYPE_PROPERTY_NAME = "Type";
+            const string CONTENT_PROPERTY_NAME = "Content";
+
             public override Cache Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
             {
                 if (reader.TokenType != JsonTokenType.StartObject)
@@ -19,6 +21,7 @@ namespace Celestus.Storage.Cache
 
                 string? key = null;
                 Dictionary<string, CacheEntry>? storage = null;
+                CacheCleanerBase<string>? cleaner = null;
 
                 while (reader.Read())
                 {
@@ -43,6 +46,62 @@ namespace Celestus.Storage.Cache
                                     storage = JsonSerializer.Deserialize<Dictionary<string, CacheEntry>>(ref reader, options);
                                     break;
 
+                                case nameof(_cleaner):
+                                    _ = reader.Read();
+
+                                    while (reader.Read())
+                                    {
+                                        switch (reader.TokenType)
+                                        {
+                                            default:
+                                            case JsonTokenType.EndObject:
+                                                break;
+
+                                            case JsonTokenType.StartObject:
+                                                break;
+
+                                            case JsonTokenType.PropertyName:
+                                                switch (reader.GetString())
+                                                {
+                                                    case TYPE_PROPERTY_NAME:
+                                                        if (JsonSerializer.Deserialize<string>(ref reader, options) is not string typeString)
+                                                        {
+                                                            throw new JsonException($"Invalid JSON for {nameof(Cache)}.");
+                                                        }
+                                                        else if (Type.GetType(typeString) is not Type cleanerType)
+                                                        {
+                                                            throw new JsonException($"Invalid JSON for {nameof(Cache)}.");
+                                                        }
+                                                        else if (Activator.CreateInstance(cleanerType) is not CacheCleanerBase<string> createdCleaner)
+                                                        {
+                                                            throw new JsonException($"Invalid JSON for {nameof(Cache)}.");
+                                                        }
+                                                        else
+                                                        {
+                                                            cleaner = createdCleaner;
+                                                        }
+                                                        break;
+
+                                                    case CONTENT_PROPERTY_NAME:
+                                                        if (cleaner == null)
+                                                        {
+                                                            throw new JsonException($"Invalid JSON for {nameof(Cache)}.");
+                                                        }
+                                                        else
+                                                        {
+                                                            cleaner.ReadSettings(ref reader, options);
+                                                        }
+                                                        break;
+
+                                                    default:
+                                                        throw new JsonException($"Invalid JSON for {nameof(Cache)}.");
+                                                }
+                                                break;
+                                        }
+                                    }
+
+                                    break;
+
                                 default:
                                     throw new JsonException($"Invalid JSON for {nameof(Cache)}.");
                             }
@@ -52,12 +111,14 @@ namespace Celestus.Storage.Cache
                 }
 
             End:
-                if (key == null || storage == null)
+                if (key == null || storage == null || cleaner == null)
                 {
                     throw new JsonException($"Invalid JSON for {nameof(Cache)}.");
                 }
-
-                return new Cache(key, storage);
+                else
+                {
+                    return new Cache(key, storage, cleaner);
+                }
             }
 
             public override void Write(Utf8JsonWriter writer, Cache value, JsonSerializerOptions options)
@@ -68,6 +129,17 @@ namespace Celestus.Storage.Cache
 
                 writer.WritePropertyName(nameof(_storage));
                 JsonSerializer.Serialize(writer, value._storage, options);
+
+                writer.WritePropertyName(nameof(_cleaner));
+                writer.WriteStartObject();
+
+                var type = value._cleaner.GetType();
+                writer.WritePropertyName(TYPE_PROPERTY_NAME);
+                writer.WriteStringValue(type.AssemblyQualifiedName);
+
+                writer.WritePropertyName(CONTENT_PROPERTY_NAME);
+                value._cleaner.WriteSettings(writer, options);
+                writer.WriteEndObject();
 
                 writer.WriteEndObject();
             }
@@ -131,18 +203,39 @@ namespace Celestus.Storage.Cache
         }
         #endregion
 
-        Dictionary<string, CacheEntry> _storage = storge;
+        Dictionary<string, CacheEntry> _storage;
+        readonly CacheCleanerBase<string> _cleaner;
 
-        public string Key { get; init; } = key;
+        public string Key { get; init; }
 
-        public Cache(string key) : this(key, [])
+        private Cache(
+            string key,
+            Dictionary<string, CacheEntry> storge,
+            CacheCleanerBase<string> cleaner,
+            bool removalRegistered = false)
         {
+            _storage = storge;
+            _cleaner = cleaner;
 
+            if (!removalRegistered)
+            {
+                _cleaner.RegisterRemovalCallback(Remove);
+            }
+
+            Key = key;
         }
 
-        public Cache() : this(string.Empty, [])
+        public Cache(string key) : this(key, [], new CacheCleaner<string>())
         {
+        }
 
+        public Cache() : this(string.Empty)
+        {
+        }
+
+        public Cache(CacheCleanerBase<string> cleaner, bool removalRegistered = false) :
+            this(string.Empty, [], cleaner, removalRegistered)
+        {
         }
 
         public void Set<DataType>(string key, DataType value, TimeSpan? duration = null)
@@ -151,7 +244,7 @@ namespace Celestus.Storage.Cache
 
             if (duration is TimeSpan timeDuration)
             {
-                expiration = DateTime.Now.Ticks + timeDuration.Ticks;
+                expiration = DateTime.UtcNow.Ticks + timeDuration.Ticks;
             }
 
             Set(key, value, expiration);
@@ -159,7 +252,10 @@ namespace Celestus.Storage.Cache
 
         public void Set<DataType>(string key, DataType value, long expiration)
         {
-            _storage[key] = new(expiration, value);
+            var entry = new CacheEntry(expiration, value);
+            _storage[key] = entry;
+
+            _cleaner.TrackEntry(ref entry, key);
         }
 
         public (bool result, DataType? data) TryGet<DataType>(string key)
@@ -170,16 +266,34 @@ namespace Celestus.Storage.Cache
             }
             else if (entry.Expiration < DateTime.Now.Ticks)
             {
+                _cleaner.EntryAccessed(ref entry, key);
+
                 return (false, default);
             }
             else if (entry.Data is not DataType data)
             {
+                _cleaner.EntryAccessed(ref entry, key);
+
                 return (entry.Data == null, default);
             }
             else
             {
+                _cleaner.EntryAccessed(ref entry, key);
+
                 return (true, data);
             }
+        }
+
+        public bool Remove(List<string> keys)
+        {
+            bool anyRemoved = false;
+
+            for (int i = 0; i < keys.Count; i++)
+            {
+                anyRemoved |= _storage.Remove(keys[i]);
+            }
+
+            return anyRemoved;
         }
 
         public void SaveToFile(Uri path)

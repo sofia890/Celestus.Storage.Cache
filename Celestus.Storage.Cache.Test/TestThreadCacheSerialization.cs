@@ -1,4 +1,6 @@
-﻿namespace Celestus.Storage.Cache.Test
+﻿using Celestus.Storage.Cache.Test.Model;
+
+namespace Celestus.Storage.Cache.Test
 {
     [TestClass]
     [DoNotParallelize] // The tests are not thread safe since they dispose of resource other tests use.
@@ -9,7 +11,7 @@
         [TestInitialize]
         public void Initialize()
         {
-            _cache = ThreadCache.GetOrCreateShared(nameof(TestThreadCacheReadingAndWriting));
+            _cache = ThreadCache.GetOrCreateShared(nameof(TestThreadCacheSerialization));
         }
 
         [TestMethod]

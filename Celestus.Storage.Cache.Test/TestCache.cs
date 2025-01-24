@@ -1,3 +1,5 @@
+using Celestus.Storage.Cache.Test.Model;
+
 namespace Celestus.Storage.Cache.Test;
 
 [TestClass]
@@ -36,6 +38,8 @@ public class TestCache
 
         Cache? otherCache = Cache.TryCreateFromFile(path);
 
+        File.Delete(path.AbsolutePath);
+
         //
         // Assert
         //
@@ -73,6 +77,8 @@ public class TestCache
         cache.Set(KEY_2, VALUE_2);
 
         cache.TryLoadFromFile(path);
+
+        File.Delete(path.AbsolutePath);
 
         //
         // Assert

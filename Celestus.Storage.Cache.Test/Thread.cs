@@ -6,7 +6,7 @@
             Func<DataType> initBackgroundThread,
             Action<DataType> cleanupBackgroundThread,
             Func<ReturnType> actionInThisThread,
-            int timeout = -1)
+            int timeout = ThreadCache.NO_TIMEOUT)
         {
             ManualResetEvent done = new(false);
             ManualResetEvent backgroundThreadReady = new(false);

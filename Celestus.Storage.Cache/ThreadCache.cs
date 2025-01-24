@@ -7,7 +7,7 @@ namespace Celestus.Storage.Cache
     public class CacheLock : IDisposable
     {
         private readonly ReaderWriterLock _lock;
-        public CacheLock(ReaderWriterLock cacheLock, int timeout = -1)
+        public CacheLock(ReaderWriterLock cacheLock, int timeout = ThreadCache.NO_TIMEOUT)
         {
             _lock = cacheLock;
             _lock.AcquireWriterLock(timeout);
@@ -125,7 +125,7 @@ namespace Celestus.Storage.Cache
             }
         }
 
-        public static ThreadCache? UpdateOrLoadSharedFromFile(Uri path, int timeout = -1)
+        public static ThreadCache? UpdateOrLoadSharedFromFile(Uri path, int timeout = NO_TIMEOUT)
         {
             if (TryCreateFromFile(path) is not ThreadCache loadedCache)
             {
@@ -169,26 +169,41 @@ namespace Celestus.Storage.Cache
         }
         #endregion
 
+        const int CLEANER_INTERVAL_IN_MS = 5000;
+        public const int NO_TIMEOUT = -1;
+
         readonly ReaderWriterLock _lock = new();
 
         Cache _cache = cache;
 
         public string Key { get; init; } = key;
 
-        public ThreadCache(string key) : this(key, new())
+        public ThreadCache(string key, CacheCleanerBase<string> cleaner) :
+            this(key, new Cache(cleaner))
+        {
+            cleaner.RegisterRemovalCallback(Remove);
+        }
+        public ThreadCache(CacheCleanerBase<string> cleaner) :
+            this(string.Empty, new Cache(cleaner))
         {
         }
 
-        public ThreadCache() : this(string.Empty, new())
+        public ThreadCache(string key, int cleaningIntervalInMs = CLEANER_INTERVAL_IN_MS) :
+            this(key, new ThreadCacheCleaner<string>(cleaningIntervalInMs))
         {
         }
 
-        public CacheLock Lock(int timeout = -1)
+        public ThreadCache(int cleaningIntervalInMs = CLEANER_INTERVAL_IN_MS) :
+            this(string.Empty, new ThreadCacheCleaner<string>(cleaningIntervalInMs))
+        {
+        }
+
+        public CacheLock Lock(int timeout = NO_TIMEOUT)
         {
             return new CacheLock(_lock, timeout);
         }
 
-        public bool TrySet<DataType>(string key, DataType value, TimeSpan? duration = null, int timeout = -1)
+        public bool TrySet<DataType>(string key, DataType value, TimeSpan? duration = null, int timeout = NO_TIMEOUT)
         {
             try
             {
@@ -210,7 +225,7 @@ namespace Celestus.Storage.Cache
                 }
             }
         }
-        public (bool result, DataType? data) TryGet<DataType>(string key, int timeout = -1)
+        public (bool result, DataType? data) TryGet<DataType>(string key, int timeout = NO_TIMEOUT)
         {
             try
             {
@@ -231,8 +246,36 @@ namespace Celestus.Storage.Cache
             }
         }
 
+        public bool Remove(List<string> keys)
+        {
+            return Remove(keys, timeout: NO_TIMEOUT);
+        }
+
+        public bool Remove(List<string> keys, int timeout = NO_TIMEOUT)
+        {
+            try
+            {
+                _lock.AcquireWriterLock(timeout);
+
+                return _cache.Remove(keys);
+            }
+            catch (ApplicationException)
+            {
+                return false;
+            }
+            finally
+            {
+                if (_lock.IsWriterLockHeld)
+                {
+                    _lock.ReleaseWriterLock();
+                }
+            }
+        }
+
         public void SaveToFile(Uri path)
         {
+            using var _ = Lock();
+
             Serialize.SaveToFile(this, path);
         }
 
@@ -243,6 +286,8 @@ namespace Celestus.Storage.Cache
 
         public bool TryLoadFromFile(Uri path)
         {
+            using var _ = Lock();
+
             var loadedData = Serialize.TryCreateFromFile<ThreadCache>(path);
 
             if (loadedData == null)

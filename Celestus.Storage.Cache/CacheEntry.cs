@@ -94,7 +94,7 @@ namespace Celestus.Storage.Cache
                 {
                     var type = value.Data.GetType();
 
-                    JsonSerializer.Serialize(writer, type.AssemblyQualifiedName, options);
+                    writer.WriteStringValue(type.AssemblyQualifiedName);
                 }
                 else
                 {

@@ -117,7 +117,7 @@ namespace Celestus.Storage.Cache.Test
 
             cache.Set(KEY_1, VALUE_1 * 2);
 
-            const string KEY_2 = "Neko";
+            const string KEY_2 = "Snake";
             const double VALUE_2 = 78.1234;
             cache.Set(KEY_2, VALUE_2);
 
