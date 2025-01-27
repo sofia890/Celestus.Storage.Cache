@@ -1,6 +1,4 @@
-﻿using System.Data.SqlTypes;
-
-namespace Celestus.Storage.Cache.Test
+﻿namespace Celestus.Storage.Cache.Test
 {
     [TestClass]
     [DoNotParallelize] // The tests are not thread safe since they dispose of resource other tests use.
