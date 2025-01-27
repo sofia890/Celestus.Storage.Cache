@@ -1,4 +1,4 @@
-﻿namespace Celestus.Storage.Cache.PerformanceTest.Model.Signalling
+﻿namespace Celestus.Storage.Cache.PerformanceTest.Model.Signaling
 {
     enum SignalType
     {
