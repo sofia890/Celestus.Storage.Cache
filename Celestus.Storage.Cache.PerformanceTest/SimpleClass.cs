@@ -11,6 +11,11 @@ namespace Celestus.Storage.Cache.PerformanceTest
         {
             c = inData.a - inData.b;
 
+            for (int i = 0; i < inData.a * inData.b; i++)
+            {
+                c += i;
+            }
+
             return inData.a + inData.b;
         }
     }
