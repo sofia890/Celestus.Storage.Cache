@@ -4,8 +4,7 @@
     {
         AdditionRequest,
         AdditionResponse,
-        AdditionIndication,
-        Stop
+        AdditionIndication
     }
 
     record Signal(SignalType Type);
