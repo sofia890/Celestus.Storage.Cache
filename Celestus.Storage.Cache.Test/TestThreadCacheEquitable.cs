@@ -1,12 +1,12 @@
 namespace Celestus.Storage.Cache.Test;
 
 [TestClass]
-public class TestCacheEquatable
+public class TestThreadCacheEquitable
 {
     [TestMethod]
     public void VerifyThatThreadCacheWhenComparedToNullReturnsFalse()
     {
-        var cache = new Cache();
+        var cache = new ThreadCache();
         Assert.IsFalse(cache.Equals(null));
     }
 }
