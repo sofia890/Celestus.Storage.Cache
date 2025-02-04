@@ -3,18 +3,9 @@
 namespace Celestus.Storage.Cache.Test
 {
     [TestClass]
-    [DoNotParallelize] // The tests are not thread safe since they dispose of resource other tests use.
     public sealed class TestThreadCacheTimeout
     {
         const int THREAD_TIMEOUT = 1000;
-
-        private ThreadCache _cache = null!;
-
-        [TestInitialize]
-        public void Initialize()
-        {
-            _cache = ThreadCache.GetOrCreateShared(nameof(TestThreadCacheTimeout));
-        }
 
         [TestMethod]
         public void VerifyThatSetCanTimeout()
@@ -22,13 +13,15 @@ namespace Celestus.Storage.Cache.Test
             //
             // Arrange
             //
+            var cache = new ThreadCache();
+
             const string KEY = "Sjö";
-            _cache.TrySet(KEY, 1);
+            cache.TrySet(KEY, 1);
 
             //
             // Act
             //
-            var setResult = ThreadTimeout.DoWhileLocked(_cache, () => _cache.TrySet(KEY, 0, timeout: 1), THREAD_TIMEOUT);
+            var setResult = ThreadTimeout.DoWhileLocked(cache, () => cache.TrySet(KEY, 0, timeout: 1), THREAD_TIMEOUT);
 
             //
             // Assert
@@ -42,13 +35,15 @@ namespace Celestus.Storage.Cache.Test
             //
             // Arrange
             //
+            var cache = new ThreadCache();
+
             const string KEY = "Sjö";
-            _cache.TrySet(KEY, 1);
+            cache.TrySet(KEY, 1);
 
             //
             // Act
             //
-            var getResult = ThreadTimeout.DoWhileLocked(_cache, () => _cache.TryGet<int>(KEY, timeout: 1), THREAD_TIMEOUT);
+            var getResult = ThreadTimeout.DoWhileLocked(cache, () => cache.TryGet<int>(KEY, timeout: 1), THREAD_TIMEOUT);
 
             //
             // Assert
@@ -57,21 +52,45 @@ namespace Celestus.Storage.Cache.Test
         }
 
         [TestMethod]
+        public void VerifyThatRemoveCanTimeout()
+        {
+            //
+            // Arrange
+            //
+            var cache = new ThreadCache();
+
+            const string KEY = "Lake";
+            cache.TrySet(KEY, 1);
+
+            //
+            // Act
+            //
+            var getResult = ThreadTimeout.DoWhileLocked(cache, () => cache.TryRemove([KEY], timeout: 1), THREAD_TIMEOUT);
+
+            //
+            // Assert
+            //
+            Assert.IsFalse(getResult);
+        }
+
+        [TestMethod]
         public void VerifyThatUpdatingSharedCacheCanTimeout()
         {
             //
             // Arrange
             //
+            var cache = ThreadCache.GetOrCreateShared(nameof(VerifyThatUpdatingSharedCacheCanTimeout));
+
             const string KEY = "Sjö";
-            _cache.TrySet(KEY, 1);
+            cache.TrySet(KEY, 1);
 
             var path = new Uri(Path.GetTempFileName());
-            _cache.SaveToFile(path);
+            cache.SaveToFile(path);
 
             //
             // Act
             //
-            var loadedCache = ThreadTimeout.DoWhileLocked(_cache, () => ThreadCache.UpdateOrLoadSharedFromFile(path, timeout: 1), THREAD_TIMEOUT);
+            var loadedCache = ThreadTimeout.DoWhileLocked(cache, () => ThreadCache.UpdateOrLoadSharedFromFile(path, timeout: 1), THREAD_TIMEOUT);
 
             //
             // Assert

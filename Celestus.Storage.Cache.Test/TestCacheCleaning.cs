@@ -162,44 +162,21 @@ public class TestCacheCleaning
         file_2.Delete();
     }
 
+
     [TestMethod]
     public void VerifyThatMissingIntervalCausesCrash()
     {
         //
         // Arrange
         //
-        static void Test()
-        {
-            string json = "{\"ExtraParameter\":\"500\"}";
-            Utf8JsonReader reader = new(Encoding.UTF8.GetBytes(json));
-
-            CacheCleaner<string> cleaner = new();
-            cleaner.ReadSettings(ref reader, new());
-        }
-
-        //
-        // Act & Assert
-        //
-        Assert.ThrowsException<JsonException>(Test);
+        string json = "{\"ExtraParameter\":\"500\"}";
+        Assert.ThrowsException<JsonException>(() => CleaningHelper.ReadSettings<CacheCleaner<string>>(json));
     }
 
     [TestMethod]
     public void VerifyThatUnknownParametersAreIgnored()
     {
-        //
-        // Arrange
-        //
         string json = "{\"ExtraParameter\":\"500\",\"_cleanupIntervalInTicks\":500}";
-        Utf8JsonReader reader = new(Encoding.UTF8.GetBytes(json));
-
-        //
-        // Act
-        //
-        CacheCleaner<string> cleaner = new();
-        cleaner.ReadSettings(ref reader, new());
-
-        //
-        // Assert
-        //
+        CleaningHelper.ReadSettings<CacheCleaner<string>>(json);
     }
 }

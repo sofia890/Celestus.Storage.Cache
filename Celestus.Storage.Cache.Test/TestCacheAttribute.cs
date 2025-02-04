@@ -1,4 +1,5 @@
-﻿using Celestus.Storage.Cache.Test.Model.ExtraNamespaceToCheckNested;
+﻿using Celestus.Storage.Cache.Attributes;
+using Celestus.Storage.Cache.Test.Model.ExtraNamespaceToCheckNested;
 using System.Diagnostics;
 
 namespace Celestus.Storage.Cache.Test
@@ -6,6 +7,23 @@ namespace Celestus.Storage.Cache.Test
     [TestClass]
     public sealed class TestCacheAttribute
     {
+        [TestMethod]
+        public void TestThatPropertiesAreSetCorrectly()
+        {
+            //
+            // Arrange
+            //
+            const int TIMEOUT_IN_MS = 26897;
+            const string KEY = "keyTest";
+            var cacheAttribute = new CacheAttribute(TIMEOUT_IN_MS, KEY);
+
+            //
+            // Act & Assert
+            //
+            Assert.AreEqual(TIMEOUT_IN_MS, cacheAttribute.Timeout);
+            Assert.AreEqual(KEY, cacheAttribute.Key);
+        }
+
         [TestMethod]
         [DoNotParallelize] // Timing tests become unreliable when run in parallel.
         public void VerifyThatCachingResultsSaveTime()

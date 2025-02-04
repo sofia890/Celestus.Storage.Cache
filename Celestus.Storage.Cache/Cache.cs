@@ -22,6 +22,7 @@ namespace Celestus.Storage.Cache
                 string? key = null;
                 Dictionary<string, CacheEntry>? storage = null;
                 CacheCleanerBase<string>? cleaner = null;
+                bool cleanerConfigured = false;
 
                 while (reader.Read())
                 {
@@ -47,15 +48,13 @@ namespace Celestus.Storage.Cache
                                     break;
 
                                 case nameof(_cleaner):
-                                    _ = reader.Read();
-
                                     while (reader.Read())
                                     {
                                         switch (reader.TokenType)
                                         {
                                             default:
                                             case JsonTokenType.EndObject:
-                                                break;
+                                                goto CleanerDone;
 
                                             case JsonTokenType.StartObject:
                                                 break;
@@ -90,16 +89,19 @@ namespace Celestus.Storage.Cache
                                                         else
                                                         {
                                                             cleaner.ReadSettings(ref reader, options);
+                                                            cleanerConfigured = true;
                                                         }
                                                         break;
 
                                                     default:
-                                                        throw new JsonException($"Invalid JSON for {nameof(Cache)}.");
+                                                        _ = reader.Read();
+                                                        break;
                                                 }
                                                 break;
                                         }
                                     }
 
+                                CleanerDone:
                                     break;
 
                                 default:
@@ -111,7 +113,7 @@ namespace Celestus.Storage.Cache
                 }
 
             End:
-                if (key == null || storage == null || cleaner == null)
+                if (key == null || storage == null || cleaner == null || !cleanerConfigured)
                 {
                     throw new JsonException($"Invalid JSON for {nameof(Cache)}.");
                 }
@@ -219,7 +221,7 @@ namespace Celestus.Storage.Cache
 
             if (!removalRegistered)
             {
-                _cleaner.RegisterRemovalCallback(Remove);
+                _cleaner.RegisterRemovalCallback(TryRemove);
             }
 
             Key = key;
@@ -233,8 +235,8 @@ namespace Celestus.Storage.Cache
         {
         }
 
-        public Cache(CacheCleanerBase<string> cleaner, bool removalRegistered = false) :
-            this(string.Empty, [], cleaner, removalRegistered)
+        public Cache(CacheCleanerBase<string> cleaner, bool doNotSetRemoval = false) :
+            this(string.Empty, [], cleaner, doNotSetRemoval)
         {
         }
 
@@ -284,7 +286,7 @@ namespace Celestus.Storage.Cache
             }
         }
 
-        public bool Remove(List<string> keys)
+        public bool TryRemove(List<string> keys)
         {
             bool anyRemoved = false;
 

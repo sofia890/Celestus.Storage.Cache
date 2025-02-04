@@ -8,10 +8,5 @@
         {
             return $"Key_{index++}";
         }
-
-        public string Current()
-        {
-            return $"Key_{index}";
-        }
     }
 }

@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Celestus.Storage.Cache.Test.Model
+﻿namespace Celestus.Storage.Cache.Test.Model
 {
     public static class CacheCleanerHelper
     {
@@ -14,14 +8,10 @@ namespace Celestus.Storage.Cache.Test.Model
             {
                 return new CacheCleaner<string>(cleanupIntervalInMs);
             }
-            else if (cleanerTypeToTest == typeof(ThreadCacheCleaner<string>))
-            {
-                return new ThreadCacheCleaner<string>(cleanupIntervalInMs);
-            }
-            else
-            {
-                throw new ArgumentException("Invalid type to test", nameof(cleanerTypeToTest));
-            }
+
+            Assert.AreEqual(cleanerTypeToTest, typeof(ThreadCacheCleaner<string>));
+            
+            return new ThreadCacheCleaner<string>(cleanupIntervalInMs);
         }
     }
 }

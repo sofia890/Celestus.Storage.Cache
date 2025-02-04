@@ -144,7 +144,7 @@ public class TestCacheCleaners
         //
         // Arrange
         //
-        var cleaner = CacheCleanerHelper.GetCleaner(cleanerTypeToTest, 0);
+        var cleaner = CacheCleanerHelper.GetCleaner(cleanerTypeToTest, SHORT_DELAY_IN_MS);
 
         using var stream = new MemoryStream();
         using Utf8JsonWriter writer = new(stream);
@@ -162,7 +162,7 @@ public class TestCacheCleaners
 
         AutoResetEvent entryRemoved = new(false);
 
-        cleaner.RegisterRemovalCallback((keys) =>
+        otherCleaner.RegisterRemovalCallback((keys) =>
         {
             entryRemoved.Set();
 
@@ -172,14 +172,14 @@ public class TestCacheCleaners
         const string KEY = "Key";
         CleanerHelper.TrackNewEntry(otherCleaner, KEY, DateTime.UtcNow, out var entry);
 
-        otherCleaner.EntryAccessed(ref entry, KEY);
-
         System.Threading.Thread.Sleep(SHORT_DELAY_IN_MS);
+
+        otherCleaner.EntryAccessed(ref entry, KEY);
 
         //
         // Assert
         //
-        Assert.IsFalse(entryRemoved.WaitOne(SHORT_DELAY_IN_MS));
+        Assert.IsTrue(entryRemoved.WaitOne(LONG_INTERVAL_IN_MS / 2));
     }
 
     [TestMethod]
@@ -187,22 +187,10 @@ public class TestCacheCleaners
     [DataRow(typeof(ThreadCacheCleaner<string>))]
     public void VerifyThatMissingIntervalCausesCrash(Type cleanerTypeToTest)
     {
-        //
-        // Arrange
-        //
-        void Test()
-        {
-            string json = "{\"ExtraParameter\":\"500\"}";
-            Utf8JsonReader reader = new(Encoding.UTF8.GetBytes(json));
+        CacheCleanerBase<string> cleaner = CacheCleanerHelper.GetCleaner(cleanerTypeToTest, 1000);
 
-            CacheCleanerBase<string> cleaner = CacheCleanerHelper.GetCleaner(cleanerTypeToTest, 1000);
-            cleaner.ReadSettings(ref reader, new());
-        }
-
-        //
-        // Act & Assert
-        //
-        Assert.ThrowsException<JsonException>(Test);
+        string json = "{\"ExtraParameter\":\"500\"}";
+        Assert.ThrowsException<JsonException>(() => CleaningHelper.ReadSettings(cleaner, json));
     }
 
     [TestMethod]
@@ -213,17 +201,9 @@ public class TestCacheCleaners
         //
         // Arrange
         //
-        string json = "{\"ExtraParameter\":\"500\",\"_cleanupIntervalInTicks\":500}";
-        Utf8JsonReader reader = new(Encoding.UTF8.GetBytes(json));
-
-        //
-        // Act
-        //
         CacheCleanerBase<string> cleaner = CacheCleanerHelper.GetCleaner(cleanerTypeToTest, 1000);
-        cleaner.ReadSettings(ref reader, new());
 
-        //
-        // Assert
-        //
+        string json = "{\"ExtraParameter\":\"500\",\"_cleanupIntervalInTicks\":500}";
+        CleaningHelper.ReadSettings(cleaner, json);
     }
 }

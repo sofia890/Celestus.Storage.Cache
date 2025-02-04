@@ -172,7 +172,7 @@ namespace Celestus.Storage.Cache
             End:
                 if (!intervalValueFound)
                 {
-                    throw new JsonException($"Missing parameter {nameof(CleanerActor._cleanupIntervalInTicks)}.");
+                    throw new JsonException($"Missing parameter {nameof(_cleanupIntervalInTicks)}.");
                 }
             }
 
@@ -201,26 +201,17 @@ namespace Celestus.Storage.Cache
 
         public override void TrackEntry(ref CacheEntry entry, KeyType key)
         {
-            if (!_server.CleanerPort.Writer.TryWrite(new TrackEntryInd(key, entry)))
-            {
-                throw new InvalidOperationException("Failed to write to the channel.");
-            }
+            _server.CleanerPort.Writer.WriteAsync(new TrackEntryInd(key, entry));
         }
 
         public override void EntryAccessed(ref CacheEntry entry, KeyType key)
         {
-            if (!_server.CleanerPort.Writer.TryWrite(new EntryAccessedInd(key)))
-            {
-                throw new InvalidOperationException("Failed to write to the channel.");
-            }
+            _server.CleanerPort.Writer.WriteAsync(new EntryAccessedInd(key));
         }
 
         public override void RegisterRemovalCallback(Func<List<KeyType>, bool> callback)
         {
-            if (!_server.CleanerPort.Writer.TryWrite(new RegisterRemovalCallbackInd(callback)))
-            {
-                throw new InvalidOperationException("Failed to write to the channel.");
-            }
+            _server.CleanerPort.Writer.WriteAsync(new RegisterRemovalCallbackInd(callback));
         }
 
         public override void ReadSettings(ref Utf8JsonReader reader, JsonSerializerOptions options)

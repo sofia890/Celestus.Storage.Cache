@@ -179,9 +179,9 @@ namespace Celestus.Storage.Cache
         public string Key { get; init; } = key;
 
         public ThreadCache(string key, CacheCleanerBase<string> cleaner) :
-            this(key, new Cache(cleaner))
+            this(key, new Cache(cleaner, doNotSetRemoval: true))
         {
-            cleaner.RegisterRemovalCallback(Remove);
+            cleaner.RegisterRemovalCallback(TryRemove);
         }
         public ThreadCache(CacheCleanerBase<string> cleaner) :
             this(string.Empty, new Cache(cleaner))
@@ -246,18 +246,18 @@ namespace Celestus.Storage.Cache
             }
         }
 
-        public bool Remove(List<string> keys)
+        public bool TryRemove(List<string> keys)
         {
-            return Remove(keys, timeout: NO_TIMEOUT);
+            return TryRemove(keys, timeout: NO_TIMEOUT);
         }
 
-        public bool Remove(List<string> keys, int timeout = NO_TIMEOUT)
+        public bool TryRemove(List<string> keys, int timeout = NO_TIMEOUT)
         {
             try
             {
                 _lock.AcquireWriterLock(timeout);
 
-                return _cache.Remove(keys);
+                return _cache.TryRemove(keys);
             }
             catch (ApplicationException)
             {

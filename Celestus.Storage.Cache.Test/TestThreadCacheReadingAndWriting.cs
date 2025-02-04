@@ -192,7 +192,9 @@
             //
             // Assert
             //
-            Assert.IsTrue(cache.TryGet<int>(KEY) is (true, > 0));
+            var value = cache.TryGet<int>(KEY);
+            Assert.IsTrue(value.result);
+            Assert.IsTrue(value.data > 0);
         }
     }
 }

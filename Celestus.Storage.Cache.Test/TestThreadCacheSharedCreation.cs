@@ -27,8 +27,8 @@
             //
             // Assert
             //
-            Assert.IsTrue(cache.TryGet<int>(KEY) is (true, VALUE));
-            Assert.IsTrue(otherResult is (true, VALUE + 1));
+            Assert.AreEqual((true, VALUE), cache.TryGet<int>(KEY));
+            Assert.AreEqual((true, VALUE + 1), otherResult);
         }
 
         [TestMethod]
