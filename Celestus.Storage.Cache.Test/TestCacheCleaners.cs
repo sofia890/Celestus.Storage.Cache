@@ -171,7 +171,7 @@ public class TestCacheCleaners
         const string KEY = "Key";
         CleanerHelper.TrackNewEntry(otherCleaner, KEY, DateTime.UtcNow, out var entry);
 
-        System.Threading.Thread.Sleep(SHORT_DELAY_IN_MS);
+        ThreadHelper.SpinWait(SHORT_DELAY_IN_MS);
 
         otherCleaner.EntryAccessed(ref entry, KEY);
 

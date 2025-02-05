@@ -21,7 +21,7 @@ namespace Celestus.Storage.Cache.Test
             //
             // Act
             //
-            var setResult = ThreadTimeout.DoWhileLocked(cache, () => cache.TrySet(KEY, 0, timeout: 1), THREAD_TIMEOUT);
+            var setResult = ThreadHelper.DoWhileLocked(cache, () => cache.TrySet(KEY, 0, timeout: 1), THREAD_TIMEOUT);
 
             //
             // Assert
@@ -43,7 +43,7 @@ namespace Celestus.Storage.Cache.Test
             //
             // Act
             //
-            var getResult = ThreadTimeout.DoWhileLocked(cache, () => cache.TryGet<int>(KEY, timeout: 1), THREAD_TIMEOUT);
+            var getResult = ThreadHelper.DoWhileLocked(cache, () => cache.TryGet<int>(KEY, timeout: 1), THREAD_TIMEOUT);
 
             //
             // Assert
@@ -65,7 +65,7 @@ namespace Celestus.Storage.Cache.Test
             //
             // Act
             //
-            var getResult = ThreadTimeout.DoWhileLocked(cache, () => cache.TryRemove([KEY], timeout: 1), THREAD_TIMEOUT);
+            var getResult = ThreadHelper.DoWhileLocked(cache, () => cache.TryRemove([KEY], timeout: 1), THREAD_TIMEOUT);
 
             //
             // Assert
@@ -90,7 +90,7 @@ namespace Celestus.Storage.Cache.Test
             //
             // Act
             //
-            var loadedCache = ThreadTimeout.DoWhileLocked(cache, () => ThreadCache.UpdateOrLoadSharedFromFile(path, timeout: 1), THREAD_TIMEOUT);
+            var loadedCache = ThreadHelper.DoWhileLocked(cache, () => ThreadCache.UpdateOrLoadSharedFromFile(path, timeout: 1), THREAD_TIMEOUT);
 
             //
             // Assert

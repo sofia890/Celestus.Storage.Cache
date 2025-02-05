@@ -1,4 +1,6 @@
-﻿namespace Celestus.Storage.Cache.Test
+﻿using Celestus.Storage.Cache.Test.Model;
+
+namespace Celestus.Storage.Cache.Test
 {
     [TestClass]
     public sealed class TestThreadCacheReadingAndWriting
@@ -11,15 +13,15 @@
             //
             var cache = new ThreadCache();
 
-            const int DURATION = 10;
+            const int DURATION_IN_MS = 10;
             const int VALUE = 55;
             const string KEY = "key";
-            _ = cache.TrySet(KEY, VALUE, duration: TimeSpan.FromMilliseconds(DURATION));
+            _ = cache.TrySet(KEY, VALUE, duration: TimeSpan.FromMilliseconds(DURATION_IN_MS));
 
             //
             // Act
             //
-            System.Threading.Thread.Sleep(DURATION * 2);
+            ThreadHelper.SpinWait(DURATION_IN_MS * 2);
 
             var (result, _) = cache.TryGet<int>(KEY);
 
@@ -27,6 +29,41 @@
             // Assert
             //
             Assert.IsFalse(result);
+        }
+
+        [TestMethod]
+        [DoNotParallelize] // Timing tests are not reliable when run in parallel.
+        public void VerifyThatItemsInCacheCanBeAccessedBeforeExpiration()
+        {
+            //
+            // Arrange
+            //
+            const int DURATION_IN_MS = 8;
+            var cache = new ThreadCache(DURATION_IN_MS * 2);
+
+            const int VALUE = 23;
+            const string KEY = "key";
+            _ = cache.TrySet(KEY, VALUE, duration: TimeSpan.FromMilliseconds(DURATION_IN_MS));
+
+            //
+            // Act
+            //
+            var (resultPointA, _) = cache.TryGet<int>(KEY);
+
+            ThreadHelper.SpinWait(DURATION_IN_MS / 2);
+
+            var (resultPointB, _) = cache.TryGet<int>(KEY);
+
+            ThreadHelper.SpinWait(DURATION_IN_MS);
+
+            var (resultPointC, _) = cache.TryGet<int>(KEY);
+
+            //
+            // Assert
+            //
+            Assert.IsTrue(resultPointA);
+            Assert.IsTrue(resultPointB);
+            Assert.IsFalse(resultPointC);
         }
 
         [TestMethod]

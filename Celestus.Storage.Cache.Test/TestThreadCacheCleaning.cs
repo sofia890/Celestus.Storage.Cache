@@ -116,7 +116,7 @@ public class TestThreadCacheCleaning
         //
         // Arrange
         //
-        const int CLEAN_INTERVAL_IN_MS = 10;
+        const int CLEAN_INTERVAL_IN_MS = 5;
         var cache = new ThreadCache(new ThreadCacheCleaner<string>(cleanupIntervalInMs: CLEAN_INTERVAL_IN_MS));
 
         static byte[] CreateElement()
@@ -142,7 +142,7 @@ public class TestThreadCacheCleaning
             _ = cache.TrySet(keys.Next(), CreateElement(), TimeSpan.FromMilliseconds(CLEAN_INTERVAL_IN_MS));
         }
 
-        System.Threading.Thread.Sleep(CLEAN_INTERVAL_IN_MS * 20);
+        ThreadHelper.SpinWait(CLEAN_INTERVAL_IN_MS * 3);
 
         _ = cache.TryGet<byte[]>(firstKey);
 

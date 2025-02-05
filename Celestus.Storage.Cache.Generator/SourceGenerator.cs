@@ -172,11 +172,18 @@ namespace Celestus.Storage.Cache.Generator
             var cacheAttributes = GetCacheAttributes(context, methodDeclaration.AttributeLists);
             var cacheStore = GetCacheStore(methodDeclaration);
 
-            string timeout = $"{CacheAttribute.DEFAULT_TIMEOUT}";
+            string timeoutInMilliseconds = $"{CacheAttribute.DEFAULT_TIMEOUT}";
 
-            if (cacheAttributes.TryGetValue("timeoutInMilliseconds", out var timeoutInMilliseconds))
+            if (cacheAttributes.TryGetValue("timeoutInMilliseconds", out var timeout))
             {
-                timeout = timeoutInMilliseconds;
+                timeoutInMilliseconds = timeout;
+            }
+
+            string durationInMs = $"{CacheAttribute.DEFAULT_DURATION}";
+
+            if (cacheAttributes.TryGetValue("durationInMs", out var duration))
+            {
+                durationInMs = duration;
             }
 
             string uniqueKeyBase = methodIdentifier;
@@ -203,12 +210,12 @@ namespace Celestus.Storage.Cache.Generator
                     {{indentation}}        var uniqueKeyBase = {{uniqueKeyBase}};
                     {{indentation}}        var uniqueKey = $"{uniqueKeyBase}-{hashCode}";
                     {{indentation}}        
-                    {{indentation}}        if ({{cacheStore}}.TryGet<{{tupleDeclaration}}>(uniqueKey, timeout: {{timeout}}) is not (result: true, var value))
+                    {{indentation}}        if ({{cacheStore}}.TryGet<{{tupleDeclaration}}>(uniqueKey, timeout: {{timeoutInMilliseconds}}) is not (result: true, var value))
                     {{indentation}}        {
                     {{indentation}}            value = ({{methodIdentifier}}({{parameters}}), {{tupleOutVariableAssignment}});
                     {{indentation}}            
                     {{indentation}}            // Avoid throwing an exception if TrySet(...) fails. Just try next time the value is fetched.
-                    {{indentation}}            _ = {{cacheStore}}.TrySet(uniqueKey, value, timeout: {{timeout}});
+                    {{indentation}}            _ = {{cacheStore}}.TrySet(uniqueKey, value, duration: TimeSpan.FromMilliseconds({{durationInMs}}), timeout: {{timeoutInMilliseconds}});
                     {{indentation}}        }
                     {{indentation}}        else
                     {{indentation}}        {

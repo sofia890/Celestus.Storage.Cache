@@ -266,7 +266,7 @@ namespace Celestus.Storage.Cache
             {
                 return (false, default);
             }
-            else if (entry.Expiration < DateTime.Now.Ticks)
+            else if (entry.Expiration < DateTime.UtcNow.Ticks)
             {
                 _cleaner.EntryAccessed(ref entry, key);
 

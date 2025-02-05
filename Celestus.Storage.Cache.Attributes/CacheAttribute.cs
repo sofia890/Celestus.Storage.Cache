@@ -6,8 +6,15 @@ namespace Celestus.Storage.Cache.Attributes
     public class CacheAttribute : Attribute
     {
         public const int DEFAULT_TIMEOUT = 1000;
+        public const int DEFAULT_DURATION = 1000;
 
         public int Timeout
+        {
+            get;
+            private set;
+        }
+
+        public int Duration
         {
             get;
             private set;
@@ -19,9 +26,10 @@ namespace Celestus.Storage.Cache.Attributes
             private set;
         }
 
-        public CacheAttribute(int timeoutInMilliseconds = DEFAULT_TIMEOUT, string key = "")
+        public CacheAttribute(int timeoutInMilliseconds = DEFAULT_TIMEOUT, int durationInMs = DEFAULT_DURATION, string key = "")
         {
             Timeout = timeoutInMilliseconds;
+            Duration = durationInMs;
             Key = key;
         }
     }

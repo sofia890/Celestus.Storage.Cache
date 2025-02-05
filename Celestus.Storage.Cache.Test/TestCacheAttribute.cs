@@ -14,13 +14,15 @@ namespace Celestus.Storage.Cache.Test
             // Arrange
             //
             const int TIMEOUT_IN_MS = 26897;
+            const int DURATION_IN_MS = 5766879;
             const string KEY = "keyTest";
-            var cacheAttribute = new CacheAttribute(TIMEOUT_IN_MS, KEY);
+            var cacheAttribute = new CacheAttribute(TIMEOUT_IN_MS, DURATION_IN_MS, KEY);
 
             //
             // Act & Assert
             //
             Assert.AreEqual(TIMEOUT_IN_MS, cacheAttribute.Timeout);
+            Assert.AreEqual(DURATION_IN_MS, cacheAttribute.Duration);
             Assert.AreEqual(KEY, cacheAttribute.Key);
         }
 

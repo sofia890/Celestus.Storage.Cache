@@ -6,9 +6,10 @@ namespace Celestus.Storage.Cache.Test.Model.ExtraNamespaceToCheckNested
     {
         readonly int _justAnotherVariable = 0;
 
-        public const int CALCULATE_TIMEOUT = 25;
-        public const int CALCULATE_WITTH_SLEEP_TIMEOUT = 50;
-        public const int CALCULATION_SLEEP = 25;
+        public const int CALCULATE_TIMEOUT = 5;
+        public const int CALCULATE_WITTH_SLEEP_TIMEOUT = 10;
+        public const int CALCULATION_SLEEP = 5;
+        public const int CALCULATE_WITTH_SLEEP_DURATION = 100;
 
         [Cache(timeoutInMilliseconds: ExampleReferenceClass.Value + 5, key: "keyTest" + "55")]
         public int Calculate((int a, int b) inData, out int c)
@@ -24,10 +25,10 @@ namespace Celestus.Storage.Cache.Test.Model.ExtraNamespaceToCheckNested
             return inData.a + inData.b;
         }
 
-        [Cache(timeoutInMilliseconds: CALCULATE_WITTH_SLEEP_TIMEOUT)]
+        [Cache(timeoutInMilliseconds: CALCULATE_WITTH_SLEEP_TIMEOUT, durationInMs: CALCULATE_WITTH_SLEEP_DURATION)]
         public int SleepBeforeCalculation((int a, int b) inData, out int c)
         {
-            System.Threading.Thread.Sleep(CALCULATION_SLEEP);
+            ThreadHelper.SpinWait(CALCULATION_SLEEP);
 
             return Calculate(inData, out c);
         }

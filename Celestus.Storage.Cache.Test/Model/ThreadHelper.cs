@@ -1,7 +1,23 @@
-﻿namespace Celestus.Storage.Cache.Test
+﻿using System.Diagnostics;
+
+namespace Celestus.Storage.Cache.Test.Model
 {
-    internal class Thread
+    public static class ThreadHelper
     {
+        public static void SpinWait(int durationInMs)
+        {
+            SpinWait(TimeSpan.FromMilliseconds(durationInMs));
+        }
+        public static void SpinWait(TimeSpan duration)
+        {
+            var stopwatch = Stopwatch.StartNew();
+
+            while (stopwatch.Elapsed < duration)
+            {
+                Thread.SpinWait(100);
+            }
+        }
+
         public static ReturnType DoUntil<DataType, ReturnType>(
             Func<DataType> initBackgroundThread,
             Action<DataType> cleanupBackgroundThread,
@@ -28,6 +44,14 @@
             _ = done.Set();
 
             return results;
+        }
+
+        public static ReturnType DoWhileLocked<ReturnType>(ThreadCache cache, Func<ReturnType> action, int timeout = ThreadCache.NO_TIMEOUT)
+        {
+            return DoUntil(() => cache.Lock(),
+                           (cacheLock) => cacheLock.Dispose(),
+                           action,
+                           timeout);
         }
     }
 }

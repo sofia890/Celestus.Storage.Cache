@@ -142,7 +142,7 @@ public class TestCacheCleaning
             cache.Set(keys.Next(), CreateElement(), TimeSpan.FromMilliseconds(CLEAN_INTERVAL_IN_MS));
         }
 
-        System.Threading.Thread.Sleep(CLEAN_INTERVAL_IN_MS);
+        ThreadHelper.SpinWait(CLEAN_INTERVAL_IN_MS);
 
         _ = cache.TryGet<byte[]>(firstKey);
 

@@ -11,7 +11,7 @@ public class TestCacheCleaner
         //
         // Arrange
         //
-        const int INTERVAL_IN_MS = 10;
+        const int INTERVAL_IN_MS = 4;
         var cleaner = new CacheCleaner<string>(cleanupIntervalInMs: INTERVAL_IN_MS);
 
         List<string> removedKeys = [];
@@ -29,8 +29,7 @@ public class TestCacheCleaner
         const string KEY_2 = "Key2";
         CleanerHelper.TrackNewEntry(cleaner, KEY_2, DateTime.UtcNow);
 
-
-        System.Threading.Thread.Sleep(INTERVAL_IN_MS + 1);
+        ThreadHelper.SpinWait(INTERVAL_IN_MS + 1);
 
         //
         // Act & Assert
