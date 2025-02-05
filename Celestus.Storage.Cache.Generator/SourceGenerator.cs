@@ -176,21 +176,21 @@ namespace Celestus.Storage.Cache.Generator
 
             if (cacheAttributes.TryGetValue("timeoutInMilliseconds", out var timeout))
             {
-                timeoutInMilliseconds = timeout;
+                timeoutInMilliseconds = timeout.value;
             }
 
             string durationInMs = $"{CacheAttribute.DEFAULT_DURATION}";
 
             if (cacheAttributes.TryGetValue("durationInMs", out var duration))
             {
-                durationInMs = duration;
+                durationInMs = duration.value;
             }
 
             string uniqueKeyBase = methodIdentifier;
 
             if (cacheAttributes.TryGetValue("key", out var key))
             {
-                uniqueKeyBase = key;
+                uniqueKeyBase = key.value;
             }
 
             var indentation = GetIndentation(namespaceContext.depth);
@@ -238,11 +238,37 @@ namespace Celestus.Storage.Cache.Generator
         {
             var cacheAttributes = GetCacheAttributes(context, classDeclaration.AttributeLists);
 
+            if (cacheAttributes.TryGetValue("durationInMs", out var duration))
+            {
+                context.ReportDiagnostic(Diagnostic.Create(
+                    id: "CelestusCache1",
+                    category: "ArgumentException",
+                    message: "The durationInMs attribute is not allowed on a class.",
+                    severity: DiagnosticSeverity.Warning,
+                    defaultSeverity: DiagnosticSeverity.Warning,
+                    isEnabledByDefault: true,
+                    warningLevel: 4,
+                    location: Location.Create(classDeclaration.SyntaxTree, duration.syntax.Span)));
+            }
+
+            if (cacheAttributes.TryGetValue("timeoutInMilliseconds", out var timeout))
+            {
+                context.ReportDiagnostic(Diagnostic.Create(
+                    id: "CelestusCache2",
+                    category: "ArgumentException",
+                    message: "The timeoutInMilliseconds attribute is not allowed on a class.",
+                    severity: DiagnosticSeverity.Warning,
+                    defaultSeverity: DiagnosticSeverity.Warning,
+                    isEnabledByDefault: true,
+                    warningLevel: 4,
+                    location: Location.Create(classDeclaration.SyntaxTree, timeout.syntax.Span)));
+            }
+
             string uniqueKey = string.Empty;
 
             if (cacheAttributes.TryGetValue("key", out var key))
             {
-                uniqueKey = key;
+                uniqueKey = key.value;
             }
 
             var indentation = GetIndentation(namespaceContext.depth);
@@ -447,13 +473,13 @@ namespace Celestus.Storage.Cache.Generator
 
             return variableAssignment.ToString().TrimEnd();
         }
-        private Dictionary<string, string> GetCacheAttributes(
+        private Dictionary<string, (string value, NameColonSyntax syntax)> GetCacheAttributes(
             SourceProductionContext context,
             SyntaxList<AttributeListSyntax> attributeLists)
         {
             var errorMessage = string.Empty;
 
-            Dictionary<string, string> foundCacheArguments = [];
+            Dictionary<string, (string value, NameColonSyntax syntax)> foundCacheArguments = [];
 
             foreach (var attributeListOuter in attributeLists)
             {
@@ -473,11 +499,11 @@ namespace Celestus.Storage.Cache.Generator
                             }
                             else if (argument.Expression is IdentifierNameSyntax variableName)
                             {
-                                foundCacheArguments.Add(attributeName, variableName.Identifier.ValueText);
+                                foundCacheArguments.Add(attributeName, (variableName.Identifier.ValueText, nameColonSyntax));
                             }
                             else
                             {
-                                foundCacheArguments.Add(attributeName, argument.Expression.ToString());
+                                foundCacheArguments.Add(attributeName, (argument.Expression.ToString(), nameColonSyntax));
                             }
                         }
                     }
@@ -487,7 +513,7 @@ namespace Celestus.Storage.Cache.Generator
             if (errorMessage.Length > 0)
             {
                 context.ReportDiagnostic(Diagnostic.Create(
-                    id: "CacheTimeout",
+                    id: "CelestusCache3",
                     category: "ArgumentException",
                     message: errorMessage,
                     severity: DiagnosticSeverity.Error,
