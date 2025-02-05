@@ -201,17 +201,17 @@ namespace Celestus.Storage.Cache
 
         public override void TrackEntry(ref CacheEntry entry, KeyType key)
         {
-            _server.CleanerPort.Writer.WriteAsync(new TrackEntryInd(key, entry));
+            _ = _server.CleanerPort.Writer.TryWrite(new TrackEntryInd(key, entry));
         }
 
         public override void EntryAccessed(ref CacheEntry entry, KeyType key)
         {
-            _server.CleanerPort.Writer.WriteAsync(new EntryAccessedInd(key));
+            _ = _server.CleanerPort.Writer.TryWrite(new EntryAccessedInd(key));
         }
 
         public override void RegisterRemovalCallback(Func<List<KeyType>, bool> callback)
         {
-            _server.CleanerPort.Writer.WriteAsync(new RegisterRemovalCallbackInd(callback));
+            _ = _server.CleanerPort.Writer.TryWrite(new RegisterRemovalCallbackInd(callback));
         }
 
         public override void ReadSettings(ref Utf8JsonReader reader, JsonSerializerOptions options)

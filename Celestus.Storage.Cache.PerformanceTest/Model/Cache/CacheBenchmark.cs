@@ -1,7 +1,7 @@
 ﻿using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Jobs;
 
-namespace Celestus.Storage.Cache.PerformanceTest
+namespace Celestus.Storage.Cache.PerformanceTest.Model.Cache
 {
     [SimpleJob(RuntimeMoniker.Net90)]
     public class CacheBenchmark

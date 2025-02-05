@@ -10,7 +10,7 @@
             }
 
             Assert.AreEqual(cleanerTypeToTest, typeof(ThreadCacheCleaner<string>));
-            
+
             return new ThreadCacheCleaner<string>(cleanupIntervalInMs);
         }
     }
