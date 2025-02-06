@@ -10,7 +10,6 @@ using System.Threading;
 
 namespace Celestus.Storage.Cache.Generator
 {
-
     internal class NamespaceContext
     {
         public string header = string.Empty;
@@ -477,8 +476,6 @@ namespace Celestus.Storage.Cache.Generator
             SourceProductionContext context,
             SyntaxList<AttributeListSyntax> attributeLists)
         {
-            var errorMessage = string.Empty;
-
             Dictionary<string, (string value, NameColonSyntax syntax)> foundCacheArguments = [];
 
             foreach (var attributeListOuter in attributeLists)
@@ -495,7 +492,16 @@ namespace Celestus.Storage.Cache.Generator
                             if (argument.NameColon is not NameColonSyntax nameColonSyntax ||
                                 !TryGetName(nameColonSyntax, out var attributeName))
                             {
-                                errorMessage = $"Could not determine which Cache attribute '{argument}' belongs to.";
+                                context.ReportDiagnostic(Diagnostic.Create(
+                                    id: "CelestusCache3",
+                                    category: "ArgumentException",
+                                    message: $"Could not determine which Cache attribute argument belongs to.",
+                                    severity: DiagnosticSeverity.Error,
+                                    defaultSeverity: DiagnosticSeverity.Error,
+                                    isEnabledByDefault: true,
+                                    warningLevel: 10,
+                                    location: Location.Create(argument.SyntaxTree, argument.Span))
+                                );
                             }
                             else if (argument.Expression is IdentifierNameSyntax variableName)
                             {
@@ -508,19 +514,6 @@ namespace Celestus.Storage.Cache.Generator
                         }
                     }
                 }
-            }
-
-            if (errorMessage.Length > 0)
-            {
-                context.ReportDiagnostic(Diagnostic.Create(
-                    id: "CelestusCache3",
-                    category: "ArgumentException",
-                    message: errorMessage,
-                    severity: DiagnosticSeverity.Error,
-                    defaultSeverity: DiagnosticSeverity.Error,
-                    isEnabledByDefault: true,
-                    warningLevel: 10)
-                );
             }
 
             return foundCacheArguments;
