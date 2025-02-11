@@ -2,6 +2,13 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
+    <NuGetAuditMode>all</NuGetAuditMode>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <Title>$(AssemblyName)</Title>
+    <PackageProjectUrl></PackageProjectUrl>
+    <RepositoryUrl>https://github.com/sofia890/Celestus.Storage.Cache/tree/master/Celestus.Storage.Cache.Attributes</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>Storage,Cache</PackageTags>
   </PropertyGroup>
 
 </Project>

@@ -5,6 +5,10 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <EnforceCodeStyleInBuild>True</EnforceCodeStyleInBuild>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <PackageTags>Storage,Cache</PackageTags>
+    <RepositoryType>git</RepositoryType>
+    <RepositoryUrl>https://github.com/sofia890/Celestus.Storage.Cache/tree/master/Celestus.Storage.Cache</RepositoryUrl>
   </PropertyGroup>
 
   <ItemGroup>
