@@ -1,9 +1,9 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Celestus.Storage.Cache.Test
+namespace Celestus.Storage.Cache.Test.Model
 {
-    internal class ExceptionHelper
+    internal class SerializationHelper
     {
         public static void Deserialize<ConverterType, DataType>(string json)
             where ConverterType : JsonConverter<DataType>, new()

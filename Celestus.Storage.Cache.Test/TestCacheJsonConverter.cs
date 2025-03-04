@@ -1,4 +1,4 @@
-using System.Text.Json;
+using Celestus.Storage.Cache.Test.Model;
 using static Celestus.Storage.Cache.Cache;
 
 namespace Celestus.Storage.Cache.Test
@@ -12,18 +12,26 @@ namespace Celestus.Storage.Cache.Test
             string json = """
                 "Invalid JSON"
                 """;
-            Assert.ThrowsException<JsonException>(() => ExceptionHelper.Deserialize<CacheJsonConverter, Cache>(json));
+            Assert.ThrowsException<StartTokenJsonException>(() => SerializationHelper.Deserialize<CacheJsonConverter, Cache>(json));
         }
 
         [TestMethod]
-        public void VerifyThatUnexpectedPropertyNameCausesCrash()
+        public void VerifyThatUnexpectedPropertyNameAreSkipped()
         {
             string json = """
                 {
-                    "InvalidProperty":"value"
+                    "InvalidProperty":"value",
+                    "Key":"key",
+                    "_storage":{},
+                    "_cleaner":{
+                        "Type":"Celestus.Storage.Cache.CacheCleaner`1[[System.String, System.Private.CoreLib]], Celestus.Storage.Cache",
+                        "Content":{
+                            "_cleanupIntervalInTicks": 0
+                        }
+                    }
                 }
                 """;
-            Assert.ThrowsException<JsonException>(() => ExceptionHelper.Deserialize<CacheJsonConverter, Cache>(json));
+            SerializationHelper.Deserialize<CacheJsonConverter, Cache>(json);
         }
 
         [TestMethod]
@@ -34,7 +42,7 @@ namespace Celestus.Storage.Cache.Test
                     "Key":"key"
                 }
                 """;
-            Assert.ThrowsException<JsonException>(() => ExceptionHelper.Deserialize<CacheJsonConverter, Cache>(json));
+            Assert.ThrowsException<MissingValueJsonException>(() => SerializationHelper.Deserialize<CacheJsonConverter, Cache>(json));
         }
 
         [TestMethod]
@@ -45,7 +53,7 @@ namespace Celestus.Storage.Cache.Test
                     "_storage":null
                 }
                 """;
-            Assert.ThrowsException<JsonException>(() => ExceptionHelper.Deserialize<CacheJsonConverter, Cache>(json));
+            Assert.ThrowsException<MissingValueJsonException>(() => SerializationHelper.Deserialize<CacheJsonConverter, Cache>(json));
         }
 
         [TestMethod]
@@ -56,7 +64,7 @@ namespace Celestus.Storage.Cache.Test
                     "_cleaner":{}
                 }
                 """;
-            Assert.ThrowsException<JsonException>(() => ExceptionHelper.Deserialize<CacheJsonConverter, Cache>(json));
+            Assert.ThrowsException<MissingValueJsonException>(() => SerializationHelper.Deserialize<CacheJsonConverter, Cache>(json));
         }
 
         [TestMethod]
@@ -69,7 +77,7 @@ namespace Celestus.Storage.Cache.Test
                     }
                 }
                 """;
-            Assert.ThrowsException<JsonException>(() => ExceptionHelper.Deserialize<CacheJsonConverter, Cache>(json));
+            Assert.ThrowsException<PropertiesOutOfOrderJsonException>(() => SerializationHelper.Deserialize<CacheJsonConverter, Cache>(json));
         }
 
         [TestMethod]
@@ -83,7 +91,7 @@ namespace Celestus.Storage.Cache.Test
                     }
                 }
                 """;
-            Assert.ThrowsException<JsonException>(() => ExceptionHelper.Deserialize<CacheJsonConverter, Cache>(json));
+            Assert.ThrowsException<ValueTypeJsonException>(() => SerializationHelper.Deserialize<CacheJsonConverter, Cache>(json));
         }
 
         [TestMethod]
@@ -97,7 +105,7 @@ namespace Celestus.Storage.Cache.Test
                     }
                 }
                 """;
-            Assert.ThrowsException<JsonException>(() => ExceptionHelper.Deserialize<CacheJsonConverter, Cache>(json));
+            Assert.ThrowsException<NotObjectTypeJsonException>(() => SerializationHelper.Deserialize<CacheJsonConverter, Cache>(json));
         }
 
         [TestMethod]
@@ -111,7 +119,7 @@ namespace Celestus.Storage.Cache.Test
                     }
                 }
                 """;
-            Assert.ThrowsException<JsonException>(() => ExceptionHelper.Deserialize<CacheJsonConverter, Cache>(json));
+            Assert.ThrowsException<MissingInheritanceJsonException>(() => SerializationHelper.Deserialize<CacheJsonConverter, Cache>(json));
         }
 
         [TestMethod]
@@ -125,11 +133,11 @@ namespace Celestus.Storage.Cache.Test
                     }
                 }
                 """;
-            Assert.ThrowsException<JsonException>(() => ExceptionHelper.Deserialize<CacheJsonConverter, Cache>(json));
+            Assert.ThrowsException<MissingValueJsonException>(() => SerializationHelper.Deserialize<CacheJsonConverter, Cache>(json));
         }
 
         [TestMethod]
-        public void VerifyThatExtraCleanerParametersAreIgnored()
+        public void VerifyThatExtraCleanerParameterIsIgnored()
         {
             string json = """
                 {
@@ -144,7 +152,7 @@ namespace Celestus.Storage.Cache.Test
                     }
                 }
                 """;
-            ExceptionHelper.Deserialize<CacheJsonConverter, Cache>(json);
+            SerializationHelper.Deserialize<CacheJsonConverter, Cache>(json);
         }
 
         [TestMethod]
@@ -157,7 +165,7 @@ namespace Celestus.Storage.Cache.Test
                     }
                 }
                 """;
-            Assert.ThrowsException<JsonException>(() => ExceptionHelper.Deserialize<CacheJsonConverter, Cache>(json));
+            Assert.ThrowsException<MissingValueJsonException>(() => SerializationHelper.Deserialize<CacheJsonConverter, Cache>(json));
         }
     }
 }

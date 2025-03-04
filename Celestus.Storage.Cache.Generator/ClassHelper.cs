@@ -1,5 +1,4 @@
-﻿using Celestus.Storage.Cache.Attributes;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
+﻿using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Linq;
 
 namespace Celestus.Storage.Cache.Generator

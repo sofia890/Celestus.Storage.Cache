@@ -16,7 +16,7 @@ namespace Celestus.Storage.Cache
             {
                 if (reader.TokenType != JsonTokenType.StartObject)
                 {
-                    throw new JsonException($"Invalid JSON for {nameof(Cache)}.");
+                    throw new StartTokenJsonException(reader.TokenType, JsonTokenType.StartObject);
                 }
 
                 string? key = null;
@@ -65,15 +65,19 @@ namespace Celestus.Storage.Cache
                                                     case TYPE_PROPERTY_NAME:
                                                         if (JsonSerializer.Deserialize<string>(ref reader, options) is not string typeString)
                                                         {
-                                                            throw new JsonException($"Invalid JSON for {nameof(Cache)}.");
+                                                            throw new ValueTypeJsonException(TYPE_PROPERTY_NAME, JsonTokenType.String, reader.TokenType);
                                                         }
                                                         else if (Type.GetType(typeString) is not Type cleanerType)
                                                         {
-                                                            throw new JsonException($"Invalid JSON for {nameof(Cache)}.");
+                                                            throw new NotObjectTypeJsonException(TYPE_PROPERTY_NAME, typeString);
                                                         }
-                                                        else if (Activator.CreateInstance(cleanerType) is not CacheCleanerBase<string> createdCleaner)
+                                                        else if (Activator.CreateInstance(cleanerType) is not object newObject)
                                                         {
-                                                            throw new JsonException($"Invalid JSON for {nameof(Cache)}.");
+                                                            throw new ObjectCreationJsonException(TYPE_PROPERTY_NAME, cleanerType);
+                                                        }
+                                                        else if (newObject is not CacheCleanerBase<string> createdCleaner)
+                                                        {
+                                                            throw new MissingInheritanceJsonException(TYPE_PROPERTY_NAME, newObject, typeof(CacheCleanerBase<string>));
                                                         }
                                                         else
                                                         {
@@ -84,7 +88,7 @@ namespace Celestus.Storage.Cache
                                                     case CONTENT_PROPERTY_NAME:
                                                         if (cleaner == null)
                                                         {
-                                                            throw new JsonException($"Invalid JSON for {nameof(Cache)}.");
+                                                            throw new PropertiesOutOfOrderJsonException(TYPE_PROPERTY_NAME, CONTENT_PROPERTY_NAME);
                                                         }
                                                         else
                                                         {
@@ -94,7 +98,7 @@ namespace Celestus.Storage.Cache
                                                         break;
 
                                                     default:
-                                                        _ = reader.Read();
+                                                        reader.Skip();
                                                         break;
                                                 }
                                                 break;
@@ -105,7 +109,8 @@ namespace Celestus.Storage.Cache
                                     break;
 
                                 default:
-                                    throw new JsonException($"Invalid JSON for {nameof(Cache)}.");
+                                    reader.Skip();
+                                    break;
                             }
 
                             break;
@@ -113,9 +118,21 @@ namespace Celestus.Storage.Cache
                 }
 
             End:
-                if (key == null || storage == null || cleaner == null || !cleanerConfigured)
+                if (key == null)
                 {
-                    throw new JsonException($"Invalid JSON for {nameof(Cache)}.");
+                    throw new MissingValueJsonException(nameof(Key));
+                }
+                else if (storage == null)
+                {
+                    throw new MissingValueJsonException(nameof(_storage));
+                }
+                else if (cleaner == null)
+                {
+                    throw new MissingValueJsonException(nameof(_cleaner));
+                }
+                else if (!cleanerConfigured)
+                {
+                    throw new MissingValueJsonException(CONTENT_PROPERTY_NAME);
                 }
                 else
                 {

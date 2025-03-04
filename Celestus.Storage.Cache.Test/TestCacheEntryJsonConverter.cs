@@ -1,4 +1,5 @@
 using Celestus.Serialization;
+using Celestus.Storage.Cache.Test.Model;
 using System.Text.Json;
 using static Celestus.Storage.Cache.CacheEntry;
 
@@ -11,49 +12,73 @@ namespace Celestus.Storage.Cache.Test
         public void VerifyThatWrongBaseTypeCausesCrash()
         {
             var json = "[]";
-            Assert.ThrowsException<JsonException>(() => ExceptionHelper.Deserialize<CacheEntryJsonConverter, CacheEntry>(json));
+            Assert.ThrowsException<JsonException>(() => SerializationHelper.Deserialize<CacheEntryJsonConverter, CacheEntry>(json));
         }
 
         [TestMethod]
         public void VerifyThatMissingTypeCausesCrash()
         {
             var json = "{\"Expiration\":1234567890,\"Data\":\"some data\"}";
-            Assert.ThrowsException<JsonException>(() => ExceptionHelper.Deserialize<CacheEntryJsonConverter, CacheEntry>(json));
+            Assert.ThrowsException<PropertiesOutOfOrderJsonException>(() => SerializationHelper.Deserialize<CacheEntryJsonConverter, CacheEntry>(json));
         }
 
         [TestMethod]
         public void VerifyThatMissingDataCausesCrash()
         {
-            var json = "{\"Expiration\":1234567890,\"Type\":\"Invalid.Type\"}";
-            Assert.ThrowsException<JsonException>(() => ExceptionHelper.Deserialize<CacheEntryJsonConverter, CacheEntry>(json));
+            var json = """
+                {
+                    "Type":"System.String",
+                    "Expiration":1234567890
+                }
+                """;
+            Assert.ThrowsException<MissingValueJsonException>(() => SerializationHelper.Deserialize<CacheEntryJsonConverter, CacheEntry>(json));
         }
 
         [TestMethod]
         public void VerifyThatMissingExpirationCausesCrash()
         {
             var json = "{\"Type\":\"System.String\",\"Data\":\"some data\"}";
-            Assert.ThrowsException<JsonException>(() => ExceptionHelper.Deserialize<CacheEntryJsonConverter, CacheEntry>(json));
+            Assert.ThrowsException<MissingValueJsonException>(() => SerializationHelper.Deserialize<CacheEntryJsonConverter, CacheEntry>(json));
         }
 
         [TestMethod]
         public void VerifyThatInvalidTypeCausesCrash()
         {
-            var json = "{\"Type\":\"Invalid.Type\",\"Expiration\":1234567890,\"Data\":\"some data\"}";
-            Assert.ThrowsException<JsonException>(() => ExceptionHelper.Deserialize<CacheEntryJsonConverter, CacheEntry>(json));
+            var json = """
+                {
+                    "Type":"Invalid.Type",
+                    "Expiration":1234567890,
+                    "Data":"some data"
+                }
+                """;
+            Assert.ThrowsException<NotObjectTypeJsonException>(() => SerializationHelper.Deserialize<CacheEntryJsonConverter, CacheEntry>(json));
         }
 
         [TestMethod]
         public void VerifyThatDataBeforeTypeCausesCrash()
         {
-            var json = "{\"Data\":\"some data\",\"Type\":\"System.String\",\"Expiration\":1234567890}";
-            Assert.ThrowsException<JsonException>(() => ExceptionHelper.Deserialize<CacheEntryJsonConverter, CacheEntry>(json));
+            var json = """
+                {
+                    "Data":"some data",
+                    "Type":"System.String",
+                    "Expiration":1234567890
+                }
+                """;
+            Assert.ThrowsException<PropertiesOutOfOrderJsonException>(() => SerializationHelper.Deserialize<CacheEntryJsonConverter, CacheEntry>(json));
         }
 
         [TestMethod]
-        public void VerifyThatUnexpectedPropertyNameCausesCrash()
+        public void VerifyThatUnexpectedPropertyIsIgnored()
         {
-            var json = "{\"JustAnotherProperty\":\"some data\"}";
-            Assert.ThrowsException<JsonException>(() => ExceptionHelper.Deserialize<CacheEntryJsonConverter, CacheEntry>(json));
+            var json = """
+                {
+                    "SomethingMore": 5,
+                    "Type":"System.String",
+                    "Data":"some data",
+                    "Expiration":1234567890
+                }
+                """;
+            SerializationHelper.Deserialize<CacheEntryJsonConverter, CacheEntry>(json);
         }
 
         [TestMethod]
@@ -83,8 +108,27 @@ namespace Celestus.Storage.Cache.Test
         [TestMethod]
         public void VerifyThatNullCanBeDeserialized()
         {
-            var json = "{\"Type\":null,\"Expiration\":0,\"Data\":null}";
-            Assert.ThrowsException<JsonException>(() => ExceptionHelper.Deserialize<CacheEntryJsonConverter, CacheEntry>(json));
+            var json = """
+                {
+                    "Type":"System.String",
+                    "Expiration":0,
+                    "Data":null
+                }
+                """;
+            SerializationHelper.Deserialize<CacheEntryJsonConverter, CacheEntry>(json);
+        }
+
+        [TestMethod]
+        public void VerifyThatDataDeserializationFailureCausesCrash()
+        {
+            var json = $$"""
+                {
+                    "Type":"{{typeof(AlwaysDeserializeToNull).AssemblyQualifiedName}}",
+                    "Expiration":0,
+                    "Data":5
+                }
+                """;
+            Assert.ThrowsException<ObjectCorruptJsonException>(() => SerializationHelper.Deserialize<CacheEntryJsonConverter, CacheEntry>(json));
         }
     }
 }

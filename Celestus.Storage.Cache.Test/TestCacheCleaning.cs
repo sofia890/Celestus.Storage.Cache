@@ -1,5 +1,4 @@
 using Celestus.Storage.Cache.Test.Model;
-using System.Text.Json;
 
 namespace Celestus.Storage.Cache.Test;
 
@@ -169,7 +168,7 @@ public class TestCacheCleaning
         // Arrange
         //
         string json = "{\"ExtraParameter\":\"500\"}";
-        Assert.ThrowsException<JsonException>(() => CleaningHelper.ReadSettings<CacheCleaner<string>>(json));
+        Assert.ThrowsException<MissingValueJsonException>(() => CleaningHelper.ReadSettings<CacheCleaner<string>>(json));
     }
 
     [TestMethod]

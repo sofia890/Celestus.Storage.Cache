@@ -189,7 +189,7 @@ public class TestCacheCleaners
         CacheCleanerBase<string> cleaner = CacheCleanerHelper.GetCleaner(cleanerTypeToTest, 1000);
 
         string json = "{\"ExtraParameter\":\"500\"}";
-        Assert.ThrowsException<JsonException>(() => CleaningHelper.ReadSettings(cleaner, json));
+        Assert.ThrowsException<MissingValueJsonException>(() => CleaningHelper.ReadSettings(cleaner, json));
     }
 
     [TestMethod]

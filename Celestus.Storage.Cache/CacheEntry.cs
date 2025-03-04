@@ -19,6 +19,7 @@ namespace Celestus.Storage.Cache
 
                 Type? type = null;
                 long? expiration = null;
+                bool dataSet = false;
                 object? data = null;
 
                 while (reader.Read())
@@ -39,11 +40,11 @@ namespace Celestus.Storage.Cache
                                 case TYPE_PROPERTY_NAME:
                                     if (JsonSerializer.Deserialize<string>(ref reader, options) is not string typeString)
                                     {
-                                        throw new JsonException($"Invalid JSON for {nameof(CacheEntry)}.");
+                                        throw new ValueTypeJsonException(TYPE_PROPERTY_NAME, JsonTokenType.String, reader.TokenType);
                                     }
                                     else if (Type.GetType(typeString) is not Type parsedType)
                                     {
-                                        throw new JsonException($"Invalid JSON for {nameof(CacheEntry)}.");
+                                        throw new NotObjectTypeJsonException(TYPE_PROPERTY_NAME, typeString);
                                     }
                                     else
                                     {
@@ -58,15 +59,26 @@ namespace Celestus.Storage.Cache
                                 case nameof(Data):
                                     if (type == null)
                                     {
-                                        throw new JsonException($"{TYPE_PROPERTY_NAME} has to be before {nameof(Data)} " +
-                                                                $"for {nameof(CacheEntry)}.");
+                                        throw new PropertiesOutOfOrderJsonException(nameof(TYPE_PROPERTY_NAME), nameof(Data));
                                     }
-
-                                    data = JsonSerializer.Deserialize(ref reader, type, options);
+                                    else if (reader.TokenType == JsonTokenType.Null)
+                                    {
+                                        dataSet = true;
+                                    }
+                                    else if (JsonSerializer.Deserialize(ref reader, type, options) is not object newData)
+                                    {
+                                        throw new ObjectCorruptJsonException(nameof(Data));
+                                    }
+                                    else
+                                    {
+                                        dataSet = true;
+                                        data = newData;
+                                    }
                                     break;
 
                                 default:
-                                    throw new JsonException($"Invalid JSON for {nameof(CacheEntry)}.");
+                                    reader.Skip();
+                                    break;
                             }
 
                             break;
@@ -74,9 +86,17 @@ namespace Celestus.Storage.Cache
                 }
 
             End:
-                if (expiration == null || data == null)
+                if (expiration == null)
                 {
-                    throw new JsonException($"Invalid JSON for {nameof(CacheEntry)}.");
+                    throw new MissingValueJsonException(nameof(expiration));
+                }
+                else if (type == null)
+                {
+                    throw new MissingValueJsonException(TYPE_PROPERTY_NAME);
+                }
+                else if (data == null && !dataSet)
+                {
+                    throw new MissingValueJsonException(nameof(data));
                 }
                 else
                 {

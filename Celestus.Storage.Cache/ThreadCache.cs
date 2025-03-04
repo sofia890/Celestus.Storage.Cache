@@ -34,7 +34,7 @@ namespace Celestus.Storage.Cache
             {
                 if (reader.TokenType != JsonTokenType.StartObject)
                 {
-                    throw new JsonException($"Invalid JSON for {nameof(ThreadCache)}.");
+                    throw new StartTokenJsonException(reader.TokenType, JsonTokenType.StartObject);
                 }
 
                 string? key = null;
@@ -64,7 +64,8 @@ namespace Celestus.Storage.Cache
                                     break;
 
                                 default:
-                                    throw new JsonException($"Invalid JSON for {nameof(ThreadCache)}.");
+                                    reader.Skip();
+                                    break;
                             }
 
                             break;
@@ -74,7 +75,7 @@ namespace Celestus.Storage.Cache
             End:
                 if (key == null || cache == null)
                 {
-                    throw new JsonException($"Invalid JSON for {nameof(ThreadCache)}.");
+                    throw new MissingValueJsonException($"Invalid JSON for {nameof(ThreadCache)}.");
                 }
 
                 return new ThreadCache(key, cache);

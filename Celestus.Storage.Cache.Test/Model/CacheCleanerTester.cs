@@ -12,7 +12,7 @@ namespace Celestus.Storage.Cache.Test.Model
 
         public List<string> TrackedKeys { get; set; } = [];
 
-        public Func<List<string>, bool> RemovalCallback { get; set; } = (key) => true;
+        public Func<List<string>, bool> RemovalCallback { get; set; }
 
         public bool SettingsReadCorrectly { get; set; } = false;
 

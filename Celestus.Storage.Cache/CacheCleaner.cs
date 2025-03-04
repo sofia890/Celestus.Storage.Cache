@@ -107,7 +107,7 @@ namespace Celestus.Storage.Cache
         End:
             if (!intervalValueFound)
             {
-                throw new JsonException($"Missing parameter {nameof(_cleanupIntervalInTicks)}.");
+                throw new MissingValueJsonException(nameof(_cleanupIntervalInTicks));
             }
         }
 
