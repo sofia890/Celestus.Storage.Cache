@@ -372,9 +372,22 @@ namespace Celestus.Storage.Cache
         #region IEquatable
         public bool Equals(Cache? other)
         {
-            return other != null &&
-                   _storage.Count == other._storage.Count &&
-                   _storage.Intersect(other._storage).Count() == _storage.Count;
+            if (other == null || _storage.Count != other._storage.Count)
+            {
+                return false;
+            }
+
+            // Compare each key-value pair efficiently
+            foreach (var kvp in _storage)
+            {
+                if (!other._storage.TryGetValue(kvp.Key, out var otherValue) || 
+                    !kvp.Value.Equals(otherValue))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         public override bool Equals(object? obj)
@@ -384,7 +397,16 @@ namespace Celestus.Storage.Cache
 
         public override int GetHashCode()
         {
-            return _storage.Aggregate(0, (a, b) => HashCode.Combine(a, b));
+            var hash = new HashCode();
+            
+            // Sort keys to ensure consistent hash code regardless of insertion order
+            foreach (var kvp in _storage.OrderBy(x => x.Key))
+            {
+                hash.Add(kvp.Key);
+                hash.Add(kvp.Value);
+            }
+            
+            return hash.ToHashCode();
         }
         #endregion
     }
