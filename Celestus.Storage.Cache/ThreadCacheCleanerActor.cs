@@ -29,7 +29,7 @@ namespace Celestus.Storage.Cache
             return Task.Delay(TimeSpan.FromTicks(_cleanupIntervalInTicks));
         }
 
-        private async void HandleSignals()
+        private async Task HandleSignals()
         {
             Task<Signal>? signalTask = null;
 
