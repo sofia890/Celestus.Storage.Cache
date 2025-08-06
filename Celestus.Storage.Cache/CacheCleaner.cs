@@ -16,10 +16,8 @@ namespace Celestus.Storage.Cache
         {
         }
 
-        private void Prune()
+        private void Prune(long currentTimeInTicks)
         {
-            var currentTimeInTicks = DateTime.UtcNow.Ticks;
-
             if (_entries.Count > 0 && _nextCleanupOpportunityInTicks <= currentTimeInTicks)
             {
                 List<(KeyType key, CacheEntry entry)> expiredKeys = [];
@@ -53,14 +51,19 @@ namespace Celestus.Storage.Cache
 
         public override void TrackEntry(ref CacheEntry entry, KeyType key)
         {
-            Prune();
+            Prune(DateTime.UtcNow.Ticks);
 
             _entries.Add((key, entry));
         }
 
         public override void EntryAccessed(ref CacheEntry entry, KeyType key)
         {
-            Prune();
+            Prune(DateTime.UtcNow.Ticks);
+        }
+
+        public override void EntryAccessed(ref CacheEntry entry, KeyType key, long timeInMilliseconds)
+        {
+            Prune(timeInMilliseconds);
         }
 
         public override void RegisterRemovalCallback(Func<List<KeyType>, bool> callback)

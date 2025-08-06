@@ -10,7 +10,7 @@
 
     internal record Signal(CleanerProtocol SignalId);
 
-    internal record EntryAccessedInd<KeyType>(KeyType Key) : Signal(CleanerProtocol.EntryAccessedInd);
+    internal record EntryAccessedInd<KeyType>(KeyType Key, long TimeInTicks) : Signal(CleanerProtocol.EntryAccessedInd);
 
     internal record TrackEntryInd<KeyType>(KeyType Key, CacheEntry Entry) : Signal(CleanerProtocol.TrackEntryInd);
 

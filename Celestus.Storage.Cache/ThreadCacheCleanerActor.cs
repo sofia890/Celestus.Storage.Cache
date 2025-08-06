@@ -43,7 +43,7 @@ namespace Celestus.Storage.Cache
                 }
                 else if (await Task.WhenAny(signalTask, NewTimeoutTask()) != signalTask)
                 {
-                    Prune();
+                    Prune(DateTime.UtcNow.Ticks);
                 }
                 else if (signalTask.IsCompletedSuccessfully)
                 {
@@ -53,12 +53,14 @@ namespace Celestus.Storage.Cache
                     switch (rawSignal.SignalId)
                     {
                         default:
-                        case CleanerProtocol.EntryAccessedInd:
-                            Prune();
+                            break;
+
+                        case CleanerProtocol.EntryAccessedInd when rawSignal is EntryAccessedInd<KeyType> payload:
+                            Prune(payload.TimeInTicks);
                             break;
 
                         case CleanerProtocol.TrackEntryInd when rawSignal is TrackEntryInd<KeyType> payload:
-                            Prune();
+                            Prune(DateTime.UtcNow.Ticks);
 
                             _entries.Add((payload.Key, payload.Entry));
                             break;
@@ -77,11 +79,9 @@ namespace Celestus.Storage.Cache
             }
         }
 
-        private void Prune()
+        private void Prune(long timeInTicks)
         {
-            var currentTimeInTicks = DateTime.UtcNow.Ticks;
-
-            if (_entries.Count > 0 && _nextCleanupOpportunityInTicks <= currentTimeInTicks)
+            if (_entries.Count > 0 && _nextCleanupOpportunityInTicks <= timeInTicks)
             {
                 List<KeyType> expiredKeys = [];
                 List<(KeyType key, CacheEntry entry)> remainingElements = new(_entries.Count);
@@ -90,7 +90,7 @@ namespace Celestus.Storage.Cache
                 {
                     var element = _entries[i];
 
-                    if (CacheCleaner<string>.ExpiredCriteria(element.entry, currentTimeInTicks))
+                    if (CacheCleaner<string>.ExpiredCriteria(element.entry, timeInTicks))
                     {
                         expiredKeys.Add(element.key);
                     }
@@ -107,7 +107,7 @@ namespace Celestus.Storage.Cache
                     _ = _removalCallback(expiredKeys);
                 }
 
-                _nextCleanupOpportunityInTicks = currentTimeInTicks + _cleanupIntervalInTicks;
+                _nextCleanupOpportunityInTicks = timeInTicks + _cleanupIntervalInTicks;
             }
         }
 

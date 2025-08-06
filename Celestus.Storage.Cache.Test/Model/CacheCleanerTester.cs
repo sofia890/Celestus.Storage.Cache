@@ -33,6 +33,11 @@ namespace Celestus.Storage.Cache.Test.Model
             AccessedKeys.Add(key);
         }
 
+        public override void EntryAccessed(ref CacheEntry entry, string key, long timeInTicks)
+        {
+            AccessedKeys.Add(key);
+        }
+
         public override void RegisterRemovalCallback(Func<List<string>, bool> callback)
         {
             RemovalCallback = callback;

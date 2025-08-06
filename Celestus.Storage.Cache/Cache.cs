@@ -307,13 +307,15 @@ namespace Celestus.Storage.Cache
 
         public (bool result, DataType? data) TryGet<DataType>(string key)
         {
+            var currentTimeInTicks = DateTime.UtcNow.Ticks;
+
             if (!_storage.TryGetValue(key, out var entry))
             {
                 return (false, default);
             }
-            else if (entry.Expiration < DateTime.UtcNow.Ticks)
+            else if (entry.Expiration < currentTimeInTicks)
             {
-                _cleaner.EntryAccessed(ref entry, key);
+                _cleaner.EntryAccessed(ref entry, key, currentTimeInTicks);
 
                 return (false, default);
             }

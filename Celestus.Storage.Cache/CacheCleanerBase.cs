@@ -13,6 +13,8 @@ namespace Celestus.Storage.Cache
 
         public abstract void EntryAccessed(ref CacheEntry entry, KeyType key);
 
+        public abstract void EntryAccessed(ref CacheEntry entry, KeyType key, long timeInTicks);
+
         public abstract void RegisterRemovalCallback(Func<List<KeyType>, bool> callback);
 
         public abstract void ReadSettings(ref Utf8JsonReader reader, JsonSerializerOptions options);

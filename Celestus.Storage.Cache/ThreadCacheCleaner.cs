@@ -26,7 +26,13 @@ namespace Celestus.Storage.Cache
 
         public override void EntryAccessed(ref CacheEntry entry, KeyType key)
         {
-            _ = _server.CleanerPort.Writer.TryWrite(new EntryAccessedInd<KeyType>(key));
+            var timeInTicks = DateTime.UtcNow.Ticks;
+            _ = _server.CleanerPort.Writer.TryWrite(new EntryAccessedInd<KeyType>(key, timeInTicks));
+        }
+
+        public override void EntryAccessed(ref CacheEntry entry, KeyType key, long timeInTicks)
+        {
+            _ = _server.CleanerPort.Writer.TryWrite(new EntryAccessedInd<KeyType>(key, timeInTicks));
         }
 
         public override void RegisterRemovalCallback(Func<List<KeyType>, bool> callback)
