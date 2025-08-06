@@ -90,7 +90,7 @@ namespace Celestus.Storage.Cache
                 {
                     var element = _entries[i];
 
-                    if (CacheCleaner<string>.ExpiredCriteria(element.entry, timeInTicks))
+                    if (CacheCleaner<KeyType>.ExpiredCriteria(element.entry, timeInTicks))
                     {
                         expiredKeys.Add(element.key);
                     }
