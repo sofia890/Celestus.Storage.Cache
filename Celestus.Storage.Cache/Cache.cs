@@ -193,11 +193,15 @@ namespace Celestus.Storage.Cache
         }
 
         #region Factory Pattern
-        readonly static Dictionary<string, Cache> _caches = [];
+        readonly static Dictionary<string, WeakReference<Cache>> _caches = [];
+        readonly static CacheFactoryCleaner<Cache> _factoryCleaner = new(_caches);
 
-        public static bool IsLoaded(string key)
+        public static bool IsLoaded(string key, out Cache? cache)
         {
-            return _caches.ContainsKey(key);
+            cache = null;
+
+            return _caches.TryGetValue(key, out var cacheReference) &&
+                   cacheReference.TryGetTarget(out cache);
         }
 
         public static Cache GetOrCreateShared(string key = "")
@@ -206,7 +210,8 @@ namespace Celestus.Storage.Cache
 
             lock (nameof(Cache))
             {
-                if (_caches.TryGetValue(usedKey, out var cache))
+                if (_caches.TryGetValue(usedKey, out var cacheReference) &&
+                    cacheReference.TryGetTarget(out var cache))
                 {
                     return cache;
                 }
@@ -214,7 +219,7 @@ namespace Celestus.Storage.Cache
                 {
                     cache = new Cache(usedKey);
 
-                    _caches[usedKey] = cache;
+                    _caches[usedKey] = new(cache);
 
                     return cache;
                 }
@@ -227,11 +232,12 @@ namespace Celestus.Storage.Cache
             {
                 return null;
             }
-            else if (IsLoaded(loadedCache.Key))
+            else if (IsLoaded(loadedCache.Key, out var cache) &&
+                     cache != null)
             {
                 lock (nameof(Cache))
                 {
-                    var cache = _caches[loadedCache.Key];
+                    var cacheReference = _caches[loadedCache.Key];
 
                     cache._storage = loadedCache._storage;
 
@@ -240,9 +246,9 @@ namespace Celestus.Storage.Cache
             }
             else
             {
-                lock (nameof(ThreadCache))
+                lock (nameof(Cache))
                 {
-                    _caches[loadedCache.Key] = loadedCache;
+                    _caches[loadedCache.Key] = new(loadedCache);
                 }
 
                 return loadedCache;
@@ -257,11 +263,11 @@ namespace Celestus.Storage.Cache
 
         private Cache(
             string key,
-            Dictionary<string, CacheEntry> storge,
+            Dictionary<string, CacheEntry> storage,
             CacheCleanerBase<string> cleaner,
             bool removalRegistered = false)
         {
-            _storage = storge;
+            _storage = storage;
             _cleaner = cleaner;
 
             if (!removalRegistered)
@@ -323,7 +329,7 @@ namespace Celestus.Storage.Cache
             {
                 _cleaner.EntryAccessed(ref entry, key);
 
-                return (entry.Data == null, default);
+                return (false, default);
             }
             else
             {

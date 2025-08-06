@@ -7,11 +7,13 @@ namespace Celestus.Storage.Cache
     public class CacheLock : IDisposable
     {
         private readonly ReaderWriterLock _lock;
+
         public CacheLock(ReaderWriterLock cacheLock, int timeout = ThreadCache.NO_TIMEOUT)
         {
             _lock = cacheLock;
             _lock.AcquireWriterLock(timeout);
         }
+
         public void Dispose()
         {
             GC.SuppressFinalize(this);
@@ -98,7 +100,8 @@ namespace Celestus.Storage.Cache
         }
 
         #region Factory Pattern
-        readonly static Dictionary<string, ThreadCache> _caches = [];
+        readonly static Dictionary<string, WeakReference<ThreadCache>> _caches = [];
+        readonly static CacheFactoryCleaner<ThreadCache> _factoryCleaner = new(_caches);
 
         public static bool IsLoaded(string key)
         {
@@ -111,7 +114,8 @@ namespace Celestus.Storage.Cache
 
             lock (nameof(ThreadCache))
             {
-                if (_caches.TryGetValue(usedKey, out var cache))
+                if (_caches.TryGetValue(usedKey, out var cacheReference) &&
+                    cacheReference.TryGetTarget(out var cache))
                 {
                     return cache;
                 }
@@ -119,7 +123,7 @@ namespace Celestus.Storage.Cache
                 {
                     cache = new ThreadCache(usedKey);
 
-                    _caches[usedKey] = cache;
+                    _caches[usedKey] = new(cache);
 
                     return cache;
                 }
@@ -136,25 +140,32 @@ namespace Celestus.Storage.Cache
             {
                 lock (nameof(ThreadCache))
                 {
-                    var threadCache = _caches[loadedCache.Key];
+                    var threadCacheReference = _caches[loadedCache.Key];
 
-                    try
+                    if (threadCacheReference.TryGetTarget(out var threadCache))
                     {
-                        threadCache._lock.AcquireWriterLock(timeout);
-                        threadCache._cache = loadedCache._cache;
+                        try
+                        {
+                            threadCache._lock.AcquireWriterLock(timeout);
+                            threadCache._cache = loadedCache._cache;
 
-                        return threadCache;
+                            return threadCache;
+                        }
+                        catch (ApplicationException)
+                        {
+                            return null;
+                        }
+                        finally
+                        {
+                            if (threadCache._lock.IsWriterLockHeld)
+                            {
+                                threadCache._lock.ReleaseWriterLock();
+                            }
+                        }
                     }
-                    catch (ApplicationException)
+                    else
                     {
                         return null;
-                    }
-                    finally
-                    {
-                        if (threadCache._lock.IsWriterLockHeld)
-                        {
-                            threadCache._lock.ReleaseWriterLock();
-                        }
                     }
                 }
             }
@@ -162,7 +173,7 @@ namespace Celestus.Storage.Cache
             {
                 lock (nameof(ThreadCache))
                 {
-                    _caches[loadedCache.Key] = loadedCache;
+                    _caches[loadedCache.Key] = new(loadedCache);
                 }
 
                 return loadedCache;

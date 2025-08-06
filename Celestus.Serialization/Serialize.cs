@@ -19,7 +19,7 @@ namespace Celestus.Serialization
                 var serializedData = File.ReadAllText(path.AbsolutePath);
                 return JsonSerializer.Deserialize<DataType>(serializedData);
             }
-            catch
+            catch (JsonException)
             {
                 return null;
             }
