@@ -325,6 +325,12 @@ namespace Celestus.Storage.Cache
 
                 return (false, default);
             }
+            else if (entry.Data == default)
+            {
+                Cleaner.EntryAccessed(ref entry, key);
+
+                return (true, default);
+            }
             else if (entry.Data is not DataType data)
             {
                 _cleaner.EntryAccessed(ref entry, key);
