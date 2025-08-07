@@ -34,7 +34,7 @@ namespace Celestus.Storage.Cache
                                 key = reader.GetString();
                                 break;
 
-                            case nameof(Cache):
+                            case nameof(ThreadCache.Cache):
                                 _ = reader.Read();
 
                                 cache = JsonSerializer.Deserialize<Cache>(ref reader, options);
@@ -63,7 +63,7 @@ namespace Celestus.Storage.Cache
             writer.WriteStartObject();
 
             writer.WriteString(nameof(ThreadCache.Key), value.Key);
-            writer.WritePropertyName(nameof(Cache));
+            writer.WritePropertyName(nameof(ThreadCache.Cache));
 
             JsonSerializer.Serialize(writer, value.Cache, options);
 
