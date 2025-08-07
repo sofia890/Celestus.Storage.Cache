@@ -52,7 +52,7 @@ public class TestThreadCacheDisposal
         //
         // Act & Assert
         //
-        Assert.ThrowsException<ObjectDisposedException>(() => cache.Lock());
+        Assert.ThrowsException<ObjectDisposedException>(() => cache.ThreadLock());
         Assert.ThrowsException<ObjectDisposedException>(() => cache.SaveToFile(new Uri("file://test")));
     }
 
@@ -63,10 +63,10 @@ public class TestThreadCacheDisposal
         // Arrange
         //
         const string testKey = "disposal-test-key";
-        var cache1 = ThreadCache.GetOrCreateShared(testKey);
+        var cache1 = ThreadCacheManager.GetOrCreateShared(testKey);
         
         // Verify it's loaded
-        Assert.IsTrue(ThreadCache.IsLoaded(testKey));
+        Assert.IsTrue(ThreadCacheManager.IsLoaded(testKey));
 
         //
         // Act
@@ -76,7 +76,7 @@ public class TestThreadCacheDisposal
         //
         // Assert - Factory should create a new instance
         //
-        var cache2 = ThreadCache.GetOrCreateShared(testKey);
+        var cache2 = ThreadCacheManager.GetOrCreateShared(testKey);
         Assert.IsFalse(ReferenceEquals(cache1, cache2));
     }
 
@@ -121,7 +121,7 @@ public class TestThreadCacheDisposal
         Assert.IsTrue(operationSucceeded);
         
         // Verify key was removed from factory
-        var newCache = ThreadCache.GetOrCreateShared("using-test-key");
+        var newCache = ThreadCacheManager.GetOrCreateShared("using-test-key");
         Assert.AreEqual((false, default), newCache.TryGet<string>("key"));
         
         newCache.Dispose();

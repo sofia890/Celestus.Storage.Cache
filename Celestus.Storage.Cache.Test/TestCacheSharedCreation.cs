@@ -14,7 +14,7 @@ namespace Celestus.Storage.Cache.Test
             //
             // Act
             //
-            var cache = Cache.GetOrCreateShared();
+            var cache = CacheManager.GetOrCreateShared();
 
             //
             // Assert
@@ -53,13 +53,13 @@ namespace Celestus.Storage.Cache.Test
             const string ELEMENT_VALUE = "ads4s65ad4a6s8d4a8sd478asd4asd8546asd56";
             const string CACHE_KEY = nameof(VerifyThatSharedCacheCanBeRetrievedAfterCreated);
 
-            var cache = Cache.GetOrCreateShared(CACHE_KEY);
+            var cache = CacheManager.GetOrCreateShared(CACHE_KEY);
             cache.Set(ELEMENT_KEY, ELEMENT_VALUE);
 
             //
             // Act
             //
-            var otherCache = Cache.GetOrCreateShared(CACHE_KEY);
+            var otherCache = CacheManager.GetOrCreateShared(CACHE_KEY);
 
             //
             // Assert
@@ -86,7 +86,7 @@ namespace Celestus.Storage.Cache.Test
             //
             // Act
             //
-            var otherCache = Cache.UpdateOrLoadSharedFromFile(path);
+            var otherCache = CacheManager.UpdateOrLoadSharedFromFile(path);
 
             File.Delete(path.AbsolutePath);
 
@@ -103,7 +103,7 @@ namespace Celestus.Storage.Cache.Test
             //
             // Arrange
             //
-            Cache cache = Cache.GetOrCreateShared(nameof(VerifyThatSharedCacheCanBeUpdatedFromFile));
+            Cache cache = CacheManager.GetOrCreateShared(nameof(VerifyThatSharedCacheCanBeUpdatedFromFile));
 
             const string KEY_1 = "Katter";
             const int VALUE_1 = 123;
@@ -121,7 +121,7 @@ namespace Celestus.Storage.Cache.Test
             const double VALUE_2 = 78.1234;
             cache.Set(KEY_2, VALUE_2);
 
-            Cache? otherCache = Cache.UpdateOrLoadSharedFromFile(path);
+            Cache? otherCache = CacheManager.UpdateOrLoadSharedFromFile(path);
 
             File.Delete(path.AbsolutePath);
 
@@ -147,7 +147,7 @@ namespace Celestus.Storage.Cache.Test
             //
             // Act
             //
-            bool loaded = Cache.UpdateOrLoadSharedFromFile(path) != null;
+            bool loaded = CacheManager.UpdateOrLoadSharedFromFile(path) != null;
 
             File.Delete(path.AbsolutePath);
 

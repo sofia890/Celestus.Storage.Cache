@@ -22,7 +22,7 @@ namespace Celestus.Storage.Cache.Test
                 {
                     "InvalidProperty":"value",
                     "Key":"key",
-                    "_storage":{},
+                    "Storage":{},
                     "Cleaner":{
                         "Type":"Celestus.Storage.Cache.CacheCleaner`1[[System.String, System.Private.CoreLib]], Celestus.Storage.Cache",
                         "Content":{
@@ -50,7 +50,7 @@ namespace Celestus.Storage.Cache.Test
         {
             string json = """
                 {
-                    "_storage":null
+                    "Storage":null
                 }
                 """;
             Assert.ThrowsException<MissingValueJsonException>(() => SerializationHelper.Deserialize<CacheJsonConverter, Cache>(json));
@@ -142,7 +142,7 @@ namespace Celestus.Storage.Cache.Test
             string json = """
                 {
                     "Key":"key",
-                    "_storage":{},
+                    "Storage":{},
                     "Cleaner":{
                         "Extra":1,
                         "Type":"Celestus.Storage.Cache.CacheCleaner`1[[System.String, System.Private.CoreLib]], Celestus.Storage.Cache",

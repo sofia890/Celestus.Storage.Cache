@@ -240,11 +240,11 @@ namespace Celestus.Storage.Cache.Generator
                     location: Location.Create(classDeclaration.SyntaxTree, timeout.syntax.Span)));
             }
 
-            string uniqueKey = string.Empty;
+            string cacheKey = string.Empty;
 
             if (cacheAttributes.TryGetValue("key", out var key))
             {
-                uniqueKey = key.value;
+                cacheKey = key.value;
             }
 
             var indentation = GetIndentation(namespaceContext.depth);
@@ -258,13 +258,13 @@ namespace Celestus.Storage.Cache.Generator
 
             if (ClassHelper.HasStaticMethods(classDeclaration))
             {
-                _ = builder.AppendLine($"{indentation}    readonly static private ThreadCache _staticThreadCache = new({uniqueKey});");
+                _ = builder.AppendLine($"{indentation}    readonly static private ThreadCache _staticThreadCache = ThreadCacheManager.GetOrCreateShared({cacheKey});");
                 _ = builder.AppendLine($"{indentation}    public static ThreadCache StaticThreadCache => _staticThreadCache;");
             }
 
             if (ClassHelper.HasNonStaticMethods(classDeclaration))
             {
-                _ = builder.AppendLine($"{indentation}    readonly private ThreadCache _threadCache = new({uniqueKey});");
+                _ = builder.AppendLine($"{indentation}    readonly private ThreadCache _threadCache = ThreadCacheManager.GetOrCreateShared({cacheKey});");
                 _ = builder.AppendLine($"{indentation}    public ThreadCache ThreadCache => _threadCache;");
             }
 

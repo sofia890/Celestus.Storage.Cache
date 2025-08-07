@@ -79,7 +79,7 @@ namespace Celestus.Storage.Cache.Test
             //
             // Arrange
             //
-            var cache = ThreadCache.GetOrCreateShared(nameof(VerifyThatUpdatingSharedCacheCanTimeout));
+            var cache = ThreadCacheManager.GetOrCreateShared(nameof(VerifyThatUpdatingSharedCacheCanTimeout));
 
             const string KEY = "Sjö";
             cache.TrySet(KEY, 1);
@@ -90,7 +90,7 @@ namespace Celestus.Storage.Cache.Test
             //
             // Act
             //
-            var loadedCache = ThreadHelper.DoWhileLocked(cache, () => ThreadCache.UpdateOrLoadSharedFromFile(path, timeout: 1), THREAD_TIMEOUT);
+            var loadedCache = ThreadHelper.DoWhileLocked(cache, () => ThreadCacheManager.UpdateOrLoadSharedFromFile(path, timeout: 1), THREAD_TIMEOUT);
 
             //
             // Assert

@@ -11,8 +11,8 @@
             //
             // Arrange
             //
-            var cache = ThreadCache.GetOrCreateShared(nameof(VerifyThatSharedCachesWithDifferentKeysAreUnique));
-            var otherCache = ThreadCache.GetOrCreateShared(new Guid().ToString());
+            var cache = ThreadCacheManager.GetOrCreateShared(nameof(VerifyThatSharedCachesWithDifferentKeysAreUnique));
+            var otherCache = ThreadCacheManager.GetOrCreateShared(new Guid().ToString());
 
             const int VALUE = 55;
             const string KEY = "test";
@@ -41,7 +41,7 @@
             //
             // Act
             //
-            var cache = ThreadCache.GetOrCreateShared();
+            var cache = ThreadCacheManager.GetOrCreateShared();
 
             //
             // Assert
@@ -80,13 +80,13 @@
             const string ELEMENT_VALUE = "ads4s65ad4a6s8d4a8sd478asd4asd8546asd56";
             const string CACHE_KEY = nameof(VerifyThatSharedCacheCanBeRetrievedAfterCreated);
 
-            var cache = ThreadCache.GetOrCreateShared(CACHE_KEY);
+            var cache = ThreadCacheManager.GetOrCreateShared(CACHE_KEY);
             _ = cache.TrySet(ELEMENT_KEY, ELEMENT_VALUE);
 
             //
             // Act
             //
-            var otherCache = ThreadCache.GetOrCreateShared(CACHE_KEY);
+            var otherCache = ThreadCacheManager.GetOrCreateShared(CACHE_KEY);
 
             //
             // Assert
@@ -113,7 +113,7 @@
             //
             // Act
             //
-            var otherCache = ThreadCache.UpdateOrLoadSharedFromFile(path);
+            var otherCache = ThreadCacheManager.UpdateOrLoadSharedFromFile(path);
 
             File.Delete(path.AbsolutePath);
 
@@ -130,7 +130,7 @@
             //
             // Arrange
             //
-            ThreadCache cache = ThreadCache.GetOrCreateShared(nameof(VerifyThatSharedCacheCanBeUpdatedFromFile));
+            ThreadCache cache = ThreadCacheManager.GetOrCreateShared(nameof(VerifyThatSharedCacheCanBeUpdatedFromFile));
 
             const string KEY_1 = "Katter";
             const int VALUE_1 = 123;
@@ -148,7 +148,7 @@
             const double VALUE_2 = 78.1234;
             _ = cache.TrySet(KEY_2, VALUE_2);
 
-            ThreadCache? otherCache = ThreadCache.UpdateOrLoadSharedFromFile(path);
+            ThreadCache? otherCache = ThreadCacheManager.UpdateOrLoadSharedFromFile(path);
 
             File.Delete(path.AbsolutePath);
 
@@ -174,7 +174,7 @@
             //
             // Act
             //
-            bool loaded = ThreadCache.UpdateOrLoadSharedFromFile(path) != null;
+            bool loaded = ThreadCacheManager.UpdateOrLoadSharedFromFile(path) != null;
 
             File.Delete(path.AbsolutePath);
 

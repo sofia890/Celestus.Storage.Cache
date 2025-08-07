@@ -22,9 +22,9 @@ namespace Celestus.Storage.Cache.Test
                 {
                     "UnknownProperty":"value",
                     "Key":"key",
-                    "_cache":{
+                    "Cache":{
                         "Key":"key",
-                        "_storage": {},
+                        "Storage": {},
                         "Cleaner":{
                             "Type":"Celestus.Storage.Cache.CacheCleaner`1[[System.String, System.Private.CoreLib]], Celestus.Storage.Cache",
                             "Content":{
@@ -53,7 +53,7 @@ namespace Celestus.Storage.Cache.Test
         {
             var json = """
                 {
-                    "_cache":null
+                    "Cache":null
                 }
                 """;
             Assert.ThrowsException<MissingValueJsonException>(() => SerializationHelper.Deserialize<ThreadCacheJsonConverter, ThreadCache>(json));

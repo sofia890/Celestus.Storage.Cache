@@ -11,7 +11,7 @@ namespace Celestus.Storage.Cache.Test
         [TestInitialize]
         public void Initialize()
         {
-            _cache = ThreadCache.GetOrCreateShared(nameof(TestThreadCacheSerialization));
+            _cache = ThreadCacheManager.GetOrCreateShared(nameof(TestThreadCacheSerialization));
         }
 
         [TestMethod]
