@@ -5,7 +5,8 @@
         EntryAccessedInd,
         TrackEntryInd,
         RegisterRemovalCallbackInd,
-        ResetInd
+        ResetInd,
+        Stop
     }
 
     internal record Signal(CleanerProtocol SignalId);
@@ -17,4 +18,6 @@
     internal record RegisterRemovalCallbackInd<KeyType>(Func<List<KeyType>, bool> Callback) : Signal(CleanerProtocol.RegisterRemovalCallbackInd);
 
     internal record ResetInd(long CleanupIntervalInTicks) : Signal(CleanerProtocol.ResetInd);
+
+    internal record StopInd() : Signal(CleanerProtocol.ResetInd);
 }

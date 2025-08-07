@@ -4,20 +4,24 @@ namespace Celestus.Storage.Cache
     public class CacheFactoryCleaner<KeyType>
         where KeyType : class
     {
-        readonly WeakReference<Dictionary<string, WeakReference<KeyType>>> _cachesReference;
+        readonly WeakReference<Dictionary<string, WeakReference<KeyType>>> _cachesReferences;
+        readonly WeakReference<Dictionary<string, CacheCleanerBase<string>>> _cleanerReferences;
+
         long cleanupIntervalInTicks = TimeSpan.FromSeconds(10).Ticks;
         readonly Timer _timer;
 
-        public CacheFactoryCleaner(Dictionary<string, WeakReference<KeyType>> caches)
+        public CacheFactoryCleaner(Dictionary<string, WeakReference<KeyType>> caches, Dictionary<string, CacheCleanerBase<string>> cleaners)
         {
-            _cachesReference = new(caches);
+            _cachesReferences = new(caches);
+            _cleanerReferences = new(cleaners);
 
             _timer = new Timer(Cleanup, null, cleanupIntervalInTicks, cleanupIntervalInTicks);
         }
 
         public void Cleanup(object? state)
         {
-            if (_cachesReference.TryGetTarget(out var _caches))
+            if (_cachesReferences.TryGetTarget(out var _caches) &&
+                _cleanerReferences.TryGetTarget(out var cleaners))
             {
                 var deadKeys = _caches.Where(entry => !entry.Value.TryGetTarget(out var _))
                                       .Select(entry => entry.Key)
@@ -25,7 +29,10 @@ namespace Celestus.Storage.Cache
 
                 foreach (var deadKey in deadKeys)
                 {
-                    var _ = _caches.Remove(deadKey);
+                    _ = _caches.Remove(deadKey);
+
+                    cleaners[deadKey].Dispose();
+                    cleaners.Remove(deadKey);
                 }
             }
             else

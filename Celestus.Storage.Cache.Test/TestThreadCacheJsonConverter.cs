@@ -25,7 +25,7 @@ namespace Celestus.Storage.Cache.Test
                     "_cache":{
                         "Key":"key",
                         "_storage": {},
-                        "_cleaner":{
+                        "Cleaner":{
                             "Type":"Celestus.Storage.Cache.CacheCleaner`1[[System.String, System.Private.CoreLib]], Celestus.Storage.Cache",
                             "Content":{
                                 "_cleanupIntervalInTicks": 0

@@ -12,7 +12,7 @@ namespace Celestus.Storage.Cache.Test.Model
 
         public List<string> TrackedKeys { get; set; } = [];
 
-        public Func<List<string>, bool> RemovalCallback { get; set; }
+        public Func<List<string>, bool> RemovalCallback { get; set; } = _ => false;
 
         public bool SettingsReadCorrectly { get; set; } = false;
 
@@ -30,26 +30,47 @@ namespace Celestus.Storage.Cache.Test.Model
 
         public override void EntryAccessed(ref CacheEntry entry, string key)
         {
+            if (IsDisposed)
+            {
+                return;
+            }
+
             AccessedKeys.Add(key);
         }
 
         public override void EntryAccessed(ref CacheEntry entry, string key, long timeInTicks)
         {
+            if (IsDisposed)
+            {
+                return;
+            }
+
             AccessedKeys.Add(key);
         }
 
         public override void RegisterRemovalCallback(Func<List<string>, bool> callback)
         {
+            if (IsDisposed)
+            {
+                return;
+            }
+
             RemovalCallback = callback;
         }
 
         public override void TrackEntry(ref CacheEntry entry, string key)
         {
+            if (IsDisposed)
+            {
+                return;
+            }
+
             TrackedKeys.Add(key);
         }
 
         public override void ReadSettings(ref Utf8JsonReader reader, JsonSerializerOptions options)
         {
+            if (IsDisposed) throw new ObjectDisposedException(GetType().Name);
             _ = reader.Read();
             _ = reader.Read();
             _ = reader.Read();
@@ -61,12 +82,26 @@ namespace Celestus.Storage.Cache.Test.Model
 
         public override void WriteSettings(Utf8JsonWriter writer, JsonSerializerOptions options)
         {
+            if (IsDisposed) throw new ObjectDisposedException(GetType().Name);
             writer.WriteStartObject();
             writer.WritePropertyName(TEST_PROPERTY_NAME);
             writer.WriteStringValue(Guid);
             writer.WriteEndObject();
 
             SettingsWritten = true;
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                lock (Testers)
+                {
+                    Testers.Remove(Guid);
+                }
+            }
+            
+            base.Dispose(disposing);
         }
     }
 }

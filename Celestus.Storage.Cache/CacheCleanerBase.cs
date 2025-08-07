@@ -2,8 +2,10 @@
 
 namespace Celestus.Storage.Cache
 {
-    public abstract class CacheCleanerBase<KeyType>
+    public abstract class CacheCleanerBase<KeyType> : IDisposable
     {
+        private bool _disposed = false;
+
         public CacheCleanerBase()
         {
 
@@ -20,5 +22,23 @@ namespace Celestus.Storage.Cache
         public abstract void ReadSettings(ref Utf8JsonReader reader, JsonSerializerOptions options);
 
         public abstract void WriteSettings(Utf8JsonWriter writer, JsonSerializerOptions options);
+
+        #region IDisposable
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_disposed)
+            {
+                _disposed = true;
+            }
+        }
+
+        public bool IsDisposed => _disposed;
+        #endregion
     }
 }

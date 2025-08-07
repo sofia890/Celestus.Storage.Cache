@@ -2,6 +2,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Celestus.Storage.Cache
 {
@@ -44,7 +45,7 @@ namespace Celestus.Storage.Cache
                                     storage = GetStorage(ref reader, options);
                                     break;
 
-                                case nameof(_cleaner):
+                                case nameof(Cleaner):
                                     (cleaner, cleanerConfigured) = GetCleaner(ref reader, options);
                                     break;
 
@@ -160,7 +161,7 @@ namespace Celestus.Storage.Cache
                 }
                 else if (cleaner == null)
                 {
-                    throw new MissingValueJsonException(nameof(_cleaner));
+                    throw new MissingValueJsonException(nameof(Cleaner));
                 }
                 else if (!cleanerConfigured)
                 {
@@ -177,15 +178,15 @@ namespace Celestus.Storage.Cache
                 writer.WritePropertyName(nameof(_storage));
                 JsonSerializer.Serialize(writer, value._storage, options);
 
-                writer.WritePropertyName(nameof(_cleaner));
+                writer.WritePropertyName(nameof(Cleaner));
                 writer.WriteStartObject();
 
-                var type = value._cleaner.GetType();
+                var type = value.Cleaner.GetType();
                 writer.WritePropertyName(TYPE_PROPERTY_NAME);
                 writer.WriteStringValue(type.AssemblyQualifiedName);
 
                 writer.WritePropertyName(CONTENT_PROPERTY_NAME);
-                value._cleaner.WriteSettings(writer, options);
+                value.Cleaner.WriteSettings(writer, options);
                 writer.WriteEndObject();
 
                 writer.WriteEndObject();
@@ -193,8 +194,13 @@ namespace Celestus.Storage.Cache
         }
 
         #region Factory Pattern
+        // Track items that need to be disposed. This is needed due to code generator
+        // not being able to implement dispose pattern correctly. Could not impose
+        // pattern in a clean and user friendly way.
+        readonly static Dictionary<string, CacheCleanerBase<string>> _cleaners = [];
+
         readonly static Dictionary<string, WeakReference<Cache>> _caches = [];
-        readonly static CacheFactoryCleaner<Cache> _factoryCleaner = new(_caches);
+        readonly static CacheFactoryCleaner<Cache> _factoryCleaner = new(_caches, new());
 
         public static bool IsLoaded(string key, out Cache? cache)
         {
@@ -220,6 +226,11 @@ namespace Celestus.Storage.Cache
                     cache = new Cache(usedKey);
 
                     _caches[usedKey] = new(cache);
+
+                    if (cache.Cleaner != null)
+                    {
+                        _cleaners[usedKey] = cache.Cleaner;
+                    }
 
                     return cache;
                 }
@@ -257,7 +268,7 @@ namespace Celestus.Storage.Cache
         #endregion
 
         Dictionary<string, CacheEntry> _storage;
-        readonly CacheCleanerBase<string> _cleaner;
+        protected CacheCleanerBase<string> Cleaner { get; private set; }
 
         public string Key { get; init; }
 
@@ -268,11 +279,11 @@ namespace Celestus.Storage.Cache
             bool removalRegistered = false)
         {
             _storage = storage;
-            _cleaner = cleaner;
+            Cleaner = cleaner;
 
             if (!removalRegistered)
             {
-                _cleaner.RegisterRemovalCallback(TryRemove);
+                Cleaner.RegisterRemovalCallback(TryRemove);
             }
 
             Key = key;
@@ -308,7 +319,7 @@ namespace Celestus.Storage.Cache
             var entry = new CacheEntry(expiration, value);
             _storage[key] = entry;
 
-            _cleaner.TrackEntry(ref entry, key);
+            Cleaner.TrackEntry(ref entry, key);
         }
 
         public (bool result, DataType? data) TryGet<DataType>(string key)
@@ -321,7 +332,7 @@ namespace Celestus.Storage.Cache
             }
             else if (entry.Expiration < currentTimeInTicks)
             {
-                _cleaner.EntryAccessed(ref entry, key, currentTimeInTicks);
+                Cleaner.EntryAccessed(ref entry, key, currentTimeInTicks);
 
                 return (false, default);
             }
@@ -333,13 +344,13 @@ namespace Celestus.Storage.Cache
             }
             else if (entry.Data is not DataType data)
             {
-                _cleaner.EntryAccessed(ref entry, key);
+                Cleaner.EntryAccessed(ref entry, key);
 
                 return (false, default);
             }
             else
             {
-                _cleaner.EntryAccessed(ref entry, key);
+                Cleaner.EntryAccessed(ref entry, key);
 
                 return (true, data);
             }

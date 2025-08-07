@@ -26,7 +26,7 @@ namespace Celestus.Storage.Cache
     }
 
     [JsonConverter(typeof(ThreadCacheJsonConverter))]
-    public class ThreadCache(string key, Cache cache)
+    public class ThreadCache : IDisposable
     {
         public class ThreadCacheJsonConverter : JsonConverter<ThreadCache>
         {
@@ -100,8 +100,13 @@ namespace Celestus.Storage.Cache
         }
 
         #region Factory Pattern
+        // Track items that need to be disposed. This is needed due to code generator
+        // not being able to implement dispose pattern correctly. Could not impose
+        // pattern in a clean and user friendly way.
+        readonly static Dictionary<string, CacheCleanerBase<string>> _cleaners = [];
+
         readonly static Dictionary<string, WeakReference<ThreadCache>> _caches = [];
-        readonly static CacheFactoryCleaner<ThreadCache> _factoryCleaner = new(_caches);
+        readonly static CacheFactoryCleaner<ThreadCache> _factoryCleaner = new(_caches, _cleaners);
 
         public static bool IsLoaded(string key)
         {
@@ -124,6 +129,11 @@ namespace Celestus.Storage.Cache
                     cache = new ThreadCache(usedKey);
 
                     _caches[usedKey] = new(cache);
+
+                    if (cache.Cleaner != null)
+                    {
+                        _cleaners[usedKey] = cache.Cleaner;
+                    }
 
                     return cache;
                 }
@@ -185,38 +195,59 @@ namespace Celestus.Storage.Cache
         public const int NO_TIMEOUT = -1;
 
         readonly ReaderWriterLock _lock = new();
+        private bool _disposed = false;
 
-        Cache _cache = cache;
+        protected CacheCleanerBase<string>? Cleaner { get; private set; } = null;
 
-        public string Key { get; init; } = key;
+        Cache _cache;
+
+        public string Key { get; init; }
+
+        public ThreadCache(string key, Cache cache, CacheCleanerBase<string>? cleaner = null)
+        {
+            Key = key;
+            _cache = cache;
+            Cleaner = cleaner;
+        }
 
         public ThreadCache(string key, CacheCleanerBase<string> cleaner) :
-            this(key, new Cache(cleaner, doNotSetRemoval: true))
+            this(key, new Cache(cleaner, doNotSetRemoval: true), cleaner)
         {
             cleaner.RegisterRemovalCallback(TryRemove);
         }
+
         public ThreadCache(CacheCleanerBase<string> cleaner) :
-            this(string.Empty, new Cache(cleaner))
+            this(string.Empty, cleaner)
         {
         }
 
         public ThreadCache(string key, int cleaningIntervalInMs = CLEANER_INTERVAL_IN_MS) :
-            this(key, new ThreadCacheCleaner<string>(cleaningIntervalInMs))
+            this(key, cleaner: new ThreadCacheCleaner<string>(cleaningIntervalInMs))
         {
         }
 
         public ThreadCache(int cleaningIntervalInMs = CLEANER_INTERVAL_IN_MS) :
-            this(string.Empty, new ThreadCacheCleaner<string>(cleaningIntervalInMs))
+            this(string.Empty, cleaningIntervalInMs)
         {
         }
 
         public CacheLock Lock(int timeout = NO_TIMEOUT)
         {
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(GetType().Name);
+            }
+
             return new CacheLock(_lock, timeout);
         }
 
         public bool TrySet<DataType>(string key, DataType value, TimeSpan? duration = null, int timeout = NO_TIMEOUT)
         {
+            if (_disposed)
+            {
+                return false;
+            }
+            
             try
             {
                 _lock.AcquireWriterLock(timeout);
@@ -239,6 +270,11 @@ namespace Celestus.Storage.Cache
         }
         public (bool result, DataType? data) TryGet<DataType>(string key, int timeout = NO_TIMEOUT)
         {
+            if (_disposed)
+            {
+                return (false, default);
+            }
+            
             try
             {
                 _lock.AcquireReaderLock(timeout);
@@ -265,6 +301,11 @@ namespace Celestus.Storage.Cache
 
         public bool TryRemove(List<string> keys, int timeout = NO_TIMEOUT)
         {
+            if (_disposed)
+            {
+                return false;
+            }
+            
             try
             {
                 _lock.AcquireWriterLock(timeout);
@@ -286,6 +327,11 @@ namespace Celestus.Storage.Cache
 
         public void SaveToFile(Uri path)
         {
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(GetType().Name);
+            }
+
             using var _ = Lock();
 
             Serialize.SaveToFile(this, path);
@@ -298,6 +344,11 @@ namespace Celestus.Storage.Cache
 
         public bool TryLoadFromFile(Uri path)
         {
+            if (_disposed)
+            {
+                return false;
+            }
+            
             using var _ = Lock();
 
             var loadedData = Serialize.TryCreateFromFile<ThreadCache>(path);
@@ -317,6 +368,41 @@ namespace Celestus.Storage.Cache
                 return true;
             }
         }
+
+        #region IDisposable
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_disposed)
+            {
+                if (disposing)
+                {
+                    // Remove from factory cache if present
+                    lock (nameof(ThreadCache))
+                    {
+                        if (_caches.TryGetValue(Key, out var cacheReference) && 
+                            cacheReference.TryGetTarget(out var cache) && 
+                            ReferenceEquals(this, cache))
+                        {
+                            _caches.Remove(Key);
+                        }
+                    }
+
+                    if (Cleaner is IDisposable disposableCleaner)
+                    {
+                        disposableCleaner.Dispose();
+                    }
+                }
+
+                _disposed = true;
+            }
+        }
+        #endregion
 
         #region IEquatable
         public bool Equals(ThreadCache? other)
