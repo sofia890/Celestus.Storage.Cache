@@ -22,26 +22,23 @@
         {
             var usedKey = (key.Length > 0) ? key : Guid.NewGuid().ToString();
 
-            lock (nameof(Cache))
+            if (_caches.TryGetValue(usedKey, out var cacheReference) &&
+                cacheReference.TryGetTarget(out var cache))
             {
-                if (_caches.TryGetValue(usedKey, out var cacheReference) &&
-                    cacheReference.TryGetTarget(out var cache))
+                return cache;
+            }
+            else
+            {
+                cache = new Cache(usedKey);
+
+                _caches[usedKey] = new(cache);
+
+                if (cache.Cleaner != null)
                 {
-                    return cache;
+                    _cleaners[usedKey] = cache.Cleaner;
                 }
-                else
-                {
-                    cache = new Cache(usedKey);
 
-                    _caches[usedKey] = new(cache);
-
-                    if (cache.Cleaner != null)
-                    {
-                        _cleaners[usedKey] = cache.Cleaner;
-                    }
-
-                    return cache;
-                }
+                return cache;
             }
         }
 
@@ -65,10 +62,7 @@
             }
             else
             {
-                lock (nameof(Cache))
-                {
-                    _caches[loadedCache.Key] = new(loadedCache);
-                }
+                _caches[loadedCache.Key] = new(loadedCache);
 
                 return loadedCache;
             }

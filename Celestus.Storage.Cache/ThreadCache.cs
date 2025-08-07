@@ -1,27 +1,29 @@
 ﻿using Celestus.Serialization;
-using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Threading;
 
 namespace Celestus.Storage.Cache
 {
     public class CacheLock : IDisposable
     {
-        private readonly ReaderWriterLock _lock;
+        private readonly ReaderWriterLockSlim _lock;
 
-        public CacheLock(ReaderWriterLock cacheLock, int timeout = ThreadCache.NO_TIMEOUT)
+        public CacheLock(ReaderWriterLockSlim cacheLock, int timeout = ThreadCache.NO_TIMEOUT)
         {
             _lock = cacheLock;
-            _lock.AcquireWriterLock(timeout);
+            
+            if (!_lock.TryEnterWriteLock(timeout))
+            {
+                throw new TimeoutException("Timeout while attempting to acquire a write lock.");
+            }
         }
 
         public void Dispose()
         {
             GC.SuppressFinalize(this);
 
-            if (_lock.IsWriterLockHeld)
+            if (_lock.IsWriteLockHeld)
             {
-                _lock.ReleaseWriterLock();
+                _lock.ExitWriteLock();
             }
         }
     }
@@ -38,7 +40,7 @@ namespace Celestus.Storage.Cache
 
         internal Cache Cache { get; set; }
 
-        internal ReaderWriterLock Lock { get; } = new();
+        ReaderWriterLockSlim _lock = new();
 
         public string Key { get; init; }
 
@@ -77,27 +79,22 @@ namespace Celestus.Storage.Cache
                 throw new ObjectDisposedException(GetType().Name);
             }
 
-            return new CacheLock(Lock, timeout);
+            return new CacheLock(_lock, timeout);
         }
 
         internal bool TrySetCache(Cache newCache, int millisecondsTimeout)
         {
-            try
-            {
-                Lock.AcquireWriterLock(millisecondsTimeout);
 
-                Cache = newCache;
-            }
-            catch (ApplicationException)
+            if (!_lock.TryEnterWriteLock(millisecondsTimeout))
             {
                 return false;
             }
-            finally
+
+            Cache = newCache;
+
+            if (_lock.IsWriteLockHeld)
             {
-                if (Lock.IsWriterLockHeld)
-                {
-                    Lock.ReleaseWriterLock();
-                }
+                _lock.ExitWriteLock();
             }
 
             return true;
@@ -109,26 +106,16 @@ namespace Celestus.Storage.Cache
             {
                 return false;
             }
-            
-            try
-            {
-                Lock.AcquireWriterLock(timeout);
-
-                Cache.Set(key, value, duration);
-
-                return true;
-            }
-            catch (ApplicationException)
+           
+            if (!_lock.TryEnterWriteLock(timeout))
             {
                 return false;
             }
-            finally
-            {
-                if (Lock.IsWriterLockHeld)
-                {
-                    Lock.ReleaseWriterLock();
-                }
-            }
+
+            Cache.Set(key, value, duration);
+            _lock.ExitWriteLock();
+
+            return true;
         }
         public (bool result, DataType? data) TryGet<DataType>(string key, int timeout = NO_TIMEOUT)
         {
@@ -136,24 +123,17 @@ namespace Celestus.Storage.Cache
             {
                 return (false, default);
             }
-            
-            try
-            {
-                Lock.AcquireReaderLock(timeout);
 
-                return Cache.TryGet<DataType>(key);
-            }
-            catch (ApplicationException)
+            if (!_lock.TryEnterReadLock(timeout))
             {
                 return (false, default);
             }
-            finally
-            {
-                if (Lock.IsReaderLockHeld)
-                {
-                    Lock.ReleaseReaderLock();
-                }
-            }
+
+            var result = Cache.TryGet<DataType>(key);
+
+            _lock.ExitReadLock();
+
+            return result;
         }
 
         public bool TryRemove(List<string> keys)
@@ -167,24 +147,17 @@ namespace Celestus.Storage.Cache
             {
                 return false;
             }
-            
-            try
-            {
-                Lock.AcquireWriterLock(timeout);
 
-                return Cache.TryRemove(keys);
-            }
-            catch (ApplicationException)
+            if (!_lock.TryEnterWriteLock(timeout))
             {
                 return false;
             }
-            finally
-            {
-                if (Lock.IsWriterLockHeld)
-                {
-                    Lock.ReleaseWriterLock();
-                }
-            }
+
+            var result = Cache.TryRemove(keys);
+
+            _lock.ExitWriteLock();
+
+            return result;
         }
 
         public void SaveToFile(Uri path)

@@ -1,4 +1,6 @@
-﻿namespace Celestus.Storage.Cache
+﻿using System.Threading;
+
+namespace Celestus.Storage.Cache
 {
     public static class ThreadCacheManager
     {
@@ -10,6 +12,8 @@
         readonly static Dictionary<string, WeakReference<ThreadCache>> _caches = [];
         readonly static CacheFactoryCleaner<ThreadCache> _factoryCleaner = new(_caches, _cleaners);
 
+        readonly static object _lock = new(); 
+
         public static bool IsLoaded(string key)
         {
             return _caches.ContainsKey(key);
@@ -19,7 +23,7 @@
         {
             var usedKey = (key.Length > 0) ? key : Guid.NewGuid().ToString();
 
-            lock (nameof(ThreadCacheManager))
+            lock (_lock)
             {
                 if (_caches.TryGetValue(usedKey, out var cacheReference) &&
                     cacheReference.TryGetTarget(out var cache))
@@ -50,7 +54,7 @@
             }
             else if (IsLoaded(loadedCache.Key))
             {
-                lock (nameof(ThreadCacheManager))
+                lock (_lock)
                 {
                     var threadCacheReference = _caches[loadedCache.Key];
 
@@ -67,7 +71,7 @@
             }
             else
             {
-                lock (nameof(ThreadCacheManager))
+                lock (_lock)
                 {
                     _caches[loadedCache.Key] = new(loadedCache);
                 }
@@ -78,7 +82,7 @@
 
         public static void Remove(string key)
         {
-            lock (nameof(ThreadCacheManager))
+            lock (_lock)
             {
                 if (_caches.TryGetValue(key, out var cacheReference))
                 {

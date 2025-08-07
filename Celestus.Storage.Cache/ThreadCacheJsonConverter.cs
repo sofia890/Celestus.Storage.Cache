@@ -65,10 +65,7 @@ namespace Celestus.Storage.Cache
             writer.WriteString(nameof(ThreadCache.Key), value.Key);
             writer.WritePropertyName(nameof(Cache));
 
-            using (value.ThreadLock(DEFAULT_LOCK_TIMEOUT))
-            {
-                JsonSerializer.Serialize(writer, value.Cache, options);
-            }
+            JsonSerializer.Serialize(writer, value.Cache, options);
 
             writer.WriteEndObject();
         }
