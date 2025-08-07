@@ -219,10 +219,8 @@ namespace Celestus.Storage.Cache
                 {
                     ThreadCacheManager.Remove(Key);
 
-                    if (Cleaner is IDisposable disposableCleaner)
-                    {
-                        disposableCleaner.Dispose();
-                    }
+                    Cache.Dispose();
+                    _lock.Dispose();
                 }
 
                 _disposed = true;

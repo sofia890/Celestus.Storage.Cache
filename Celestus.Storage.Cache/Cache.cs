@@ -1,14 +1,13 @@
 ﻿using Celestus.Serialization;
-using System.Diagnostics.CodeAnalysis;
-using System.Text.Json;
 using System.Text.Json.Serialization;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Celestus.Storage.Cache
 {
     [JsonConverter(typeof(CacheJsonConverter))]
-    public class Cache
+    public class Cache : IDisposable
     {
+        private bool _disposed = false;
+
         internal Dictionary<string, CacheEntry> Storage { get; set; }
 
         internal CacheCleanerBase<string> Cleaner { get; private set; }
@@ -47,6 +46,11 @@ namespace Celestus.Storage.Cache
 
         public void Set<DataType>(string key, DataType value, TimeSpan? duration = null)
         {
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(GetType().Name);
+            }
+
             long expiration = long.MaxValue;
 
             if (duration is TimeSpan timeDuration)
@@ -59,6 +63,11 @@ namespace Celestus.Storage.Cache
 
         public void Set<DataType>(string key, DataType value, long expiration)
         {
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(GetType().Name);
+            }
+
             var entry = new CacheEntry(expiration, value);
             Storage[key] = entry;
 
@@ -67,6 +76,11 @@ namespace Celestus.Storage.Cache
 
         public (bool result, DataType? data) TryGet<DataType>(string key)
         {
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(GetType().Name);
+            }
+
             var currentTimeInTicks = DateTime.UtcNow.Ticks;
 
             if (!Storage.TryGetValue(key, out var entry))
@@ -101,6 +115,11 @@ namespace Celestus.Storage.Cache
 
         public bool TryRemove(List<string> keys)
         {
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(GetType().Name);
+            }
+
             bool anyRemoved = false;
 
             for (int i = 0; i < keys.Count; i++)
@@ -113,6 +132,11 @@ namespace Celestus.Storage.Cache
 
         public void SaveToFile(Uri path)
         {
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(GetType().Name);
+            }
+
             Serialize.SaveToFile(this, path);
         }
 
@@ -123,6 +147,11 @@ namespace Celestus.Storage.Cache
 
         public bool TryLoadFromFile(Uri path)
         {
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(GetType().Name);
+            }
+
             var loadedData = Serialize.TryCreateFromFile<Cache>(path);
 
             if (loadedData == null)
@@ -136,6 +165,30 @@ namespace Celestus.Storage.Cache
                 return true;
             }
         }
+
+        #region IDisposable
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_disposed)
+            {
+                if (disposing)
+                {
+                    Cleaner.Dispose();
+                    Storage.Clear();
+                }
+
+                _disposed = true;
+            }
+        }
+
+        public bool IsDisposed => _disposed;
+        #endregion
 
         #region IEquatable
         public bool Equals(Cache? other)
