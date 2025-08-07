@@ -82,10 +82,6 @@ namespace Celestus.Storage.Cache
                             break;
                     }
                 }
-                else if (signalTask.IsCanceled || signalTask.IsFaulted)
-                {
-                    break;
-                }
             }
         }
 
