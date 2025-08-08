@@ -1,48 +1,9 @@
 ﻿using Celestus.Serialization;
 using System.Text.Json.Serialization;
+using System.Threading;
 
 namespace Celestus.Storage.Cache
 {
-    public class CacheLock : IDisposable
-    {
-        private bool _disposed = false;
-        private readonly ReaderWriterLockSlim _lock;
-
-        public CacheLock(ReaderWriterLockSlim cacheLock, int timeoutInMs = ThreadCache.NO_TIMEOUT)
-        {
-            _lock = cacheLock;
-
-            if (!_lock.TryEnterWriteLock(timeoutInMs))
-            {
-                throw new TimeoutException($"Timed out while waiting to acquire a write lock on {nameof(ThreadCache)}.");
-            }
-        }
-
-        #region IDisposable
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!_disposed)
-            {
-                if (disposing)
-                {
-                    if (_lock.IsWriteLockHeld)
-                    {
-                        _lock.ExitWriteLock();
-                    }
-                }
-
-                _disposed = true;
-            }
-        }
-        #endregion
-    }
-
     [JsonConverter(typeof(ThreadCacheJsonConverter))]
     public class ThreadCache : IDisposable
     {
@@ -88,11 +49,11 @@ namespace Celestus.Storage.Cache
         {
         }
         public CacheLock ThreadLock(int timeout = NO_TIMEOUT)
-            {
+        {
             if (_disposed)
             {
                 throw new ObjectDisposedException(GetType().Name);
-        }
+            }
 
             return new CacheLock(_lock, timeout);
         }
@@ -120,7 +81,7 @@ namespace Celestus.Storage.Cache
             {
                 throw new ObjectDisposedException(GetType().Name);
             }
-           
+
             if (!_lock.TryEnterWriteLock(timeout))
             {
                 return false;
