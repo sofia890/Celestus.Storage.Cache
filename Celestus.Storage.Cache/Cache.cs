@@ -95,19 +95,19 @@ namespace Celestus.Storage.Cache
             }
             else if (entry.Data == default)
             {
-                Cleaner.EntryAccessed(ref entry, key);
+                Cleaner.EntryAccessed(ref entry, key, currentTimeInTicks);
 
                 return (true, default);
             }
             else if (entry.Data is not DataType data)
             {
-                Cleaner.EntryAccessed(ref entry, key);
+                Cleaner.EntryAccessed(ref entry, key, currentTimeInTicks);
 
                 return (false, default);
             }
             else
             {
-                Cleaner.EntryAccessed(ref entry, key);
+                Cleaner.EntryAccessed(ref entry, key, currentTimeInTicks);
 
                 return (true, data);
             }

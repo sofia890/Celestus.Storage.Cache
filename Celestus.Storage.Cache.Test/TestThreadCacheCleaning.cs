@@ -146,7 +146,7 @@ public class TestThreadCacheCleaning
             _ = cache.TrySet(keys.Next(), CreateElement(), TimeSpan.FromMilliseconds(CLEAN_INTERVAL_IN_MS));
         }
 
-        ThreadHelper.SpinWait(CLEAN_INTERVAL_IN_MS * 3);
+        ThreadHelper.SpinWait(ThreadCacheConstants.LONG_INTERVAL_IN_MS);
 
         _ = cache.TryGet<byte[]>(firstKey);
 
