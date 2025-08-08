@@ -70,7 +70,7 @@ namespace Celestus.Storage.Cache
         public ThreadCache(string key, CacheCleanerBase<string> cleaner) :
             this(key, new Cache(cleaner, doNotSetRemoval: true), cleaner)
         {
-            cleaner.RegisterRemovalCallback(TryRemove);
+            cleaner.RegisterRemovalCallback(new(TryRemove));
         }
 
         public ThreadCache(CacheCleanerBase<string> cleaner) :

@@ -25,7 +25,7 @@ namespace Celestus.Storage.Cache
 
             if (!removalRegistered)
             {
-                Cleaner.RegisterRemovalCallback(TryRemove);
+                Cleaner.RegisterRemovalCallback(new(TryRemove));
             }
 
             Key = key;

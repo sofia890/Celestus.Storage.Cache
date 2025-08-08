@@ -15,7 +15,7 @@
 
     internal record TrackEntryInd<KeyType>(KeyType Key, CacheEntry Entry) : Signal(CleanerProtocol.TrackEntryInd);
 
-    internal record RegisterRemovalCallbackInd<KeyType>(Func<List<KeyType>, bool> Callback) : Signal(CleanerProtocol.RegisterRemovalCallbackInd);
+    internal record RegisterRemovalCallbackInd<KeyType>(WeakReference<Func<List<KeyType>, bool>> Callback) : Signal(CleanerProtocol.RegisterRemovalCallbackInd);
 
     internal record ResetInd(long CleanupIntervalInTicks) : Signal(CleanerProtocol.ResetInd);
 

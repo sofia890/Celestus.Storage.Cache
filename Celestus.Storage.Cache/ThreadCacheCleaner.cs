@@ -44,7 +44,7 @@ namespace Celestus.Storage.Cache
             _ = _server.CleanerPort.Writer.TryWrite(new EntryAccessedInd<KeyType>(key, timeInTicks));
         }
 
-        public override void RegisterRemovalCallback(Func<List<KeyType>, bool> callback)
+        public override void RegisterRemovalCallback(WeakReference<Func<List<KeyType>, bool>> callback)
         {
             if (IsDisposed)
             {

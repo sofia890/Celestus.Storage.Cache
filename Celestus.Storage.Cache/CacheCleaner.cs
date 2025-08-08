@@ -10,7 +10,7 @@ namespace Celestus.Storage.Cache
         readonly List<(KeyType key, CacheEntry entry)> _entries = [];
         long _cleanupIntervalInTicks = TimeSpan.FromMilliseconds(cleanupIntervalInMs).Ticks;
         long _nextCleanupOpportunityInTicks = 0;
-        Func<List<KeyType>, bool> _removalCallback = (key) => false;
+        WeakReference<Func<List<KeyType>, bool>> _removalCallbackReference = new((key) => false);
 
         public CacheCleaner() : this(cleanupIntervalInMs: DEFAULT_INTERVAL)
         {
@@ -35,9 +35,9 @@ namespace Celestus.Storage.Cache
                     _entries.Remove(element);
                 }
 
-                if (expiredKeys.Count > 0)
+                if (expiredKeys.Count > 0 && _removalCallbackReference.TryGetTarget(out var callback))
                 {
-                    _ = _removalCallback([.. expiredKeys.Select(x => x.key)]);
+                    _ = callback([.. expiredKeys.Select(x => x.key)]);
                 }
 
                 _nextCleanupOpportunityInTicks = currentTimeInTicks + _cleanupIntervalInTicks;
@@ -66,9 +66,9 @@ namespace Celestus.Storage.Cache
             Prune(timeInMilliseconds);
         }
 
-        public override void RegisterRemovalCallback(Func<List<KeyType>, bool> callback)
+        public override void RegisterRemovalCallback(WeakReference<Func<List<KeyType>, bool>> callback)
         {
-            _removalCallback = callback;
+            _removalCallbackReference = callback;
         }
 
         public override void ReadSettings(ref Utf8JsonReader reader, JsonSerializerOptions options)

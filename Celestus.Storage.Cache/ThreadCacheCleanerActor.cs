@@ -8,7 +8,7 @@ namespace Celestus.Storage.Cache
         List<(KeyType key, CacheEntry entry)> _entries = [];
         long _cleanupIntervalInTicks;
         long _nextCleanupOpportunityInTicks = 0;
-        Func<List<KeyType>, bool> _removalCallback = (keys) => false;
+        WeakReference<Func<List<KeyType>, bool>> _removalCallbackReference = new((keys) => false);
         private bool _disposed = false;
         private readonly Task _signalHandlerTask;
 
@@ -72,7 +72,7 @@ namespace Celestus.Storage.Cache
                             break;
 
                         case CleanerProtocol.RegisterRemovalCallbackInd when rawSignal is RegisterRemovalCallbackInd<KeyType> payload:
-                            _removalCallback = payload.Callback;
+                            _removalCallbackReference = payload.Callback;
                             break;
 
                         case CleanerProtocol.ResetInd when rawSignal is ResetInd payload:
@@ -111,12 +111,14 @@ namespace Celestus.Storage.Cache
 
             _entries = remainingElements;
 
-            if (expiredKeys.Count > 0 && !_disposed)
+            if (expiredKeys.Count > 0 &&
+                !_disposed &&
+                _removalCallbackReference.TryGetTarget(out var callback))
             {
-                _ = _removalCallback(expiredKeys);
+                _ = callback(expiredKeys);
             }
 
-            _nextCleanupOpportunityInTicks = timeInTicks + _cleanupIntervalInTicks;
+                _nextCleanupOpportunityInTicks = timeInTicks + _cleanupIntervalInTicks;
         }
 
         public void ReadSettings(ref Utf8JsonReader reader)
@@ -203,11 +205,6 @@ namespace Celestus.Storage.Cache
 
                 _disposed = true;
             }
-        }
-
-        ~ThreadCacheCleanerActor()
-        {
-            Dispose(false);
         }
         #endregion
     }
