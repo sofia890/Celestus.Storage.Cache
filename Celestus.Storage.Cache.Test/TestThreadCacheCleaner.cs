@@ -18,19 +18,10 @@ public class TestThreadCacheCleaner
         // Arrange
         //
         const int INTERVAL_IN_MS = VERY_LONG_INTERVAL_IN_MS;
-        var cleaner = new ThreadCacheCleaner<string>(cleanupIntervalInMs: INTERVAL_IN_MS);
+        using var cleaner = new ThreadCacheCleaner<string>(cleanupIntervalInMs: INTERVAL_IN_MS);
 
-        AutoResetEvent entryRemoved = new(false);
-
-        List<string> removedKeys = [];
-        cleaner.RegisterRemovalCallback((keys) =>
-        {
-            removedKeys.AddRange(keys);
-
-            entryRemoved.Set();
-
-            return true;
-        });
+        RemovalTracker removalTracker = new();
+        cleaner.RegisterRemovalCallback(new(removalTracker.TryRemove));
 
         long nowInTicks = DateTime.UtcNow.Ticks;
 
@@ -43,16 +34,16 @@ public class TestThreadCacheCleaner
         //
         // Act & Assert
         //
-        Assert.IsFalse(entryRemoved.WaitOne(LONG_INTERVAL_IN_MS));
+        Assert.IsFalse(removalTracker.EntryRemoved.WaitOne(LONG_INTERVAL_IN_MS));
 
         cleaner.EntryAccessed(ref entry_2, KEY_2);
 
-        Assert.IsFalse(entryRemoved.WaitOne(LONG_INTERVAL_IN_MS));
+        Assert.IsFalse(removalTracker.EntryRemoved.WaitOne(LONG_INTERVAL_IN_MS));
 
-        Assert.IsTrue(entryRemoved.WaitOne(INTERVAL_IN_MS));
+        Assert.IsTrue(removalTracker.EntryRemoved.WaitOne(INTERVAL_IN_MS));
 
-        Assert.AreEqual(1, removedKeys.Count);
-        Assert.AreEqual(KEY_2, removedKeys.First());
+        Assert.AreEqual(1, removalTracker.RemovedKeys.Count);
+        Assert.AreEqual(KEY_2, removalTracker.RemovedKeys.First());
     }
 
     [TestMethod]
@@ -61,19 +52,10 @@ public class TestThreadCacheCleaner
         //
         // Arrange
         //
-        var cleaner = new ThreadCacheCleaner<string>(cleanupIntervalInMs: SHORT_INTERVAL_IN_MS);
+        using var cleaner = new ThreadCacheCleaner<string>(cleanupIntervalInMs: SHORT_INTERVAL_IN_MS);
 
-        AutoResetEvent entryRemoved = new(false);
-
-        List<string> removedKeys = [];
-        cleaner.RegisterRemovalCallback((keys) =>
-        {
-            removedKeys.AddRange(keys);
-
-            entryRemoved.Set();
-
-            return true;
-        });
+        RemovalTracker removalTracker = new();
+        cleaner.RegisterRemovalCallback(new (removalTracker.TryRemove));
 
         long nowInTicks = DateTime.UtcNow.Ticks;
 
@@ -87,11 +69,11 @@ public class TestThreadCacheCleaner
         //
         // Assert
         //
-        Assert.IsFalse(entryRemoved.WaitOne(SHORT_INTERVAL_IN_MS / 2));
+        Assert.IsFalse(removalTracker.EntryRemoved.WaitOne(SHORT_INTERVAL_IN_MS / 2));
 
-        Assert.IsTrue(entryRemoved.WaitOne(SHORT_INTERVAL_IN_MS * 2));
+        Assert.IsTrue(removalTracker.EntryRemoved.WaitOne(SHORT_INTERVAL_IN_MS * 2));
 
-        Assert.AreEqual(1, removedKeys.Count);
-        Assert.AreEqual(KEY_1, removedKeys.First());
+        Assert.AreEqual(1, removalTracker.RemovedKeys.Count);
+        Assert.AreEqual(KEY_1, removalTracker.RemovedKeys.First());
     }
 }

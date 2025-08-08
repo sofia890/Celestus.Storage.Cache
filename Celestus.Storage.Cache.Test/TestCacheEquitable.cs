@@ -6,7 +6,14 @@ public class TestCacheEquitable
     [TestMethod]
     public void VerifyThatThreadCacheWhenComparedToNullReturnsFalse()
     {
-        var cache = new Cache();
+        //
+        // Arrange & Act
+        //
+        using var cache = new Cache();
+        
+        //
+        // Assert
+        //
         Assert.IsFalse(cache.Equals(null));
     }
 }

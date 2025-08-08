@@ -20,19 +20,10 @@ public class TestCacheCleaners
         // Arrange
         //
         const int SHORT_INTERVAL_IN_MS = VERY_LONG_INTERVAL_IN_MS;
-        var cleaner = CacheCleanerHelper.GetCleaner(cleanerTypeToTest, SHORT_INTERVAL_IN_MS);
+        using var cleaner = CacheCleanerHelper.GetCleaner(cleanerTypeToTest, SHORT_INTERVAL_IN_MS);
 
-        AutoResetEvent entryRemoved = new(false);
-
-        List<string> removedKeys = [];
-        cleaner.RegisterRemovalCallback((keys) =>
-        {
-            removedKeys.AddRange(keys);
-
-            entryRemoved.Set();
-
-            return true;
-        });
+        RemovalTracker removalTracker = new();
+        cleaner.RegisterRemovalCallback(new(removalTracker.TryRemove));
 
         const string KEY_1 = "Key1";
         CleanerHelper.TrackNewEntry(cleaner, KEY_1, DateTime.UtcNow);
@@ -43,9 +34,9 @@ public class TestCacheCleaners
         const string KEY_2 = "Key2";
         CleanerHelper.TrackNewEntry(cleaner, KEY_2, DateTime.UtcNow.AddDays(1));
 
-        Assert.IsTrue(entryRemoved.WaitOne(SHORT_INTERVAL_IN_MS));
-        Assert.AreEqual(1, removedKeys.Count);
-        Assert.AreEqual(KEY_1, removedKeys.First());
+        Assert.IsTrue(removalTracker.EntryRemoved.WaitOne(SHORT_INTERVAL_IN_MS));
+        Assert.AreEqual(1, removalTracker.RemovedKeys.Count);
+        Assert.AreEqual(KEY_1, removalTracker.RemovedKeys.First());
     }
 
     [TestMethod]
@@ -56,19 +47,10 @@ public class TestCacheCleaners
         //
         // Arrange
         //
-        var cleaner = CacheCleanerHelper.GetCleaner(cleanerTypeToTest, LONG_INTERVAL_IN_MS);
+        using var cleaner = CacheCleanerHelper.GetCleaner(cleanerTypeToTest, LONG_INTERVAL_IN_MS);
 
-        AutoResetEvent entryRemoved = new(false);
-
-        List<string> removedKeys = [];
-        cleaner.RegisterRemovalCallback((keys) =>
-        {
-            removedKeys.AddRange(keys);
-
-            entryRemoved.Set();
-
-            return true;
-        });
+        RemovalTracker removalTracker = new();
+        cleaner.RegisterRemovalCallback(new(removalTracker.TryRemove));
 
         const string KEY = "Key";
         CleanerHelper.TrackNewEntry(cleaner, KEY, DateTime.UtcNow, out var entry);
@@ -76,15 +58,15 @@ public class TestCacheCleaners
         //
         // Act & Assert
         //
-        Assert.IsFalse(entryRemoved.WaitOne(SHORT_DELAY_IN_MS));
+        Assert.IsFalse(removalTracker.EntryRemoved.WaitOne(SHORT_DELAY_IN_MS));
 
         cleaner.EntryAccessed(ref entry, KEY);
 
-        Assert.IsTrue(entryRemoved.WaitOne());
-        Assert.IsFalse(entryRemoved.WaitOne(SHORT_DELAY_IN_MS));
+        Assert.IsTrue(removalTracker.EntryRemoved.WaitOne());
+        Assert.IsFalse(removalTracker.EntryRemoved.WaitOne(SHORT_DELAY_IN_MS));
 
-        Assert.AreEqual(1, removedKeys.Count);
-        Assert.AreEqual(KEY, removedKeys.First());
+        Assert.AreEqual(1, removalTracker.RemovedKeys.Count);
+        Assert.AreEqual(KEY, removalTracker.RemovedKeys.First());
     }
 
     [TestMethod]
@@ -96,19 +78,10 @@ public class TestCacheCleaners
         // Arrange
         //
         const int INTERVAL_IN_MS = LONG_INTERVAL_IN_MS;
-        var cleaner = CacheCleanerHelper.GetCleaner(cleanerTypeToTest, INTERVAL_IN_MS);
+        using var cleaner = CacheCleanerHelper.GetCleaner(cleanerTypeToTest, INTERVAL_IN_MS);
 
-        AutoResetEvent entryRemoved = new(false);
-
-        List<string> removedKeys = [];
-        cleaner.RegisterRemovalCallback((keys) =>
-        {
-            removedKeys.AddRange(keys);
-
-            entryRemoved.Set();
-
-            return true;
-        });
+        RemovalTracker removalTracker = new();
+        cleaner.RegisterRemovalCallback(new(removalTracker.TryRemove));
 
         long nowInTicks = DateTime.UtcNow.Ticks;
 
@@ -121,18 +94,18 @@ public class TestCacheCleaners
         //
         // Act & Assert
         //
-        Assert.IsFalse(entryRemoved.WaitOne(SHORT_DELAY_IN_MS));
+        Assert.IsFalse(removalTracker.EntryRemoved.WaitOne(SHORT_DELAY_IN_MS));
 
         cleaner.EntryAccessed(ref entry_2, KEY_2);
 
-        Assert.IsFalse(entryRemoved.WaitOne(INTERVAL_IN_MS - SHORT_DELAY_IN_MS));
+        Assert.IsFalse(removalTracker.EntryRemoved.WaitOne(INTERVAL_IN_MS - SHORT_DELAY_IN_MS));
 
         cleaner.EntryAccessed(ref entry_2, KEY_2);
 
-        Assert.IsTrue(entryRemoved.WaitOne(INTERVAL_IN_MS * 2));
+        Assert.IsTrue(removalTracker.EntryRemoved.WaitOne(INTERVAL_IN_MS * 2));
 
-        Assert.AreEqual(1, removedKeys.Count);
-        Assert.AreEqual(KEY_2, removedKeys.First());
+        Assert.AreEqual(1, removalTracker.RemovedKeys.Count);
+        Assert.AreEqual(KEY_2, removalTracker.RemovedKeys.First());
     }
 
     [TestMethod]
@@ -143,7 +116,7 @@ public class TestCacheCleaners
         //
         // Arrange
         //
-        var cleaner = CacheCleanerHelper.GetCleaner(cleanerTypeToTest, SHORT_DELAY_IN_MS);
+        using var cleaner = CacheCleanerHelper.GetCleaner(cleanerTypeToTest, SHORT_DELAY_IN_MS);
 
         using var stream = new MemoryStream();
         using Utf8JsonWriter writer = new(stream);
@@ -154,19 +127,13 @@ public class TestCacheCleaners
         // Act
         //
         const int LONG_INTERVAL_IN_MS = 500000;
-        var otherCleaner = CacheCleanerHelper.GetCleaner(cleanerTypeToTest, LONG_INTERVAL_IN_MS);
+        using var otherCleaner = CacheCleanerHelper.GetCleaner(cleanerTypeToTest, LONG_INTERVAL_IN_MS);
 
         Utf8JsonReader reader = new(stream.ToArray());
         otherCleaner.ReadSettings(ref reader, new());
 
-        AutoResetEvent entryRemoved = new(false);
-
-        otherCleaner.RegisterRemovalCallback((keys) =>
-        {
-            entryRemoved.Set();
-
-            return true;
-        });
+        RemovalTracker removalTracker = new();
+        otherCleaner.RegisterRemovalCallback(new(removalTracker.TryRemove));
 
         const string KEY = "Key";
         CleanerHelper.TrackNewEntry(otherCleaner, KEY, DateTime.UtcNow, out var entry);
@@ -178,7 +145,7 @@ public class TestCacheCleaners
         //
         // Assert
         //
-        Assert.IsTrue(entryRemoved.WaitOne(LONG_INTERVAL_IN_MS / 2));
+        Assert.IsTrue(removalTracker.EntryRemoved.WaitOne(LONG_INTERVAL_IN_MS / 2));
     }
 
     [TestMethod]
@@ -186,7 +153,7 @@ public class TestCacheCleaners
     [DataRow(typeof(ThreadCacheCleaner<string>))]
     public void VerifyThatMissingIntervalCausesCrash(Type cleanerTypeToTest)
     {
-        CacheCleanerBase<string> cleaner = CacheCleanerHelper.GetCleaner(cleanerTypeToTest, 1000);
+        using CacheCleanerBase<string> cleaner = CacheCleanerHelper.GetCleaner(cleanerTypeToTest, 1000);
 
         string json = "{\"ExtraParameter\":\"500\"}";
         Assert.ThrowsException<MissingValueJsonException>(() => CleaningHelper.ReadSettings(cleaner, json));
@@ -200,7 +167,7 @@ public class TestCacheCleaners
         //
         // Arrange
         //
-        CacheCleanerBase<string> cleaner = CacheCleanerHelper.GetCleaner(cleanerTypeToTest, 1000);
+        using CacheCleanerBase<string> cleaner = CacheCleanerHelper.GetCleaner(cleanerTypeToTest, 1000);
 
         string json = "{\"ExtraParameter\":\"500\",\"_cleanupIntervalInTicks\":500}";
         CleaningHelper.ReadSettings(cleaner, json);

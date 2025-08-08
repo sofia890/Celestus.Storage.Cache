@@ -14,12 +14,8 @@ public class TestCacheCleaner
         const int INTERVAL_IN_MS = 4;
         var cleaner = new CacheCleaner<string>(cleanupIntervalInMs: INTERVAL_IN_MS);
 
-        List<string> removedKeys = [];
-        cleaner.RegisterRemovalCallback((keys) =>
-        {
-            removedKeys.AddRange(keys);
-            return true;
-        });
+        RemovalTracker removalTracker = new();
+        cleaner.RegisterRemovalCallback(new(removalTracker.TryRemove));
 
         long nowInTicks = DateTime.UtcNow.Ticks;
 
@@ -34,12 +30,12 @@ public class TestCacheCleaner
         //
         // Act & Assert
         //
-        Assert.AreEqual(0, removedKeys.Count);
+        Assert.AreEqual(0, removalTracker.RemovedKeys.Count);
 
         const string KEY_3 = "Key3";
         CleanerHelper.TrackNewEntry(cleaner, KEY_3, DateTime.UtcNow, out var entry_3);
 
-        Assert.AreEqual(1, removedKeys.Count);
-        Assert.AreEqual(KEY_2, removedKeys.First());
+        Assert.AreEqual(1, removalTracker.RemovedKeys.Count);
+        Assert.AreEqual(KEY_2, removalTracker.RemovedKeys.First());
     }
 }

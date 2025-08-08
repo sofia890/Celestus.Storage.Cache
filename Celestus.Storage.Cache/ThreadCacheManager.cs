@@ -90,5 +90,10 @@ namespace Celestus.Storage.Cache
                 }
             }
         }
+
+        public static void SetCleanupInterval(TimeSpan interval)
+        {
+            _factoryCleaner.SetCleanupInterval(interval);
+        }
     }
 }

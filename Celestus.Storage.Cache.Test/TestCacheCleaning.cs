@@ -75,7 +75,10 @@ public class TestCacheCleaning
         //
         // Act
         //
-        cleanerTester.RemovalCallback([KEY_1]);
+        if (cleanerTester.RemovalCallback.TryGetTarget(out var callback))
+        {
+            callback([KEY_1]);
+        }
 
         //
         // Assert
@@ -110,6 +113,7 @@ public class TestCacheCleaning
     }
 
     [TestMethod]
+    [DoNotParallelize]
     public void VerifyThatCacheFreesUpMemory()
     {
         //

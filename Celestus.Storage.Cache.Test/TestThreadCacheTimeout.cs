@@ -13,7 +13,7 @@ namespace Celestus.Storage.Cache.Test
             //
             // Arrange
             //
-            var cache = new ThreadCache();
+            using var cache = new ThreadCache();
 
             const string KEY = "Sjö";
             cache.TrySet(KEY, 1);
@@ -35,7 +35,7 @@ namespace Celestus.Storage.Cache.Test
             //
             // Arrange
             //
-            var cache = new ThreadCache();
+            using var cache = new ThreadCache();
 
             const string KEY = "Sjö";
             cache.TrySet(KEY, 1);
@@ -57,7 +57,7 @@ namespace Celestus.Storage.Cache.Test
             //
             // Arrange
             //
-            var cache = new ThreadCache();
+            using var cache = new ThreadCache();
 
             const string KEY = "Lake";
             cache.TrySet(KEY, 1);
@@ -79,13 +79,13 @@ namespace Celestus.Storage.Cache.Test
             //
             // Arrange
             //
-            var cache = ThreadCacheManager.GetOrCreateShared(nameof(VerifyThatUpdatingSharedCacheCanTimeout));
+            using var cache = ThreadCacheManager.GetOrCreateShared(nameof(VerifyThatUpdatingSharedCacheCanTimeout));
 
             const string KEY = "Sjö";
             cache.TrySet(KEY, 1);
 
             var path = new Uri(Path.GetTempFileName());
-            cache.SaveToFile(path);
+            cache.TrySaveToFile(path);
 
             //
             // Act
@@ -96,6 +96,9 @@ namespace Celestus.Storage.Cache.Test
             // Assert
             //
             Assert.IsNull(loadedCache);
+
+            // Cleanup
+            File.Delete(path.AbsolutePath);
         }
     }
 }

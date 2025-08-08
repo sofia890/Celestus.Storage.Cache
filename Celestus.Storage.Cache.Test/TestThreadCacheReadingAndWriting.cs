@@ -11,7 +11,7 @@ namespace Celestus.Storage.Cache.Test
             //
             // Arrange
             //
-            var cache = new ThreadCache();
+            using var cache = new ThreadCache();
 
             const int DURATION_IN_MS = 10;
             const int VALUE = 55;
@@ -39,7 +39,7 @@ namespace Celestus.Storage.Cache.Test
             // Arrange
             //
             const int DURATION_IN_MS = 8;
-            var cache = new ThreadCache(DURATION_IN_MS * 2);
+            using var cache = new ThreadCache(DURATION_IN_MS * 2);
 
             const int VALUE = 23;
             const string KEY = "key";
@@ -72,7 +72,7 @@ namespace Celestus.Storage.Cache.Test
             //
             // Arrange
             //
-            var cache = new ThreadCache();
+            using var cache = new ThreadCache();
 
             //
             // Act
@@ -93,7 +93,7 @@ namespace Celestus.Storage.Cache.Test
             //
             // Arrange
             //
-            var cache = new ThreadCache();
+            using var cache = new ThreadCache();
 
             //
             // Act
@@ -114,7 +114,7 @@ namespace Celestus.Storage.Cache.Test
             //
             // Arrange
             //
-            var cache = new ThreadCache();
+            using var cache = new ThreadCache();
 
             //
             // Act
@@ -140,7 +140,7 @@ namespace Celestus.Storage.Cache.Test
             //
             // Arrange
             //
-            var cache = new ThreadCache();
+            using var cache = new ThreadCache();
 
             ManualResetEvent startSignal = new(false);
 
@@ -191,7 +191,7 @@ namespace Celestus.Storage.Cache.Test
             //
             // Arrange
             //
-            var cache = new ThreadCache();
+            using var cache = new ThreadCache();
 
             const string KEY = "hammer";
             const int THREAD_TEST_TIMEOUT = 10000;

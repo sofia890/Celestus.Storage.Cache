@@ -8,13 +8,9 @@ namespace Celestus.Storage.Cache.Test
         public void VerifyThatSharedCacheCreatesKeyWhenNotProvided()
         {
             //
-            // Arrange
+            // Arrange & Act
             //
-
-            //
-            // Act
-            //
-            var cache = CacheManager.GetOrCreateShared();
+            using var cache = CacheManager.GetOrCreateShared();
 
             //
             // Assert
@@ -28,19 +24,22 @@ namespace Celestus.Storage.Cache.Test
             //
             // Arrange
             //
+            var path = new Uri(Path.GetTempFileName());
+
+            File.WriteAllText(path.AbsolutePath, "");
 
             //
             // Act
             //
-            var path = new Uri(Path.GetTempFileName());
-            File.WriteAllText(path.AbsolutePath, "");
-
-            var cache = Cache.TryCreateFromFile(path);
+            using var cache = Cache.TryCreateFromFile(path);
 
             //
             // Assert
             //
             Assert.IsNull(cache);
+            
+            // Cleanup
+            File.Delete(path.AbsolutePath);
         }
 
         [TestMethod]
@@ -53,13 +52,13 @@ namespace Celestus.Storage.Cache.Test
             const string ELEMENT_VALUE = "ads4s65ad4a6s8d4a8sd478asd4asd8546asd56";
             const string CACHE_KEY = nameof(VerifyThatSharedCacheCanBeRetrievedAfterCreated);
 
-            var cache = CacheManager.GetOrCreateShared(CACHE_KEY);
+            using var cache = CacheManager.GetOrCreateShared(CACHE_KEY);
             cache.Set(ELEMENT_KEY, ELEMENT_VALUE);
 
             //
             // Act
             //
-            var otherCache = CacheManager.GetOrCreateShared(CACHE_KEY);
+            using var otherCache = CacheManager.GetOrCreateShared(CACHE_KEY);
 
             //
             // Assert
@@ -77,7 +76,7 @@ namespace Celestus.Storage.Cache.Test
             const string ELEMENT_VALUE = "ads4s65ad4a6s8d4a8sd478asd4asd8546asd56";
             const string CACHE_KEY = nameof(VerifyThatSharedCacheCanBeLoadedFromFileWhenKeyIsNotKnown);
 
-            var cache = new Cache(CACHE_KEY);
+            using var cache = new Cache(CACHE_KEY);
             cache.Set(ELEMENT_KEY, ELEMENT_VALUE);
 
             var path = new Uri(Path.GetTempFileName());
@@ -86,15 +85,16 @@ namespace Celestus.Storage.Cache.Test
             //
             // Act
             //
-            var otherCache = CacheManager.UpdateOrLoadSharedFromFile(path);
-
-            File.Delete(path.AbsolutePath);
+            using var otherCache = CacheManager.UpdateOrLoadSharedFromFile(path);
 
             //
             // Assert
             //
             Assert.IsNotNull(otherCache);
             Assert.AreEqual((true, ELEMENT_VALUE), otherCache.TryGet<string>(ELEMENT_KEY));
+
+            // Cleanup
+            File.Delete(path.AbsolutePath);
         }
 
         [TestMethod]
@@ -103,7 +103,7 @@ namespace Celestus.Storage.Cache.Test
             //
             // Arrange
             //
-            Cache cache = CacheManager.GetOrCreateShared(nameof(VerifyThatSharedCacheCanBeUpdatedFromFile));
+            using Cache cache = CacheManager.GetOrCreateShared(nameof(VerifyThatSharedCacheCanBeUpdatedFromFile));
 
             const string KEY_1 = "Katter";
             const int VALUE_1 = 123;
@@ -121,18 +121,18 @@ namespace Celestus.Storage.Cache.Test
             const double VALUE_2 = 78.1234;
             cache.Set(KEY_2, VALUE_2);
 
-            Cache? otherCache = CacheManager.UpdateOrLoadSharedFromFile(path);
-
-            File.Delete(path.AbsolutePath);
+            using Cache? otherCache = CacheManager.UpdateOrLoadSharedFromFile(path);
 
             //
             // Assert
             //
             Assert.IsNotNull(otherCache);
             Assert.AreEqual(cache, otherCache);
-
             Assert.AreEqual(cache.TryGet<int>(KEY_1), (true, VALUE_1));
             Assert.AreEqual(cache.TryGet<double>(KEY_2), (false, 0));
+
+            // Cleanup
+            File.Delete(path.AbsolutePath);
         }
 
         [TestMethod]
@@ -147,14 +147,15 @@ namespace Celestus.Storage.Cache.Test
             //
             // Act
             //
-            bool loaded = CacheManager.UpdateOrLoadSharedFromFile(path) != null;
-
-            File.Delete(path.AbsolutePath);
+            using var cache = Cache.TryCreateFromFile(path);
 
             //
             // Assert
             //
-            Assert.IsFalse(loaded);
+            Assert.IsNull(cache);
+
+            // Cleanup
+            File.Delete(path.AbsolutePath);
         }
     }
 }

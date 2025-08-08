@@ -12,8 +12,8 @@ public class TestThreadCacheCleaning
         //
         // Arrange
         //
-        var cleanerTester = new CacheCleanerTester();
-        var cache = new ThreadCache(cleanerTester);
+        using var cleanerTester = new CacheCleanerTester();
+        using var cache = new ThreadCache(cleanerTester);
 
         //
         // Act
@@ -40,8 +40,8 @@ public class TestThreadCacheCleaning
         //
         // Arrange
         //
-        var cleanerTester = new CacheCleanerTester();
-        var cache = new ThreadCache(cleanerTester);
+        using var cleanerTester = new CacheCleanerTester();
+        using var cache = new ThreadCache(cleanerTester);
 
         //
         // Act
@@ -65,8 +65,8 @@ public class TestThreadCacheCleaning
         //
         // Arrange
         //
-        var cleanerTester = new CacheCleanerTester();
-        var cache = new ThreadCache(cleanerTester);
+        using var cleanerTester = new CacheCleanerTester();
+        using var cache = new ThreadCache(cleanerTester);
 
         const string KEY_1 = "Hamster";
         const bool VALUE_1 = true;
@@ -76,7 +76,10 @@ public class TestThreadCacheCleaning
         //
         // Act
         //
-        cleanerTester.RemovalCallback([KEY_1]);
+        if (cleanerTester.RemovalCallback.TryGetTarget(out var callback))
+        {
+            callback([KEY_1]);
+        }
 
         //
         // Assert
@@ -90,24 +93,25 @@ public class TestThreadCacheCleaning
         //
         // Arrange
         //
-        var cleanerTester = new CacheCleanerTester();
-        var cache = new ThreadCache(cleanerTester);
+        using var cleanerTester = new CacheCleanerTester();
+        using var cache = new ThreadCache(cleanerTester);
 
         //
         // Act
         //
         var path = new Uri(Path.GetTempFileName());
-        cache.SaveToFile(path);
+        cache.TrySaveToFile(path);
 
-        var _ = ThreadCache.TryCreateFromFile(path);
-
-        File.Delete(path.AbsolutePath);
+        using ThreadCache? loadedCache = ThreadCache.TryCreateFromFile(path); ;
 
         //
         // Assert
         //
         Assert.IsTrue(cleanerTester.SettingsWritten);
         Assert.IsTrue(cleanerTester.SettingsReadCorrectly);
+
+        // Cleanup
+        File.Delete(path.AbsolutePath);
     }
 
     [TestMethod]
@@ -117,7 +121,7 @@ public class TestThreadCacheCleaning
         // Arrange
         //
         const int CLEAN_INTERVAL_IN_MS = 5;
-        var cache = new ThreadCache(new ThreadCacheCleaner<string>(cleanupIntervalInMs: CLEAN_INTERVAL_IN_MS));
+        using var cache = new ThreadCache(new ThreadCacheCleaner<string>(cleanupIntervalInMs: CLEAN_INTERVAL_IN_MS));
 
         static byte[] CreateElement()
         {
@@ -130,7 +134,7 @@ public class TestThreadCacheCleaning
         _ = cache.TrySet(firstKey, CreateElement(), TimeSpan.FromDays(1));
 
         var path_1 = new Uri(Path.GetTempFileName());
-        cache.SaveToFile(path_1);
+        cache.TrySaveToFile(path_1);
 
         //
         // Act
@@ -147,7 +151,7 @@ public class TestThreadCacheCleaning
         _ = cache.TryGet<byte[]>(firstKey);
 
         var path_2 = new Uri(Path.GetTempFileName());
-        cache.SaveToFile(path_2);
+        cache.TrySaveToFile(path_2);
 
         //
         // Assert
@@ -157,6 +161,7 @@ public class TestThreadCacheCleaning
 
         Assert.AreEqual(file_1.Length, file_2.Length);
 
+        // Cleanup
         file_1.Delete();
         file_2.Delete();
     }

@@ -4,16 +4,14 @@
     [DoNotParallelize] // The tests are not thread safe since they dispose of resource other tests use.
     public sealed class TestThreadCacheSharedCreation
     {
-
         [TestMethod]
         public void VerifyThatSharedCachesWithDifferentKeysAreUnique()
         {
             //
             // Arrange
             //
-            var cache = ThreadCacheManager.GetOrCreateShared(nameof(VerifyThatSharedCachesWithDifferentKeysAreUnique));
-            var otherCache = ThreadCacheManager.GetOrCreateShared(new Guid().ToString());
-
+            using var cache = ThreadCacheManager.GetOrCreateShared(nameof(VerifyThatSharedCachesWithDifferentKeysAreUnique));
+            using var otherCache = ThreadCacheManager.GetOrCreateShared(new Guid().ToString());
             const int VALUE = 55;
             const string KEY = "test";
             _ = cache.TrySet(KEY, VALUE);
@@ -41,7 +39,7 @@
             //
             // Act
             //
-            var cache = ThreadCacheManager.GetOrCreateShared();
+            using var cache = ThreadCacheManager.GetOrCreateShared();
 
             //
             // Assert
@@ -55,19 +53,22 @@
             //
             // Arrange
             //
+            var path = new Uri(Path.GetTempFileName());
+            File.WriteAllText(path.AbsolutePath, "");
 
             //
             // Act
             //
-            var path = new Uri(Path.GetTempFileName());
-            File.WriteAllText(path.AbsolutePath, "");
 
-            var cache = ThreadCache.TryCreateFromFile(path);
+            using var cache = ThreadCache.TryCreateFromFile(path);
 
             //
             // Assert
             //
             Assert.IsNull(cache);
+
+            // Cleanup
+            File.Delete(path.AbsolutePath);
         }
 
         [TestMethod]
@@ -80,7 +81,8 @@
             const string ELEMENT_VALUE = "ads4s65ad4a6s8d4a8sd478asd4asd8546asd56";
             const string CACHE_KEY = nameof(VerifyThatSharedCacheCanBeRetrievedAfterCreated);
 
-            var cache = ThreadCacheManager.GetOrCreateShared(CACHE_KEY);
+            using var cache = ThreadCacheManager.GetOrCreateShared(CACHE_KEY);
+
             _ = cache.TrySet(ELEMENT_KEY, ELEMENT_VALUE);
 
             //
@@ -92,6 +94,7 @@
             // Assert
             //
             Assert.AreEqual((true, ELEMENT_VALUE), otherCache.TryGet<string>(ELEMENT_KEY));
+            Assert.AreSame(cache, otherCache);
         }
 
         [TestMethod]
@@ -104,24 +107,25 @@
             const string ELEMENT_VALUE = "ads4s65ad4a6s8d4a8sd478asd4asd8546asd56";
             const string CACHE_KEY = nameof(VerifyThatSharedCacheCanBeLoadedFromFileWhenKeyIsNotKnown);
 
-            var cache = new ThreadCache(CACHE_KEY);
+            using var cache = new ThreadCache(CACHE_KEY);
             _ = cache.TrySet(ELEMENT_KEY, ELEMENT_VALUE);
 
             var path = new Uri(Path.GetTempFileName());
-            cache.SaveToFile(path);
+            cache.TrySaveToFile(path);
 
             //
             // Act
             //
-            var otherCache = ThreadCacheManager.UpdateOrLoadSharedFromFile(path);
-
-            File.Delete(path.AbsolutePath);
+            using ThreadCache? otherCache = ThreadCacheManager.UpdateOrLoadSharedFromFile(path);
 
             //
             // Assert
             //
             Assert.IsNotNull(otherCache);
             Assert.AreEqual((true, ELEMENT_VALUE), otherCache.TryGet<string>(ELEMENT_KEY));
+            
+            // Cleanup
+            File.Delete(path.AbsolutePath);
         }
 
         [TestMethod]
@@ -130,7 +134,7 @@
             //
             // Arrange
             //
-            ThreadCache cache = ThreadCacheManager.GetOrCreateShared(nameof(VerifyThatSharedCacheCanBeUpdatedFromFile));
+            using ThreadCache cache = ThreadCacheManager.GetOrCreateShared(nameof(VerifyThatSharedCacheCanBeUpdatedFromFile));
 
             const string KEY_1 = "Katter";
             const int VALUE_1 = 123;
@@ -140,7 +144,7 @@
             // Act
             //
             var path = new Uri(Path.GetTempFileName());
-            cache.SaveToFile(path);
+            cache.TrySaveToFile(path);
 
             _ = cache.TrySet(KEY_1, VALUE_1 * 2);
 
@@ -174,14 +178,15 @@
             //
             // Act
             //
-            bool loaded = ThreadCacheManager.UpdateOrLoadSharedFromFile(path) != null;
-
-            File.Delete(path.AbsolutePath);
+            using var cache = ThreadCacheManager.UpdateOrLoadSharedFromFile(path);
 
             //
             // Assert
             //
-            Assert.IsFalse(loaded);
+            Assert.IsNull(cache);
+            
+            // Cleanup
+            File.Delete(path.AbsolutePath);
         }
     }
 }

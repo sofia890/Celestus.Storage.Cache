@@ -5,14 +5,13 @@ namespace Celestus.Storage.Cache.Test;
 [TestClass]
 public class TestCache
 {
-
     [TestMethod]
     public void VerifyThatSerializationToAndFromFileWorks()
     {
         //
         // Arrange
         //
-        Cache cache = new();
+        using Cache cache = new();
 
         const string KEY_1 = "One";
         const int VALUE_1 = 757;
@@ -36,9 +35,7 @@ public class TestCache
         var path = new Uri(Path.GetTempFileName());
         cache.SaveToFile(path);
 
-        Cache? otherCache = Cache.TryCreateFromFile(path);
-
-        File.Delete(path.AbsolutePath);
+        using Cache? otherCache = Cache.TryCreateFromFile(path); ;
 
         //
         // Assert
@@ -50,6 +47,9 @@ public class TestCache
         Assert.AreEqual((true, VALUE_2), otherCache.TryGet<double>(KEY_2));
         Assert.AreEqual((true, VALUE_3), otherCache.TryGet<DateTime>(KEY_3));
         Assert.AreEqual((true, VALUE_4), otherCache.TryGet<ExampleRecord>(KEY_4));
+        
+        // Cleanup
+        File.Delete(path.AbsolutePath);
     }
 
     [TestMethod]
@@ -58,7 +58,7 @@ public class TestCache
         //
         // Arrange
         //
-        Cache cache = new();
+        using Cache cache = new();
 
         const string KEY_1 = "Kola";
         const int VALUE_1 = 891237;
@@ -78,13 +78,14 @@ public class TestCache
 
         cache.TryLoadFromFile(path);
 
-        File.Delete(path.AbsolutePath);
-
         //
         // Assert
         //
         Assert.AreEqual((true, VALUE_1), cache.TryGet<int>(KEY_1));
         Assert.AreEqual((false, 0), cache.TryGet<double>(KEY_2));
+
+        // Cleanup
+        File.Delete(path.AbsolutePath);
     }
 
     [TestMethod]
@@ -93,7 +94,7 @@ public class TestCache
         //
         // Arrange
         //
-        Cache cache = new();
+        using Cache cache = new();
 
         var path = new Uri(Path.GetTempFileName());
         File.WriteAllText(path.AbsolutePath, "");
@@ -103,12 +104,13 @@ public class TestCache
         //
         bool loaded = cache.TryLoadFromFile(path);
 
-        File.Delete(path.AbsolutePath);
-
         //
         // Assert
         //
         Assert.IsFalse(loaded);
+
+        // Cleanup
+        File.Delete(path.AbsolutePath);
     }
 
     [TestMethod]
@@ -117,7 +119,7 @@ public class TestCache
         //
         // Arrange
         //
-        Cache cache = new();
+        using Cache cache = new();
 
         const string KEY_1 = "Kola";
         const int VALUE_1 = 891237;

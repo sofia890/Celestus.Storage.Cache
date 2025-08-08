@@ -12,7 +12,7 @@ namespace Celestus.Storage.Cache.Test.Model
 
         public List<string> TrackedKeys { get; set; } = [];
 
-        public Func<List<string>, bool> RemovalCallback { get; set; } = _ => false;
+        public WeakReference<Func<List<string>, bool>> RemovalCallback { get; set; } = new(_ => false);
 
         public bool SettingsReadCorrectly { get; set; } = false;
 
@@ -48,7 +48,7 @@ namespace Celestus.Storage.Cache.Test.Model
             AccessedKeys.Add(key);
         }
 
-        public override void RegisterRemovalCallback(Func<List<string>, bool> callback)
+        public override void RegisterRemovalCallback(WeakReference<Func<List<string>, bool>> callback)
         {
             if (IsDisposed)
             {
@@ -77,7 +77,13 @@ namespace Celestus.Storage.Cache.Test.Model
             _ = reader.TryGetGuid(out var readValue);
             _ = reader.Read();
 
-            Testers[readValue].SettingsReadCorrectly = true;
+            lock (Testers)
+            {
+                if (Testers.TryGetValue(readValue, out var tester))
+                {
+                    tester.SettingsReadCorrectly = true;
+                }
+            }
         }
 
         public override void WriteSettings(Utf8JsonWriter writer, JsonSerializerOptions options)
@@ -99,6 +105,10 @@ namespace Celestus.Storage.Cache.Test.Model
                 {
                     Testers.Remove(Guid);
                 }
+                
+                // Clear collections to help with garbage collection
+                AccessedKeys.Clear();
+                TrackedKeys.Clear();
             }
             
             base.Dispose(disposing);

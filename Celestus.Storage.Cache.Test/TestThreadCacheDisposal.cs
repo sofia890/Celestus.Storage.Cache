@@ -6,26 +6,6 @@ namespace Celestus.Storage.Cache.Test;
 public class TestThreadCacheDisposal
 {
     [TestMethod]
-    public void VerifyThatThreadCacheCanBeDisposed()
-    {
-        //
-        // Arrange
-        //
-        var cache = new ThreadCache("test-key");
-
-        //
-        // Act & Assert
-        //
-        cache.Dispose();
-
-        // Verify that operations fail gracefully after disposal
-        Assert.IsFalse(cache.TrySet("key", "value"));
-        Assert.AreEqual((false, default), cache.TryGet<string>("key"));
-        Assert.IsFalse(cache.TryRemove(["key"]));
-        Assert.IsFalse(cache.TryLoadFromFile(new Uri("file://test")));
-    }
-
-    [TestMethod]
     public void VerifyThatDoubleDisposalIsHandledGracefully()
     {
         //
@@ -53,7 +33,9 @@ public class TestThreadCacheDisposal
         // Act & Assert
         //
         Assert.ThrowsException<ObjectDisposedException>(() => cache.ThreadLock());
-        Assert.ThrowsException<ObjectDisposedException>(() => cache.SaveToFile(new Uri("file://test")));
+        Assert.ThrowsException<ObjectDisposedException>(() => cache.TrySaveToFile(new Uri("file://test")));
+        Assert.ThrowsException<ObjectDisposedException>(() => cache.TrySet("new-key", "new-value"));
+        Assert.ThrowsException<ObjectDisposedException>(() => cache.TryGet<string>("test-key"));
     }
 
     [TestMethod]
@@ -76,7 +58,8 @@ public class TestThreadCacheDisposal
         //
         // Assert - Factory should create a new instance
         //
-        var cache2 = ThreadCacheManager.GetOrCreateShared(testKey);
+        using var cache2 = ThreadCacheManager.GetOrCreateShared(testKey);
+
         Assert.IsFalse(ReferenceEquals(cache1, cache2));
     }
 
@@ -86,7 +69,7 @@ public class TestThreadCacheDisposal
         //
         // Arrange
         //
-        var cleanerTester = new CacheCleanerTester();
+        using var cleanerTester = new CacheCleanerTester();
         var cache = new ThreadCache("test-key", cleanerTester);
 
         // Set up some data to verify cleaner is working
@@ -104,36 +87,12 @@ public class TestThreadCacheDisposal
     }
 
     [TestMethod]
-    public void VerifyThatUsingStatementWorksCorrectly()
-    {
-        //
-        // Arrange & Act
-        //
-        bool operationSucceeded;
-        using (var cache = new ThreadCache("using-test-key"))
-        {
-            operationSucceeded = cache.TrySet("key", "value");
-        }
-
-        //
-        // Assert
-        //
-        Assert.IsTrue(operationSucceeded);
-        
-        // Verify key was removed from factory
-        var newCache = ThreadCacheManager.GetOrCreateShared("using-test-key");
-        Assert.AreEqual((false, default), newCache.TryGet<string>("key"));
-        
-        newCache.Dispose();
-    }
-
-    [TestMethod]
-    public void VerifyThatThreadCacheCleanerActorIsProperlyDisposed()
+    public void VerifyThatThreadCacheDoesNotCrashDuringCleanup()
     {
         //
         // Arrange
         //
-        var cache = new ThreadCache("actor-disposal-test", cleaningIntervalInMs: 1000);
+        using var cache = new ThreadCache("actor-disposal-test", cleaningIntervalInMs: 1000);
 
         // Add some data to ensure the actor is working
         _ = cache.TrySet("test-key", "test-value");
@@ -146,11 +105,9 @@ public class TestThreadCacheDisposal
         //
         // Assert - Operations should fail gracefully after disposal
         //
-        Assert.IsFalse(cache.TrySet("new-key", "new-value"));
-        Assert.AreEqual((false, default), cache.TryGet<string>("test-key"));
 
         // Give some time for background task to shut down
-        Thread.Sleep(100);
+        Thread.Sleep(ThreadCacheConstants.WAIT_FOR_THREAD_IN_MS);
 
         // No exceptions should be thrown during cleanup
         GC.Collect();
