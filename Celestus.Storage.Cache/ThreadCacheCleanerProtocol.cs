@@ -18,6 +18,4 @@
     internal record RegisterRemovalCallbackInd<KeyType>(WeakReference<Func<List<KeyType>, bool>> Callback) : Signal(CleanerProtocol.RegisterRemovalCallbackInd);
 
     internal record ResetInd(long CleanupIntervalInTicks) : Signal(CleanerProtocol.ResetInd);
-
-    internal record StopInd() : Signal(CleanerProtocol.ResetInd);
 }
