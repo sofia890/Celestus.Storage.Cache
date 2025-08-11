@@ -135,8 +135,8 @@ public class TestCache
         //
         // Assert
         //
-        Assert.AreEqual(asString, (false, default));
-        Assert.AreEqual(asDouble, (false, default));
-        Assert.AreEqual(asDateTime, (false, default));
+        Assert.AreEqual((false, default), asString);
+        Assert.AreEqual((false, default), asDouble);
+        Assert.AreEqual((false, default), asDateTime);
     }
 }
