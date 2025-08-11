@@ -50,16 +50,15 @@ namespace Celestus.Storage.Cache
         }
         public CacheLock ThreadLock(int timeout = NO_TIMEOUT)
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(GetType().Name);
-            }
+            ObjectDisposedException.ThrowIf(IsDisposed, this);
 
             return new CacheLock(_lock, timeout);
         }
 
         internal bool TrySetCache(Cache newCache, int millisecondsTimeout)
         {
+            ObjectDisposedException.ThrowIf(IsDisposed, this);
+
             if (!_lock.TryEnterWriteLock(millisecondsTimeout))
             {
                 return false;
@@ -77,10 +76,7 @@ namespace Celestus.Storage.Cache
 
         public bool TrySet<DataType>(string key, DataType value, TimeSpan? duration = null, int timeout = NO_TIMEOUT)
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(GetType().Name);
-            }
+            ObjectDisposedException.ThrowIf(IsDisposed, this);
 
             if (!_lock.TryEnterWriteLock(timeout))
             {
@@ -94,10 +90,7 @@ namespace Celestus.Storage.Cache
         }
         public (bool result, DataType? data) TryGet<DataType>(string key, int timeout = NO_TIMEOUT)
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(GetType().Name);
-            }
+            ObjectDisposedException.ThrowIf(IsDisposed, this);
 
             if (!_lock.TryEnterReadLock(timeout))
             {
@@ -118,10 +111,7 @@ namespace Celestus.Storage.Cache
 
         public bool TryRemove(List<string> keys, int timeout = NO_TIMEOUT)
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(GetType().Name);
-            }
+            ObjectDisposedException.ThrowIf(IsDisposed, this);
 
             if (!_lock.TryEnterWriteLock(timeout))
             {
@@ -137,11 +127,9 @@ namespace Celestus.Storage.Cache
 
         public bool TrySaveToFile(Uri path)
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(GetType().Name);
-            }
-            else if (!_lock.TryEnterReadLock(DEFAULT_TIMEOUT_IN_MS))
+            ObjectDisposedException.ThrowIf(IsDisposed, this);
+
+            if (!_lock.TryEnterReadLock(DEFAULT_TIMEOUT_IN_MS))
             {
                 return false;
             }
@@ -160,11 +148,9 @@ namespace Celestus.Storage.Cache
 
         public bool TryLoadFromFile(Uri path)
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(GetType().Name);
-            }
-            else if (!_lock.TryEnterWriteLock(DEFAULT_TIMEOUT_IN_MS))
+            ObjectDisposedException.ThrowIf(IsDisposed, this);
+
+            if (!_lock.TryEnterWriteLock(DEFAULT_TIMEOUT_IN_MS))
             {
                 return false;
             }
@@ -207,6 +193,8 @@ namespace Celestus.Storage.Cache
                 _disposed = true;
             }
         }
+
+        public bool IsDisposed => _disposed;
         #endregion
 
         #region IEquatable

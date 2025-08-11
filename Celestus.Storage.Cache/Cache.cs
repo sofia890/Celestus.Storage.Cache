@@ -46,10 +46,7 @@ namespace Celestus.Storage.Cache
 
         public void Set<DataType>(string key, DataType value, TimeSpan? duration = null)
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(GetType().Name);
-            }
+            ObjectDisposedException.ThrowIf(IsDisposed, this);
 
             long expiration = long.MaxValue;
 
@@ -63,10 +60,7 @@ namespace Celestus.Storage.Cache
 
         public void Set<DataType>(string key, DataType value, long expiration)
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(GetType().Name);
-            }
+            ObjectDisposedException.ThrowIf(IsDisposed, this);
 
             var entry = new CacheEntry(expiration, value);
             Storage[key] = entry;
@@ -76,49 +70,27 @@ namespace Celestus.Storage.Cache
 
         public (bool result, DataType? data) TryGet<DataType>(string key)
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(GetType().Name);
-            }
+            ObjectDisposedException.ThrowIf(IsDisposed, this);
 
-            var currentTimeInTicks = DateTime.UtcNow.Ticks;
+            bool found = false;
+            DataType? value = default;
 
-            if (!Storage.TryGetValue(key, out var entry))
+            if (Storage.TryGetValue(key, out var entry) &&
+                entry.Data is DataType data)
             {
-                return (false, default);
-            }
-            else if (entry.Expiration < currentTimeInTicks)
-            {
+                var currentTimeInTicks = DateTime.UtcNow.Ticks;
+                found = entry.Expiration >= currentTimeInTicks;
+                value = data;
+
                 Cleaner.EntryAccessed(ref entry, key, currentTimeInTicks);
-
-                return (false, default);
             }
-            else if (entry.Data == default)
-            {
-                Cleaner.EntryAccessed(ref entry, key, currentTimeInTicks);
 
-                return (true, default);
-            }
-            else if (entry.Data is not DataType data)
-            {
-                Cleaner.EntryAccessed(ref entry, key, currentTimeInTicks);
-
-                return (false, default);
-            }
-            else
-            {
-                Cleaner.EntryAccessed(ref entry, key, currentTimeInTicks);
-
-                return (true, data);
-            }
+            return (found, value);
         }
 
         public bool TryRemove(List<string> keys)
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(GetType().Name);
-            }
+            ObjectDisposedException.ThrowIf(IsDisposed, this);
 
             bool anyRemoved = false;
 
@@ -132,10 +104,7 @@ namespace Celestus.Storage.Cache
 
         public void SaveToFile(Uri path)
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(GetType().Name);
-            }
+            ObjectDisposedException.ThrowIf(IsDisposed, this);
 
             Serialize.SaveToFile(this, path);
         }
@@ -147,10 +116,7 @@ namespace Celestus.Storage.Cache
 
         public bool TryLoadFromFile(Uri path)
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(GetType().Name);
-            }
+            ObjectDisposedException.ThrowIf(IsDisposed, this);
 
             var loadedData = Serialize.TryCreateFromFile<Cache>(path);
 

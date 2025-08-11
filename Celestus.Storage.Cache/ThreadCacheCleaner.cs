@@ -15,20 +15,14 @@ namespace Celestus.Storage.Cache
 
         public override void TrackEntry(ref CacheEntry entry, KeyType key)
         {
-            if (IsDisposed)
-            {
-                return;
-            }
+            ObjectDisposedException.ThrowIf(IsDisposed, this);
 
             _ = _server.CleanerPort.Writer.TryWrite(new TrackEntryInd<KeyType>(key, entry));
         }
 
         public override void EntryAccessed(ref CacheEntry entry, KeyType key)
         {
-            if (IsDisposed)
-            {
-                return;
-            }
+            ObjectDisposedException.ThrowIf(IsDisposed, this);
 
             var timeInTicks = DateTime.UtcNow.Ticks;
             _ = _server.CleanerPort.Writer.TryWrite(new EntryAccessedInd<KeyType>(key, timeInTicks));
@@ -36,40 +30,28 @@ namespace Celestus.Storage.Cache
 
         public override void EntryAccessed(ref CacheEntry entry, KeyType key, long timeInTicks)
         {
-            if (IsDisposed)
-            {
-                return;
-            }
+            ObjectDisposedException.ThrowIf(IsDisposed, this);
 
             _ = _server.CleanerPort.Writer.TryWrite(new EntryAccessedInd<KeyType>(key, timeInTicks));
         }
 
         public override void RegisterRemovalCallback(WeakReference<Func<List<KeyType>, bool>> callback)
         {
-            if (IsDisposed)
-            {
-                throw new ObjectDisposedException(GetType().Name);
-            }
+            ObjectDisposedException.ThrowIf(IsDisposed, this);
 
             _ = _server.CleanerPort.Writer.TryWrite(new RegisterRemovalCallbackInd<KeyType>(callback));
         }
 
         public override void ReadSettings(ref Utf8JsonReader reader, JsonSerializerOptions options)
         {
-            if (IsDisposed)
-            {
-                throw new ObjectDisposedException(GetType().Name);
-            }
+            ObjectDisposedException.ThrowIf(IsDisposed, this);
 
             _server.ReadSettings(ref reader);
         }
 
         public override void WriteSettings(Utf8JsonWriter writer, JsonSerializerOptions options)
         {
-            if (IsDisposed)
-            {
-                throw new ObjectDisposedException(GetType().Name);
-            }
+            ObjectDisposedException.ThrowIf(IsDisposed, this);
 
             _server.WriteSettings(writer);
         }
