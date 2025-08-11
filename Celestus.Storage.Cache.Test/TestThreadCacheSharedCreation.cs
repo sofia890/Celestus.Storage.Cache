@@ -123,7 +123,7 @@
             //
             Assert.IsNotNull(otherCache);
             Assert.AreEqual((true, ELEMENT_VALUE), otherCache.TryGet<string>(ELEMENT_KEY));
-            
+
             // Cleanup
             File.Delete(path.AbsolutePath);
         }
@@ -184,7 +184,7 @@
             // Assert
             //
             Assert.IsNull(cache);
-            
+
             // Cleanup
             File.Delete(path.AbsolutePath);
         }

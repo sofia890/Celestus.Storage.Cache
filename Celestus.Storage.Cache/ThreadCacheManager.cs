@@ -1,6 +1,4 @@
-﻿using System.Threading;
-
-namespace Celestus.Storage.Cache
+﻿namespace Celestus.Storage.Cache
 {
     public static class ThreadCacheManager
     {
@@ -12,7 +10,7 @@ namespace Celestus.Storage.Cache
         readonly static Dictionary<string, WeakReference<ThreadCache>> _caches = [];
         readonly static CacheFactoryCleaner<ThreadCache> _factoryCleaner = new(_caches, _cleaners);
 
-        readonly static object _lock = new(); 
+        readonly static object _lock = new();
 
         public static bool IsLoaded(string key)
         {

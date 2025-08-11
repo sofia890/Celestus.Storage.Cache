@@ -1,6 +1,5 @@
 ﻿using Celestus.Serialization;
 using System.Text.Json.Serialization;
-using System.Threading;
 
 namespace Celestus.Storage.Cache
 {
@@ -17,7 +16,7 @@ namespace Celestus.Storage.Cache
 
         internal Cache Cache { get; set; }
 
-        ReaderWriterLockSlim _lock = new();
+        readonly ReaderWriterLockSlim _lock = new();
 
         public string Key { get; init; }
 

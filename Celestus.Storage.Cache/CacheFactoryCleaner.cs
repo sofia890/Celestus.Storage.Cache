@@ -1,6 +1,6 @@
 ﻿
 namespace Celestus.Storage.Cache
-{    
+{
     public class CacheFactoryCleaner<KeyType>
         where KeyType : class
     {

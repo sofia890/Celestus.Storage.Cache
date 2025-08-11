@@ -118,7 +118,7 @@ namespace Celestus.Storage.Cache
                 _ = callback(expiredKeys);
             }
 
-                _nextCleanupOpportunityInTicks = timeInTicks + _cleanupIntervalInTicks;
+            _nextCleanupOpportunityInTicks = timeInTicks + _cleanupIntervalInTicks;
         }
 
         public void ReadSettings(ref Utf8JsonReader reader)

@@ -37,7 +37,7 @@ namespace Celestus.Storage.Cache.Test
             // Assert
             //
             Assert.IsNull(cache);
-            
+
             // Cleanup
             File.Delete(path.AbsolutePath);
         }

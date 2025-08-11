@@ -105,12 +105,12 @@ namespace Celestus.Storage.Cache.Test.Model
                 {
                     Testers.Remove(Guid);
                 }
-                
+
                 // Clear collections to help with garbage collection
                 AccessedKeys.Clear();
                 TrackedKeys.Clear();
             }
-            
+
             base.Dispose(disposing);
         }
     }

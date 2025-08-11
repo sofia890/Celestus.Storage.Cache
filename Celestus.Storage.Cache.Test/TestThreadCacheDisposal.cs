@@ -46,7 +46,7 @@ public class TestThreadCacheDisposal
         //
         const string testKey = "disposal-test-key";
         var cache1 = ThreadCacheManager.GetOrCreateShared(testKey);
-        
+
         // Verify it's loaded
         Assert.IsTrue(ThreadCacheManager.IsLoaded(testKey));
 

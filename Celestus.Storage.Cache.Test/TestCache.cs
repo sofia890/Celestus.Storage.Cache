@@ -47,7 +47,7 @@ public class TestCache
         Assert.AreEqual((true, VALUE_2), otherCache.TryGet<double>(KEY_2));
         Assert.AreEqual((true, VALUE_3), otherCache.TryGet<DateTime>(KEY_3));
         Assert.AreEqual((true, VALUE_4), otherCache.TryGet<ExampleRecord>(KEY_4));
-        
+
         // Cleanup
         File.Delete(path.AbsolutePath);
     }

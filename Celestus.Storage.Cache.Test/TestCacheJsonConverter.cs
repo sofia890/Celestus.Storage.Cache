@@ -1,5 +1,4 @@
 using Celestus.Storage.Cache.Test.Model;
-using static Celestus.Storage.Cache.Cache;
 
 namespace Celestus.Storage.Cache.Test
 {

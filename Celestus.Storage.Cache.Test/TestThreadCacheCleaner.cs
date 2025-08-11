@@ -49,7 +49,7 @@ public class TestThreadCacheCleaner
         using var cleaner = new ThreadCacheCleaner<string>(cleanupIntervalInMs: ThreadCacheConstants.LONG_INTERVAL_IN_MS);
 
         RemovalTracker removalTracker = new();
-        cleaner.RegisterRemovalCallback(new (removalTracker.TryRemove));
+        cleaner.RegisterRemovalCallback(new(removalTracker.TryRemove));
 
         long nowInTicks = DateTime.UtcNow.Ticks;
 

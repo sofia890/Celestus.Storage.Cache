@@ -4,7 +4,7 @@
     {
         public AutoResetEvent EntryRemoved { get; private set; } = new(false);
 
-        public List<string> RemovedKeys { get; private set; }  = [];
+        public List<string> RemovedKeys { get; private set; } = [];
 
         public bool TryRemove(List<string> keys)
         {

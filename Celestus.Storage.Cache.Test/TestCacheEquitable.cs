@@ -10,7 +10,7 @@ public class TestCacheEquitable
         // Arrange & Act
         //
         using var cache = new Cache();
-        
+
         //
         // Assert
         //

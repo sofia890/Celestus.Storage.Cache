@@ -10,7 +10,7 @@ public class TestThreadCacheEquitable
         // Arrange & Act
         //
         using var cache = new ThreadCache();
-        
+
         //
         // Assert
         //

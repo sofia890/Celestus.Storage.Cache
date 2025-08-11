@@ -23,7 +23,8 @@ public class TestThreadCacheManager
         long hashOriginal = 0;
 
         var cacheKey = nameof(VerifyThatGetOrCreateSharedCreatesNewCacheWithKey);
-        tracked.Add(Weak.CreateReference(() => {
+        tracked.Add(Weak.CreateReference(() =>
+        {
             var originalCache = ThreadCacheManager.GetOrCreateShared(cacheKey);
             _ = originalCache.TrySet(cacheKey, 15);
 

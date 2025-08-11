@@ -167,7 +167,7 @@ namespace Celestus.Storage.Cache
             // Compare each key-value pair efficiently
             foreach (var kvp in Storage)
             {
-                if (!other.Storage.TryGetValue(kvp.Key, out var otherValue) || 
+                if (!other.Storage.TryGetValue(kvp.Key, out var otherValue) ||
                     !kvp.Value.Equals(otherValue))
                 {
                     return false;
@@ -185,14 +185,14 @@ namespace Celestus.Storage.Cache
         public override int GetHashCode()
         {
             var hash = new HashCode();
-            
+
             // Sort keys to ensure consistent hash code regardless of insertion order
             foreach (var kvp in Storage.OrderBy(x => x.Key))
             {
                 hash.Add(kvp.Key);
                 hash.Add(kvp.Value);
             }
-            
+
             return hash.ToHashCode();
         }
         #endregion
