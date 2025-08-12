@@ -1,3 +1,4 @@
+using Celestus.Io;
 using Celestus.Storage.Cache.Test.Model;
 
 namespace Celestus.Storage.Cache.Test;
@@ -99,19 +100,16 @@ public class TestThreadCacheCleaning
         //
         // Act
         //
-        var path = new Uri(Path.GetTempFileName());
-        cache.TrySaveToFile(path);
+        using var tempFile = new TempFile();
+        cache.TrySaveToFile(tempFile.Uri);
 
-        using ThreadCache? loadedCache = ThreadCache.TryCreateFromFile(path); ;
+        using ThreadCache? loadedCache = ThreadCache.TryCreateFromFile(tempFile.Uri);
 
         //
         // Assert
         //
         Assert.IsTrue(cleanerTester.SettingsWritten);
         Assert.IsTrue(cleanerTester.SettingsReadCorrectly);
-
-        // Cleanup
-        File.Delete(path.AbsolutePath);
     }
 
     [TestMethod]
@@ -133,8 +131,8 @@ public class TestThreadCacheCleaning
         var firstKey = keys.Next();
         _ = cache.TrySet(firstKey, CreateElement(), TimeSpan.FromDays(1));
 
-        var path_1 = new Uri(Path.GetTempFileName());
-        cache.TrySaveToFile(path_1);
+        using var tempFile1 = new TempFile();
+        cache.TrySaveToFile(tempFile1.Uri);
 
         //
         // Act
@@ -150,19 +148,15 @@ public class TestThreadCacheCleaning
 
         _ = cache.TryGet<byte[]>(firstKey);
 
-        var path_2 = new Uri(Path.GetTempFileName());
-        cache.TrySaveToFile(path_2);
+        using var tempFile2 = new TempFile();
+        cache.TrySaveToFile(tempFile2.Uri);
 
         //
         // Assert
         //
-        var file_1 = new FileInfo(path_1.AbsolutePath);
-        var file_2 = new FileInfo(path_2.AbsolutePath);
+        var file_1 = tempFile1.ToFileInfo();
+        var file_2 = tempFile2.ToFileInfo();
 
         Assert.AreEqual(file_1.Length, file_2.Length);
-
-        // Cleanup
-        file_1.Delete();
-        file_2.Delete();
     }
 }

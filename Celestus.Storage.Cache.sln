@@ -15,6 +15,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Celestus.Storage.Cache.Perf
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Celestus.Serialization", "Celestus.Serialization\Celestus.Serialization.csproj", "{89ECF54B-95AC-4477-88B6-4D6D64F4A6AD}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Celestus.Io", "Celestus.Io\Celestus.Io.csproj", "{11638F6F-9031-4AF5-B78F-4DB40B822DBF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -45,6 +47,10 @@ Global
 		{89ECF54B-95AC-4477-88B6-4D6D64F4A6AD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{89ECF54B-95AC-4477-88B6-4D6D64F4A6AD}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{89ECF54B-95AC-4477-88B6-4D6D64F4A6AD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{11638F6F-9031-4AF5-B78F-4DB40B822DBF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{11638F6F-9031-4AF5-B78F-4DB40B822DBF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{11638F6F-9031-4AF5-B78F-4DB40B822DBF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{11638F6F-9031-4AF5-B78F-4DB40B822DBF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

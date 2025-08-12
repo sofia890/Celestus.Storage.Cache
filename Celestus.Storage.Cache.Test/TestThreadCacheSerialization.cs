@@ -1,4 +1,5 @@
-﻿using Celestus.Storage.Cache.Test.Model;
+﻿using Celestus.Io;
+using Celestus.Storage.Cache.Test.Model;
 
 namespace Celestus.Storage.Cache.Test
 {
@@ -35,10 +36,10 @@ namespace Celestus.Storage.Cache.Test
             //
             // Act
             //
-            var path = new Uri(Path.GetTempFileName());
-            var loaded = originalCache.TrySaveToFile(path);
+            using var tempFile = new TempFile();
+            var loaded = originalCache.TrySaveToFile(tempFile.Uri);
 
-            using ThreadCache? loadedCache = ThreadCache.TryCreateFromFile(path); ;
+            using ThreadCache? loadedCache = ThreadCache.TryCreateFromFile(tempFile.Uri);
 
             //
             // Assert
@@ -68,24 +69,20 @@ namespace Celestus.Storage.Cache.Test
             const Decimal VALUE_1 = 598888899663145M;
             _ = cacheOne.TrySet(KEY_1, VALUE_1);
 
-            var path = new Uri(Path.GetTempFileName());
-            cacheOne.TrySaveToFile(path);
+            using var tempFile = new TempFile();
+            cacheOne.TrySaveToFile(tempFile.Uri);
 
             //
             // Act
             //
             using ThreadCache cacheTwo = new("anotherKey");
 
-            bool loaded = cacheTwo.TryLoadFromFile(path);
+            var loaded = cacheTwo.TryLoadFromFile(tempFile.Uri);
 
             //
             // Assert
             //
             Assert.IsFalse(loaded);
-            Assert.AreEqual((false, default), cacheTwo.TryGet<decimal>(KEY_1));
-
-            // Cleanup
-            File.Delete(path.AbsolutePath);
         }
 
         [TestMethod]

@@ -69,8 +69,7 @@ public class TestCacheCleaning
 
         const string KEY_1 = "Hamster";
         const bool VALUE_1 = true;
-        const int INSTANT_TIMEOUT = 0;
-        cache.Set(KEY_1, VALUE_1, INSTANT_TIMEOUT);
+        cache.Set(KEY_1, VALUE_1, ThreadCacheConstants.INSTANT_TIMEOUT);
 
         //
         // Act
@@ -120,7 +119,7 @@ public class TestCacheCleaning
         // Arrange
         //
         const int CLEAN_INTERVAL_IN_MS = 1;
-        var cache = new Cache(new CacheCleaner<string>(cleanupIntervalInMs: CLEAN_INTERVAL_IN_MS), false);
+        using var cache = new Cache(new CacheCleaner<string>(cleanupIntervalInMs: CLEAN_INTERVAL_IN_MS), false);
 
         static byte[] CreateElement()
         {

@@ -1,4 +1,7 @@
-﻿namespace Celestus.Storage.Cache.Test
+﻿using Celestus.Io;
+using Celestus.Storage.Cache.Test.Model;
+
+namespace Celestus.Storage.Cache.Test
 {
     [TestClass]
     [DoNotParallelize] // The tests are not thread safe since they dispose of resource other tests use.
@@ -110,22 +113,19 @@
             using var cache = new ThreadCache(CACHE_KEY);
             _ = cache.TrySet(ELEMENT_KEY, ELEMENT_VALUE);
 
-            var path = new Uri(Path.GetTempFileName());
-            cache.TrySaveToFile(path);
+            using var tempFile = new TempFile();
+            cache.TrySaveToFile(tempFile.Uri);
 
             //
             // Act
             //
-            using ThreadCache? otherCache = ThreadCacheManager.UpdateOrLoadSharedFromFile(path);
+            using ThreadCache? otherCache = ThreadCacheManager.UpdateOrLoadSharedFromFile(tempFile.Uri);
 
             //
             // Assert
             //
             Assert.IsNotNull(otherCache);
             Assert.AreEqual((true, ELEMENT_VALUE), otherCache.TryGet<string>(ELEMENT_KEY));
-
-            // Cleanup
-            File.Delete(path.AbsolutePath);
         }
 
         [TestMethod]
@@ -143,8 +143,8 @@
             //
             // Act
             //
-            var path = new Uri(Path.GetTempFileName());
-            cache.TrySaveToFile(path);
+            using var tempFile = new TempFile();
+            cache.TrySaveToFile(tempFile.Uri);
 
             _ = cache.TrySet(KEY_1, VALUE_1 * 2);
 
@@ -152,9 +152,7 @@
             const double VALUE_2 = 78.1234;
             _ = cache.TrySet(KEY_2, VALUE_2);
 
-            ThreadCache? otherCache = ThreadCacheManager.UpdateOrLoadSharedFromFile(path);
-
-            File.Delete(path.AbsolutePath);
+            ThreadCache? otherCache = ThreadCacheManager.UpdateOrLoadSharedFromFile(tempFile.Uri);
 
             //
             // Assert
@@ -172,21 +170,17 @@
             //
             // Arrange
             //
-            var path = new Uri(Path.GetTempFileName());
-            File.WriteAllText(path.AbsolutePath, "");
+            using var tempFile = new TempFile(createFile: true);
 
             //
             // Act
             //
-            using var cache = ThreadCacheManager.UpdateOrLoadSharedFromFile(path);
+            using ThreadCache? cache = ThreadCacheManager.UpdateOrLoadSharedFromFile(tempFile.Uri);
 
             //
             // Assert
             //
             Assert.IsNull(cache);
-
-            // Cleanup
-            File.Delete(path.AbsolutePath);
         }
     }
 }

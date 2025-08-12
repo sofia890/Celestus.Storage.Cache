@@ -1,4 +1,5 @@
-﻿using Celestus.Storage.Cache.Test.Model;
+﻿using Celestus.Io;
+using Celestus.Storage.Cache.Test.Model;
 
 namespace Celestus.Storage.Cache.Test
 {
@@ -84,21 +85,18 @@ namespace Celestus.Storage.Cache.Test
             const string KEY = "Sjö";
             cache.TrySet(KEY, 1);
 
-            var path = new Uri(Path.GetTempFileName());
-            cache.TrySaveToFile(path);
+            using var tempFile = new TempFile();
+            cache.TrySaveToFile(tempFile.Uri);
 
             //
             // Act
             //
-            var loadedCache = ThreadHelper.DoWhileLocked(cache, () => ThreadCacheManager.UpdateOrLoadSharedFromFile(path, timeout: 1), THREAD_TIMEOUT);
+            var loadedCache = ThreadHelper.DoWhileLocked(cache, () => ThreadCacheManager.UpdateOrLoadSharedFromFile(tempFile.Uri, timeout: 1), THREAD_TIMEOUT);
 
             //
             // Assert
             //
             Assert.IsNull(loadedCache);
-
-            // Cleanup
-            File.Delete(path.AbsolutePath);
         }
     }
 }
