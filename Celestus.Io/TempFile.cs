@@ -4,7 +4,7 @@
     {
         private bool _disposed;
 
-        public Uri Uri { get; init; } = new Uri(Path.GetTempPath());
+        public Uri Uri { get; init; } = new Uri(Path.GetTempFileName());
 
         /// <summary>
         /// Initializes a new instance of the TempFile class.
