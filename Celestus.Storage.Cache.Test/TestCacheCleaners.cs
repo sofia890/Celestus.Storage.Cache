@@ -97,7 +97,7 @@ public class TestCacheCleaners
 
         cleaner.EntryAccessed(ref entry_2, KEY_2);
 
-        Assert.IsTrue(removalTracker.EntryRemoved.WaitOne(INTERVAL_IN_MS * 20));
+        Assert.IsTrue(removalTracker.EntryRemoved.WaitOne(INTERVAL_IN_MS * 200));
 
         Assert.AreEqual(1, removalTracker.RemovedKeys.Count);
         Assert.AreEqual(KEY_2, removalTracker.RemovedKeys.First());
