@@ -121,7 +121,7 @@ public class TestThreadCacheCleaning
         // Arrange
         //
         const int CLEAN_INTERVAL_IN_MS = 5;
-        using var cache = new ThreadCache(new ThreadCacheCleaner<string>(cleanupIntervalInMs: CLEAN_INTERVAL_IN_MS));
+        using var cache = new ThreadCache(CLEAN_INTERVAL_IN_MS);
 
         static byte[] CreateElement()
         {

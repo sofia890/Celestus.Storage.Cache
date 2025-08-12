@@ -15,19 +15,19 @@ public class TestCacheCleaners
         //
         // Arrange
         //
-        using var cleaner = CacheCleanerHelper.GetCleaner(cleanerTypeToTest, ThreadCacheConstants.LONG_INTERVAL_IN_MS);
+        using var cleaner = CacheCleanerHelper.GetCleaner(cleanerTypeToTest, ThreadCacheConstants.LONG_INTERVAL_IN_MS, out var context);
 
         RemovalTracker removalTracker = new();
         cleaner.RegisterRemovalCallback(new(removalTracker.TryRemove));
 
         const string KEY_1 = "Key1";
-        CleanerHelper.TrackNewEntry(cleaner, KEY_1, DateTime.UtcNow);
+        CleanerHelper.TrackNewEntry(cleaner, KEY_1, DateTime.UtcNow, context);
 
         //
         // Act & Assert
         //
         const string KEY_2 = "Key2";
-        CleanerHelper.TrackNewEntry(cleaner, KEY_2, DateTime.UtcNow.AddDays(1));
+        CleanerHelper.TrackNewEntry(cleaner, KEY_2, DateTime.UtcNow.AddDays(1), context);
 
         Assert.IsTrue(removalTracker.EntryRemoved.WaitOne(ThreadCacheConstants.VERY_LONG_INTERVAL_IN_MS));
         Assert.AreEqual(1, removalTracker.RemovedKeys.Count);
@@ -42,13 +42,13 @@ public class TestCacheCleaners
         //
         // Arrange
         //
-        using var cleaner = CacheCleanerHelper.GetCleaner(cleanerTypeToTest, ThreadCacheConstants.LONG_INTERVAL_IN_MS);
+        using var cleaner = CacheCleanerHelper.GetCleaner(cleanerTypeToTest, ThreadCacheConstants.LONG_INTERVAL_IN_MS, out var context);
 
         RemovalTracker removalTracker = new();
         cleaner.RegisterRemovalCallback(new(removalTracker.TryRemove));
 
         const string KEY = "Key";
-        CleanerHelper.TrackNewEntry(cleaner, KEY, DateTime.UtcNow, out var entry);
+        CleanerHelper.TrackNewEntry(cleaner, KEY, DateTime.UtcNow, context, out var entry);
 
         //
         // Act & Assert
@@ -73,7 +73,7 @@ public class TestCacheCleaners
         // Arrange
         //
         const int INTERVAL_IN_MS = ThreadCacheConstants.LONG_INTERVAL_IN_MS;
-        using var cleaner = CacheCleanerHelper.GetCleaner(cleanerTypeToTest, INTERVAL_IN_MS);
+        using var cleaner = CacheCleanerHelper.GetCleaner(cleanerTypeToTest, INTERVAL_IN_MS, out var context);
 
         RemovalTracker removalTracker = new();
         cleaner.RegisterRemovalCallback(new(removalTracker.TryRemove));
@@ -81,10 +81,10 @@ public class TestCacheCleaners
         long nowInTicks = DateTime.UtcNow.Ticks;
 
         const string KEY_1 = "Key1";
-        CleanerHelper.TrackNewEntry(cleaner, KEY_1, DateTime.UtcNow.AddDays(1));
+        CleanerHelper.TrackNewEntry(cleaner, KEY_1, DateTime.UtcNow.AddDays(1), context);
 
         const string KEY_2 = "Key2";
-        CleanerHelper.TrackNewEntry(cleaner, KEY_2, DateTime.UtcNow, out var entry_2);
+        CleanerHelper.TrackNewEntry(cleaner, KEY_2, DateTime.UtcNow, context, out var entry_2);
 
         //
         // Act & Assert
@@ -93,11 +93,11 @@ public class TestCacheCleaners
 
         cleaner.EntryAccessed(ref entry_2, KEY_2);
 
-        Assert.IsFalse(removalTracker.EntryRemoved.WaitOne(INTERVAL_IN_MS - ThreadCacheConstants.SHORT_DELAY_IN_MS));
+        Assert.IsFalse(removalTracker.EntryRemoved.WaitOne(ThreadCacheConstants.SHORT_DELAY_IN_MS * 2));
 
         cleaner.EntryAccessed(ref entry_2, KEY_2);
 
-        Assert.IsTrue(removalTracker.EntryRemoved.WaitOne(INTERVAL_IN_MS * 2));
+        Assert.IsTrue(removalTracker.EntryRemoved.WaitOne(INTERVAL_IN_MS * 20));
 
         Assert.AreEqual(1, removalTracker.RemovedKeys.Count);
         Assert.AreEqual(KEY_2, removalTracker.RemovedKeys.First());
@@ -111,31 +111,31 @@ public class TestCacheCleaners
         //
         // Arrange
         //
-        using var cleaner = CacheCleanerHelper.GetCleaner(cleanerTypeToTest, ThreadCacheConstants.SHORT_DELAY_IN_MS);
+        using var cleanerA = CacheCleanerHelper.GetCleaner(cleanerTypeToTest, ThreadCacheConstants.SHORT_DELAY_IN_MS, out var contextA);
 
         using var stream = new MemoryStream();
         using Utf8JsonWriter writer = new(stream);
-        cleaner.WriteSettings(writer, new());
+        cleanerA.WriteSettings(writer, new());
         writer.Flush();
 
         //
         // Act
         //
         const int LONG_INTERVAL_IN_MS = 500000;
-        using var otherCleaner = CacheCleanerHelper.GetCleaner(cleanerTypeToTest, LONG_INTERVAL_IN_MS);
+        using var cleanerB = CacheCleanerHelper.GetCleaner(cleanerTypeToTest, LONG_INTERVAL_IN_MS, out var contextB);
 
         Utf8JsonReader reader = new(stream.ToArray());
-        otherCleaner.ReadSettings(ref reader, new());
+        cleanerB.ReadSettings(ref reader, new());
 
         RemovalTracker removalTracker = new();
-        otherCleaner.RegisterRemovalCallback(new(removalTracker.TryRemove));
+        cleanerB.RegisterRemovalCallback(new(removalTracker.TryRemove));
 
         const string KEY = "Key";
-        CleanerHelper.TrackNewEntry(otherCleaner, KEY, DateTime.UtcNow, out var entry);
+        CleanerHelper.TrackNewEntry(cleanerB, KEY, DateTime.UtcNow, contextB, out var entry);
 
         ThreadHelper.SpinWait(ThreadCacheConstants.SHORT_DELAY_IN_MS);
 
-        otherCleaner.EntryAccessed(ref entry, KEY);
+        cleanerB.EntryAccessed(ref entry, KEY);
 
         //
         // Assert
@@ -148,7 +148,7 @@ public class TestCacheCleaners
     [DataRow(typeof(ThreadCacheCleaner<string>))]
     public void VerifyThatMissingIntervalCausesCrash(Type cleanerTypeToTest)
     {
-        using CacheCleanerBase<string> cleaner = CacheCleanerHelper.GetCleaner(cleanerTypeToTest, 1000);
+        using CacheCleanerBase<string> cleaner = CacheCleanerHelper.GetCleaner(cleanerTypeToTest, 1000, out var context);
 
         string json = "{\"ExtraParameter\":\"500\"}";
         Assert.ThrowsException<MissingValueJsonException>(() => CleaningHelper.ReadSettings(cleaner, json));
@@ -162,7 +162,7 @@ public class TestCacheCleaners
         //
         // Arrange
         //
-        using CacheCleanerBase<string> cleaner = CacheCleanerHelper.GetCleaner(cleanerTypeToTest, 1000);
+        using CacheCleanerBase<string> cleaner = CacheCleanerHelper.GetCleaner(cleanerTypeToTest, 1000, out var context);
 
         string json = "{\"ExtraParameter\":\"500\",\"_cleanupIntervalInTicks\":500}";
         CleaningHelper.ReadSettings(cleaner, json);

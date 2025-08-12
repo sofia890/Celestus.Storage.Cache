@@ -12,7 +12,7 @@ public class TestCacheCleaner
         // Arrange
         //
         const int INTERVAL_IN_MS = 4;
-        var cleaner = new CacheCleaner<string>(cleanupIntervalInMs: INTERVAL_IN_MS);
+        var cleaner = CacheCleanerHelper.GetCleaner(typeof(CacheCleaner<string>), INTERVAL_IN_MS, out var context);
 
         RemovalTracker removalTracker = new();
         cleaner.RegisterRemovalCallback(new(removalTracker.TryRemove));
@@ -20,10 +20,10 @@ public class TestCacheCleaner
         long nowInTicks = DateTime.UtcNow.Ticks;
 
         const string KEY_1 = "Key1";
-        CleanerHelper.TrackNewEntry(cleaner, KEY_1, DateTime.UtcNow.AddDays(1));
+        CleanerHelper.TrackNewEntry(cleaner, KEY_1, DateTime.UtcNow.AddDays(1), context);
 
         const string KEY_2 = "Key2";
-        CleanerHelper.TrackNewEntry(cleaner, KEY_2, DateTime.UtcNow);
+        CleanerHelper.TrackNewEntry(cleaner, KEY_2, DateTime.UtcNow, context);
 
         ThreadHelper.SpinWait(INTERVAL_IN_MS + 1);
 
@@ -33,7 +33,7 @@ public class TestCacheCleaner
         Assert.AreEqual(0, removalTracker.RemovedKeys.Count);
 
         const string KEY_3 = "Key3";
-        CleanerHelper.TrackNewEntry(cleaner, KEY_3, DateTime.UtcNow, out var entry_3);
+        CleanerHelper.TrackNewEntry(cleaner, KEY_3, DateTime.UtcNow, context, out var entry_3);
 
         Assert.AreEqual(1, removalTracker.RemovedKeys.Count);
         Assert.AreEqual(KEY_2, removalTracker.RemovedKeys.First());

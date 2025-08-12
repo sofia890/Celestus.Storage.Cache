@@ -2,16 +2,24 @@
 {
     public static class CacheCleanerHelper
     {
-        public static CacheCleanerBase<string> GetCleaner(Type cleanerTypeToTest, int cleanupIntervalInMs)
+        public static CacheCleanerBase<string> GetCleaner(Type cleanerTypeToTest, int cleanupIntervalInMs, out object context)
         {
             if (cleanerTypeToTest == typeof(CacheCleaner<string>))
             {
+                context = new object();
+
                 return new CacheCleaner<string>(cleanupIntervalInMs);
             }
 
             Assert.AreEqual(cleanerTypeToTest, typeof(ThreadCacheCleaner<string>));
 
-            return new ThreadCacheCleaner<string>(cleanupIntervalInMs);
+            var threadContext = new CacheCleanerThreadContext();
+            context = threadContext;
+
+            var threadCache = new ThreadCacheCleaner<string>(cleanupIntervalInMs);
+            threadCache.RegisterCollection(new(threadContext.Storage));
+
+            return threadCache;
         }
     }
 }

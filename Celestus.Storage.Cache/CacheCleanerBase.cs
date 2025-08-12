@@ -19,6 +19,8 @@ namespace Celestus.Storage.Cache
 
         public abstract void RegisterRemovalCallback(WeakReference<Func<List<KeyType>, bool>> callback);
 
+        public abstract void RegisterCollection(WeakReference<IEnumerable<KeyValuePair<KeyType, CacheEntry>>> collection);
+
         public abstract void ReadSettings(ref Utf8JsonReader reader, JsonSerializerOptions options);
 
         public abstract void WriteSettings(Utf8JsonWriter writer, JsonSerializerOptions options);

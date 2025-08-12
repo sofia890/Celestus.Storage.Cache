@@ -4,11 +4,14 @@ using System.Threading.Channels;
 namespace Celestus.Storage.Cache
 {
     internal class ThreadCacheCleanerActor<KeyType> : IDisposable
+        where KeyType : notnull
     {
-        List<(KeyType key, CacheEntry entry)> _entries = [];
+        public const int DEFAULT_TIMEOUT_IN_MS = 5000;
+
         long _cleanupIntervalInTicks;
         long _nextCleanupOpportunityInTicks = 0;
         WeakReference<Func<List<KeyType>, bool>> _removalCallbackReference = new((keys) => false);
+        WeakReference<IEnumerable<KeyValuePair<KeyType, CacheEntry>>> _collectionReference = new(new Dictionary<KeyType, CacheEntry>());
         private bool _disposed = false;
         private readonly Task _signalHandlerTask;
 
@@ -23,7 +26,6 @@ namespace Celestus.Storage.Cache
         public ThreadCacheCleanerActor(int cleanupIntervalInMs)
         {
             _cleanupIntervalInTicks = TimeSpan.FromMilliseconds(cleanupIntervalInMs).Ticks;
-
             _signalHandlerTask = Task.Run(HandleSignals);
         }
 
@@ -46,8 +48,7 @@ namespace Celestus.Storage.Cache
                 }
                 else if (await Task.WhenAny(signalTask, NewTimeoutTask()) != signalTask)
                 {
-                    if (!_disposed)
-                        Prune(DateTime.UtcNow.Ticks);
+                    Prune(DateTime.UtcNow.Ticks);
                 }
                 else if (signalTask.IsCompletedSuccessfully)
                 {
@@ -61,22 +62,15 @@ namespace Celestus.Storage.Cache
                         default:
                             break;
 
-                        case CleanerProtocol.EntryAccessedInd when rawSignal is EntryAccessedInd<KeyType> payload:
-                            Prune(payload.TimeInTicks);
-                            break;
-
-                        case CleanerProtocol.TrackEntryInd when rawSignal is TrackEntryInd<KeyType> payload:
-                            Prune(DateTime.UtcNow.Ticks);
-
-                            _entries.Add((payload.Key, payload.Entry));
-                            break;
-
                         case CleanerProtocol.RegisterRemovalCallbackInd when rawSignal is RegisterRemovalCallbackInd<KeyType> payload:
                             _removalCallbackReference = payload.Callback;
                             break;
 
+                        case CleanerProtocol.Registercollection when rawSignal is RegistercollectionInd<KeyType> payload:
+                            _collectionReference = payload.collection;
+                            break;
+
                         case CleanerProtocol.ResetInd when rawSignal is ResetInd payload:
-                            _entries.Clear();
                             _cleanupIntervalInTicks = payload.CleanupIntervalInTicks;
                             _nextCleanupOpportunityInTicks = 0;
                             break;
@@ -87,46 +81,41 @@ namespace Celestus.Storage.Cache
 
         private void Prune(long timeInTicks)
         {
-            if (_disposed || _entries.Count == 0 || _nextCleanupOpportunityInTicks > timeInTicks)
+            ObjectDisposedException.ThrowIf(IsDisposed, this);
+
+            if (_nextCleanupOpportunityInTicks > timeInTicks)
             {
                 return;
             }
-
-            List<KeyType> expiredKeys = [];
-            List<(KeyType key, CacheEntry entry)> remainingElements = new(_entries.Count);
-
-            for (int i = 0; i < _entries.Count; i++)
+            if (!_collectionReference.TryGetTarget(out var collection))
             {
-                var element = _entries[i];
-
-                if (CacheCleaner<KeyType>.ExpiredCriteria(element.entry, timeInTicks))
-                {
-                    expiredKeys.Add(element.key);
-                }
-                else
-                {
-                    remainingElements.Add(element);
-                }
+                // Wait for reference to be available.
+                return;
             }
-
-            _entries = remainingElements;
-
-            if (expiredKeys.Count > 0 &&
-                !_disposed &&
-                _removalCallbackReference.TryGetTarget(out var callback))
+            else
             {
-                _ = callback(expiredKeys);
-            }
+                List<KeyType> expiredKeys = [];
 
-            _nextCleanupOpportunityInTicks = timeInTicks + _cleanupIntervalInTicks;
+                foreach (var entry in collection)
+                {
+                    if (CacheCleaner<KeyType>.ExpiredCriteria(entry.Value, timeInTicks))
+                    {
+                        expiredKeys.Add(entry.Key);
+                    }
+                }
+
+                if (expiredKeys.Count > 0 && _removalCallbackReference.TryGetTarget(out var callback))
+                {
+                    _ = callback(expiredKeys);
+                }
+
+                _nextCleanupOpportunityInTicks = timeInTicks + _cleanupIntervalInTicks;
+            }
         }
 
         public void ReadSettings(ref Utf8JsonReader reader)
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(GetType().Name);
-            }
+            ObjectDisposedException.ThrowIf(IsDisposed, this);
 
             bool intervalValueFound = false;
 
@@ -172,10 +161,7 @@ namespace Celestus.Storage.Cache
 
         public void WriteSettings(Utf8JsonWriter writer)
         {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(GetType().Name);
-            }
+            ObjectDisposedException.ThrowIf(IsDisposed, this);
 
             writer.WriteStartObject();
             writer.WritePropertyName(nameof(_cleanupIntervalInTicks));
@@ -196,16 +182,16 @@ namespace Celestus.Storage.Cache
             {
                 if (disposing)
                 {
-                    CleanerPort.Writer.Complete();
+                    _ = CleanerPort.Writer.TryComplete();
 
                     _signalHandlerTask.Wait(TimeSpan.FromSeconds(5));
-
-                    _entries.Clear();
                 }
 
                 _disposed = true;
             }
         }
+
+        public bool IsDisposed => _disposed;
         #endregion
     }
 }

@@ -2,37 +2,32 @@
 
 namespace Celestus.Storage.Cache
 {
-    public class ThreadCacheCleaner<KeyType>(int cleanupIntervalInMs) : CacheCleanerBase<KeyType>
+    public class ThreadCacheCleaner<KeyType>(int cleanupIntervalInMs) :  CacheCleanerBase<KeyType>
+        where KeyType : notnull
     {
         const int DEFAULT_INTERVAL_IN_MS = 60000;
-
         readonly ThreadCacheCleanerActor<KeyType> _server = new(cleanupIntervalInMs);
 
         public ThreadCacheCleaner() : this(DEFAULT_INTERVAL_IN_MS)
         {
 
         }
-
         public override void TrackEntry(ref CacheEntry entry, KeyType key)
         {
+            // For performance the entries are directly taken from storage.
             ObjectDisposedException.ThrowIf(IsDisposed, this);
-
-            _ = _server.CleanerPort.Writer.TryWrite(new TrackEntryInd<KeyType>(key, entry));
         }
 
         public override void EntryAccessed(ref CacheEntry entry, KeyType key)
         {
+            // For performance cleanup only happens according to a periodic timer.
             ObjectDisposedException.ThrowIf(IsDisposed, this);
-
-            var timeInTicks = DateTime.UtcNow.Ticks;
-            _ = _server.CleanerPort.Writer.TryWrite(new EntryAccessedInd<KeyType>(key, timeInTicks));
         }
 
         public override void EntryAccessed(ref CacheEntry entry, KeyType key, long timeInTicks)
         {
+            // For performance cleanup only happens according to a periodic timer.
             ObjectDisposedException.ThrowIf(IsDisposed, this);
-
-            _ = _server.CleanerPort.Writer.TryWrite(new EntryAccessedInd<KeyType>(key, timeInTicks));
         }
 
         public override void RegisterRemovalCallback(WeakReference<Func<List<KeyType>, bool>> callback)
@@ -40,6 +35,13 @@ namespace Celestus.Storage.Cache
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 
             _ = _server.CleanerPort.Writer.TryWrite(new RegisterRemovalCallbackInd<KeyType>(callback));
+        }
+
+        public override void RegisterCollection(WeakReference<IEnumerable<KeyValuePair<KeyType, CacheEntry>>> collection)
+        {
+            ObjectDisposedException.ThrowIf(IsDisposed, this);
+
+            _ = _server.CleanerPort.Writer.TryWrite(new RegistercollectionInd<KeyType>(collection));
         }
 
         public override void ReadSettings(ref Utf8JsonReader reader, JsonSerializerOptions options)

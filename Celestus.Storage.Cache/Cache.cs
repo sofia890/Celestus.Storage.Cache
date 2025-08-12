@@ -1,4 +1,5 @@
 ﻿using Celestus.Serialization;
+using System.Collections.Concurrent;
 using System.Text.Json.Serialization;
 
 namespace Celestus.Storage.Cache
@@ -14,16 +15,16 @@ namespace Celestus.Storage.Cache
 
         public string Key { get; init; }
 
-        internal Cache(
+        public Cache(
             string key,
             Dictionary<string, CacheEntry> storage,
             CacheCleanerBase<string> cleaner,
-            bool removalRegistered = false)
+            bool doNotSetRemoval = false)
         {
             Storage = storage;
             Cleaner = cleaner;
 
-            if (!removalRegistered)
+            if (!doNotSetRemoval)
             {
                 Cleaner.RegisterRemovalCallback(new(TryRemove));
             }
@@ -44,10 +45,8 @@ namespace Celestus.Storage.Cache
         {
         }
 
-        public void Set<DataType>(string key, DataType value, TimeSpan? duration = null)
+        private long GetExpiration(TimeSpan? duration = null)
         {
-            ObjectDisposedException.ThrowIf(IsDisposed, this);
-
             long expiration = long.MaxValue;
 
             if (duration is TimeSpan timeDuration)
@@ -55,34 +54,72 @@ namespace Celestus.Storage.Cache
                 expiration = DateTime.UtcNow.Ticks + timeDuration.Ticks;
             }
 
-            Set(key, value, expiration);
+            return expiration;
+        }
+
+        public void Set<DataType>(string key, DataType value, TimeSpan? duration = null)
+        {
+            ObjectDisposedException.ThrowIf(IsDisposed, this);
+
+            Set(key, value, GetExpiration(duration));
         }
 
         public void Set<DataType>(string key, DataType value, long expiration)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 
-            var entry = new CacheEntry(expiration, value);
+            Set(key, value, expiration, out var _);
+        }
+
+        public void Set<DataType>(string key, DataType value, long expiration, out CacheEntry entry)
+        {
+            ObjectDisposedException.ThrowIf(IsDisposed, this);
+
+            entry = new CacheEntry(expiration, value);
             Storage[key] = entry;
 
             Cleaner.TrackEntry(ref entry, key);
         }
 
+        public void Set<DataType>(string key, DataType value, out CacheEntry entry, TimeSpan? duration = null)
+        {
+            ObjectDisposedException.ThrowIf(IsDisposed, this);
+
+            Set(key, value, GetExpiration(duration), out entry);
+        }
+
         public (bool result, DataType? data) TryGet<DataType>(string key)
+        {
+            return TryGet<DataType>(key, out var _);
+        }
+
+        public (bool result, DataType? data) TryGet<DataType>(string key, out CacheEntry? entry)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 
             bool found = false;
             DataType? value = default;
 
-            if (Storage.TryGetValue(key, out var entry) &&
-                entry.Data is DataType data)
+            if (Storage.TryGetValue(key, out entry))
             {
                 var currentTimeInTicks = DateTime.UtcNow.Ticks;
                 found = entry.Expiration >= currentTimeInTicks;
-                value = data;
 
-                Cleaner.EntryAccessed(ref entry, key, currentTimeInTicks);
+                if (entry.Data is DataType data)
+                {
+                    value = data;
+                }
+                else if (entry.Data == null)
+                {
+                    value = default;
+                    found = value == null;
+                }
+                else
+                {
+                    found = false;
+                }
+
+                Cleaner.EntryAccessed(ref entry, key);
             }
 
             return (found, value);

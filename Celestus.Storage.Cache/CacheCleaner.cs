@@ -71,6 +71,11 @@ namespace Celestus.Storage.Cache
             _removalCallbackReference = callback;
         }
 
+        public override void RegisterCollection(WeakReference<IEnumerable<KeyValuePair<KeyType, CacheEntry>>> collection)
+        {
+            // Not used.
+        }
+
         public override void ReadSettings(ref Utf8JsonReader reader, JsonSerializerOptions options)
         {
             bool intervalValueFound = false;

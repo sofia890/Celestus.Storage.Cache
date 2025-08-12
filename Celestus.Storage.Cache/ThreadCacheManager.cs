@@ -24,22 +24,22 @@
             lock (_lock)
             {
                 if (_caches.TryGetValue(usedKey, out var cacheReference) &&
-                    cacheReference.TryGetTarget(out var cache))
+                    cacheReference.TryGetTarget(out var threadCache))
                 {
-                    return cache;
+                    return threadCache;
                 }
                 else
                 {
-                    cache = new ThreadCache(usedKey);
+                    threadCache = new ThreadCache(usedKey);
 
-                    _caches[usedKey] = new(cache);
+                    _caches[usedKey] = new(threadCache);
 
-                    if (cache.Cleaner != null)
+                    if (threadCache.Cache.Cleaner != null)
                     {
-                        _cleaners[usedKey] = cache.Cleaner;
+                        _cleaners[usedKey] = threadCache.Cache.Cleaner;
                     }
 
-                    return cache;
+                    return threadCache;
                 }
             }
         }

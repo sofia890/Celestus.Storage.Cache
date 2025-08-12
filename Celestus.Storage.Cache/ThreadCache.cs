@@ -12,25 +12,24 @@ namespace Celestus.Storage.Cache
 
         private bool _disposed = false;
 
-        internal CacheCleanerBase<string>? Cleaner { get; private set; } = null;
-
         internal Cache Cache { get; set; }
 
         readonly ReaderWriterLockSlim _lock = new();
 
         public string Key { get; init; }
 
-        public ThreadCache(string key, Cache cache, CacheCleanerBase<string>? cleaner = null)
+        public ThreadCache(string key, Cache cache)
         {
             Key = key;
             Cache = cache;
-            Cleaner = cleaner;
+
+            Cache.Cleaner.RegisterRemovalCallback(new(TryRemove));
+            Cache.Cleaner.RegisterCollection(new(Cache.Storage));
         }
 
         public ThreadCache(string key, CacheCleanerBase<string> cleaner) :
-            this(key, new Cache(cleaner, doNotSetRemoval: true), cleaner)
+            this(key, new Cache(cleaner, doNotSetRemoval: true))
         {
-            cleaner.RegisterRemovalCallback(new(TryRemove));
         }
 
         public ThreadCache(CacheCleanerBase<string> cleaner) :
@@ -47,6 +46,7 @@ namespace Celestus.Storage.Cache
             this(string.Empty, cleaningIntervalInMs)
         {
         }
+
         public CacheLock ThreadLock(int timeout = NO_TIMEOUT)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
@@ -82,7 +82,7 @@ namespace Celestus.Storage.Cache
                 return false;
             }
 
-            Cache.Set(key, value, duration);
+            Cache.Set(key, value, out var entry, duration);
             _lock.ExitWriteLock();
 
             return true;
@@ -154,18 +154,27 @@ namespace Celestus.Storage.Cache
                 return false;
             }
 
-            var loadedData = Serialize.TryCreateFromFile<ThreadCache>(path);
-
             bool result = false;
 
-            if (loadedData != null && Key == loadedData.Key)
+            try
             {
-                Cache = loadedData.Cache;
+                var loadedData = Serialize.TryCreateFromFile<ThreadCache>(path);
 
-                result = true;
+                if (loadedData != null && Key == loadedData.Key)
+                {
+                    Cache = loadedData.Cache;
+
+                    result = true;
+                }
             }
-
-            _lock.ExitWriteLock();
+            catch
+            {
+                throw;
+            }
+            finally
+            {
+                _lock.ExitWriteLock();
+            }
 
             return result;
         }

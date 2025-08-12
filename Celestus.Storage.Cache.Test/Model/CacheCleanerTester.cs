@@ -14,6 +14,8 @@ namespace Celestus.Storage.Cache.Test.Model
 
         public WeakReference<Func<List<string>, bool>> RemovalCallback { get; set; } = new(_ => false);
 
+        public WeakReference<IEnumerable<KeyValuePair<string, CacheEntry>>> StorageCollection { get; set; } = new(new Dictionary<string, CacheEntry>());
+
         public bool SettingsReadCorrectly { get; set; } = false;
 
         public bool SettingsWritten { get; set; } = false;
@@ -56,6 +58,16 @@ namespace Celestus.Storage.Cache.Test.Model
             }
 
             RemovalCallback = callback;
+        }
+
+        public override void RegisterCollection(WeakReference<IEnumerable<KeyValuePair<string, CacheEntry>>> collection)
+        {
+            if (IsDisposed)
+            {
+                return;
+            }
+
+            StorageCollection = collection;
         }
 
         public override void TrackEntry(ref CacheEntry entry, string key)
