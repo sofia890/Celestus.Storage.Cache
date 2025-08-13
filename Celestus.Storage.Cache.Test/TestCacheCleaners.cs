@@ -95,9 +95,10 @@ public class TestCacheCleaners
 
         Assert.IsFalse(removalTracker.EntryRemoved.WaitOne(ThreadCacheConstants.SHORT_DELAY_IN_MS * 2));
 
+        Thread.Sleep(INTERVAL_IN_MS);
         cleaner.EntryAccessed(ref entry_2, KEY_2);
 
-        Assert.IsTrue(removalTracker.EntryRemoved.WaitOne(INTERVAL_IN_MS * 200));
+        Assert.IsTrue(removalTracker.EntryRemoved.WaitOne(ThreadCacheConstants.SHORT_DELAY_IN_MS));
 
         Assert.AreEqual(1, removalTracker.RemovedKeys.Count);
         Assert.AreEqual(KEY_2, removalTracker.RemovedKeys.First());
