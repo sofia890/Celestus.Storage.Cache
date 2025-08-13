@@ -127,13 +127,9 @@ namespace Celestus.Storage.Cache
             {
                 throw new NotObjectTypeJsonException(TYPE_PROPERTY_NAME, typeString);
             }
-            else if (Activator.CreateInstance(cleanerType) is not object newObject)
+            else if (Activator.CreateInstance(cleanerType) is not CacheCleanerBase<string> createdCleaner)
             {
-                throw new ObjectCreationJsonException(TYPE_PROPERTY_NAME, cleanerType);
-            }
-            else if (newObject is not CacheCleanerBase<string> createdCleaner)
-            {
-                throw new MissingInheritanceJsonException(TYPE_PROPERTY_NAME, newObject, typeof(CacheCleanerBase<string>));
+                throw new MissingInheritanceJsonException(TYPE_PROPERTY_NAME, cleanerType, typeof(CacheCleanerBase<string>));
             }
             else
             {
