@@ -58,7 +58,7 @@ namespace Celestus.Storage.Cache
 
         public override void EntryAccessed(ref CacheEntry entry, KeyType key)
         {
-            Prune(DateTime.UtcNow.Ticks);
+            EntryAccessed(ref entry, key, DateTime.UtcNow.Ticks);
         }
 
         public override void EntryAccessed(ref CacheEntry entry, KeyType key, long timeInMilliseconds)
