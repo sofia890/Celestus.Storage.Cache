@@ -87,7 +87,7 @@ namespace Celestus.Storage.Cache
             {
                 return;
             }
-            if (!_collectionReference.TryGetTarget(out var collection))
+            else if (!_collectionReference.TryGetTarget(out var collection))
             {
                 // Wait for reference to be available.
                 return;

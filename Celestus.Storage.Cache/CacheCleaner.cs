@@ -4,13 +4,15 @@ using System.Text.Json;
 namespace Celestus.Storage.Cache
 {
     public class CacheCleaner<KeyType>(int cleanupIntervalInMs) : CacheCleanerBase<KeyType>()
+        where KeyType : notnull
     {
         const int DEFAULT_INTERVAL = 5000;
 
-        readonly List<(KeyType key, CacheEntry entry)> _entries = [];
+        WeakReference<IEnumerable<KeyValuePair<KeyType, CacheEntry>>> _collectionReference = new(new Dictionary<KeyType, CacheEntry>());
+
         long _cleanupIntervalInTicks = TimeSpan.FromMilliseconds(cleanupIntervalInMs).Ticks;
         long _nextCleanupOpportunityInTicks = 0;
-        WeakReference<Func<List<KeyType>, bool>> _removalCallbackReference = new((key) => false);
+        WeakReference<Func<List<KeyType>, bool>>? _removalCallbackReference;
 
         public CacheCleaner() : this(cleanupIntervalInMs: DEFAULT_INTERVAL)
         {
@@ -18,11 +20,20 @@ namespace Celestus.Storage.Cache
 
         private void Prune(long currentTimeInTicks)
         {
-            if (_entries.Count > 0 && _nextCleanupOpportunityInTicks <= currentTimeInTicks)
+            if (_nextCleanupOpportunityInTicks > currentTimeInTicks)
+            {
+                return;
+            }
+            else if (!_collectionReference.TryGetTarget(out var collection))
+            {
+                // Wait for reference to be available.
+                return;
+            }
+            else
             {
                 List<(KeyType key, CacheEntry entry)> expiredKeys = [];
 
-                foreach (var (key, entry) in _entries)
+                foreach (var (key, entry) in collection)
                 {
                     if (ExpiredCriteria(entry, currentTimeInTicks))
                     {
@@ -30,12 +41,7 @@ namespace Celestus.Storage.Cache
                     }
                 }
 
-                foreach (var element in expiredKeys)
-                {
-                    _entries.Remove(element);
-                }
-
-                if (expiredKeys.Count > 0 && _removalCallbackReference.TryGetTarget(out var callback))
+                if (expiredKeys.Count > 0 && (_removalCallbackReference?.TryGetTarget(out var callback) ?? false))
                 {
                     _ = callback([.. expiredKeys.Select(x => x.key)]);
                 }
@@ -52,8 +58,6 @@ namespace Celestus.Storage.Cache
         public override void TrackEntry(ref CacheEntry entry, KeyType key)
         {
             Prune(DateTime.UtcNow.Ticks);
-
-            _entries.Add((key, entry));
         }
 
         public override void EntryAccessed(ref CacheEntry entry, KeyType key)
@@ -73,7 +77,7 @@ namespace Celestus.Storage.Cache
 
         public override void RegisterCollection(WeakReference<IEnumerable<KeyValuePair<KeyType, CacheEntry>>> collection)
         {
-            // Not used.
+            _collectionReference = collection;
         }
 
         public override void ReadSettings(ref Utf8JsonReader reader, JsonSerializerOptions options)

@@ -1,13 +1,13 @@
 ﻿using Celestus.Serialization;
 using System.Text.Json.Serialization;
+using System.Threading;
 
 namespace Celestus.Storage.Cache
 {
     [JsonConverter(typeof(ThreadCacheJsonConverter))]
-    public class ThreadCache : IDisposable
+    public partial class ThreadCache : CacheBase<string>, IDisposable
     {
         const int CLEANER_INTERVAL_IN_MS = 5000;
-        public const int NO_TIMEOUT = -1;
         public const int DEFAULT_TIMEOUT_IN_MS = 5000;
 
         private bool _disposed = false;
@@ -16,11 +16,10 @@ namespace Celestus.Storage.Cache
 
         readonly ReaderWriterLockSlim _lock = new();
 
-        public string Key { get; init; }
+        internal override CacheCleanerBase<string> Cleaner { get => Cache.Cleaner; }
 
-        public ThreadCache(string key, Cache cache)
+        public ThreadCache(string key, Cache cache) : base(key)
         {
-            Key = key;
             Cache = cache;
 
             Cache.Cleaner.RegisterRemovalCallback(new(TryRemove));
@@ -44,6 +43,11 @@ namespace Celestus.Storage.Cache
 
         public ThreadCache(int cleaningIntervalInMs = CLEANER_INTERVAL_IN_MS) :
             this(string.Empty, cleaningIntervalInMs)
+        {
+        }
+
+        public ThreadCache(string key) :
+            this(key, CLEANER_INTERVAL_IN_MS)
         {
         }
 
@@ -73,6 +77,15 @@ namespace Celestus.Storage.Cache
             return true;
         }
 
+        public override void Set<DataType>(string key, DataType value, TimeSpan? duration = null)
+        {
+            ObjectDisposedException.ThrowIf(IsDisposed, this);
+
+            _lock.EnterWriteLock();
+            Cache.Set(key, value, out var entry, duration);
+            _lock.ExitWriteLock();
+        }
+
         public bool TrySet<DataType>(string key, DataType value, TimeSpan? duration = null, int timeout = NO_TIMEOUT)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
@@ -87,6 +100,19 @@ namespace Celestus.Storage.Cache
 
             return true;
         }
+
+        public override DataType? Get<DataType>(string key)
+            where DataType : class
+        {
+            ObjectDisposedException.ThrowIf(IsDisposed, this);
+
+            _lock.EnterReadLock();
+            var result = Cache.Get<DataType>(key);
+            _lock.ExitReadLock();
+
+            return result;
+        }
+
         public (bool result, DataType? data) TryGet<DataType>(string key, int timeout = NO_TIMEOUT)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
@@ -192,9 +218,10 @@ namespace Celestus.Storage.Cache
             {
                 if (disposing)
                 {
-                    ThreadCacheManager.Remove(Key);
+                    Factory.Remove(Key);
 
                     Cache.Dispose();
+
                     _lock.Dispose();
                 }
 
@@ -202,7 +229,7 @@ namespace Celestus.Storage.Cache
             }
         }
 
-        public bool IsDisposed => _disposed;
+        public override bool IsDisposed => _disposed;
         #endregion
 
         #region IEquatable

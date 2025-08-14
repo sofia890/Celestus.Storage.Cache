@@ -13,7 +13,7 @@ namespace Celestus.Storage.Cache.Test
             //
             // Arrange & Act
             //
-            using var cache = CacheManager.GetOrCreateShared();
+            using var cache = Cache.Factory.GetOrCreateShared();
 
             //
             // Assert
@@ -55,13 +55,13 @@ namespace Celestus.Storage.Cache.Test
             const string ELEMENT_VALUE = "ads4s65ad4a6s8d4a8sd478asd4asd8546asd56";
             const string CACHE_KEY = nameof(VerifyThatSharedCacheCanBeRetrievedAfterCreated);
 
-            using var cache = CacheManager.GetOrCreateShared(CACHE_KEY);
+            using var cache = Cache.Factory.GetOrCreateShared(CACHE_KEY);
             cache.Set(ELEMENT_KEY, ELEMENT_VALUE);
 
             //
             // Act
             //
-            using var otherCache = CacheManager.GetOrCreateShared(CACHE_KEY);
+            using var otherCache = Cache.Factory.GetOrCreateShared(CACHE_KEY);
 
             //
             // Assert
@@ -88,7 +88,7 @@ namespace Celestus.Storage.Cache.Test
             //
             // Act
             //
-            using var otherCache = CacheManager.UpdateOrLoadSharedFromFile(tempFile.Uri);
+            using var otherCache = Cache.Factory.UpdateOrLoadSharedFromFile(tempFile.Uri);
 
             //
             // Assert
@@ -103,11 +103,13 @@ namespace Celestus.Storage.Cache.Test
             //
             // Arrange
             //
-            using Cache cache = CacheManager.GetOrCreateShared(nameof(VerifyThatSharedCacheCanBeUpdatedFromFile));
+            using Cache cache = Cache.Factory.GetOrCreateShared(nameof(VerifyThatSharedCacheCanBeUpdatedFromFile));
 
             const string KEY_1 = "Katter";
             const int VALUE_1 = 123;
-            cache.Set(KEY_1, VALUE_1);
+
+            var longDuration = TimeSpan.FromHours(1);
+            cache.Set(KEY_1, VALUE_1, duration: longDuration);
 
             //
             // Act
@@ -115,21 +117,21 @@ namespace Celestus.Storage.Cache.Test
             using var tempFile = new TempFile();
             cache.SaveToFile(tempFile.Uri);
 
-            cache.Set(KEY_1, VALUE_1 * 2);
+            cache.Set(KEY_1, VALUE_1 * 2, duration: longDuration);
 
             const string KEY_2 = "Snake";
             const double VALUE_2 = 78.1234;
-            cache.Set(KEY_2, VALUE_2);
+            cache.Set(KEY_2, VALUE_2, duration: longDuration);
 
-            using Cache? otherCache = CacheManager.UpdateOrLoadSharedFromFile(tempFile.Uri);
+            using Cache? otherCache = Cache.Factory.UpdateOrLoadSharedFromFile(tempFile.Uri);
 
             //
             // Assert
             //
             Assert.IsNotNull(otherCache);
             Assert.AreEqual(cache, otherCache);
-            Assert.AreEqual(cache.TryGet<int>(KEY_1), (true, VALUE_1));
-            Assert.AreEqual(cache.TryGet<double>(KEY_2), (false, 0));
+            Assert.AreEqual((true, VALUE_1), cache.TryGet<int>(KEY_1));
+            Assert.AreEqual((false, 0), cache.TryGet<double>(KEY_2));
         }
 
         [TestMethod]

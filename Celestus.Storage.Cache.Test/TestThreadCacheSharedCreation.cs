@@ -13,8 +13,8 @@ namespace Celestus.Storage.Cache.Test
             //
             // Arrange
             //
-            using var cache = ThreadCacheManager.GetOrCreateShared(nameof(VerifyThatSharedCachesWithDifferentKeysAreUnique));
-            using var otherCache = ThreadCacheManager.GetOrCreateShared(new Guid().ToString());
+            using var cache = ThreadCache.Factory.GetOrCreateShared(nameof(VerifyThatSharedCachesWithDifferentKeysAreUnique));
+            using var otherCache = ThreadCache.Factory.GetOrCreateShared(new Guid().ToString());
             const int VALUE = 55;
             const string KEY = "test";
             _ = cache.TrySet(KEY, VALUE);
@@ -42,7 +42,7 @@ namespace Celestus.Storage.Cache.Test
             //
             // Act
             //
-            using var cache = ThreadCacheManager.GetOrCreateShared();
+            using var cache = ThreadCache.Factory.GetOrCreateShared();
 
             //
             // Assert
@@ -84,14 +84,14 @@ namespace Celestus.Storage.Cache.Test
             const string ELEMENT_VALUE = "ads4s65ad4a6s8d4a8sd478asd4asd8546asd56";
             const string CACHE_KEY = nameof(VerifyThatSharedCacheCanBeRetrievedAfterCreated);
 
-            using var cache = ThreadCacheManager.GetOrCreateShared(CACHE_KEY);
+            using var cache = ThreadCache.Factory.GetOrCreateShared(CACHE_KEY);
 
             _ = cache.TrySet(ELEMENT_KEY, ELEMENT_VALUE);
 
             //
             // Act
             //
-            var otherCache = ThreadCacheManager.GetOrCreateShared(CACHE_KEY);
+            var otherCache = ThreadCache.Factory.GetOrCreateShared(CACHE_KEY);
 
             //
             // Assert
@@ -119,7 +119,7 @@ namespace Celestus.Storage.Cache.Test
             //
             // Act
             //
-            using ThreadCache? otherCache = ThreadCacheManager.UpdateOrLoadSharedFromFile(tempFile.Uri);
+            using ThreadCache? otherCache = ThreadCache.Factory.UpdateOrLoadSharedFromFile(tempFile.Uri);
 
             //
             // Assert
@@ -134,7 +134,7 @@ namespace Celestus.Storage.Cache.Test
             //
             // Arrange
             //
-            using ThreadCache cache = ThreadCacheManager.GetOrCreateShared(nameof(VerifyThatSharedCacheCanBeUpdatedFromFile));
+            using ThreadCache cache = ThreadCache.Factory.GetOrCreateShared(nameof(VerifyThatSharedCacheCanBeUpdatedFromFile));
 
             const string KEY_1 = "Katter";
             const int VALUE_1 = 123;
@@ -152,7 +152,7 @@ namespace Celestus.Storage.Cache.Test
             const double VALUE_2 = 78.1234;
             _ = cache.TrySet(KEY_2, VALUE_2);
 
-            ThreadCache? otherCache = ThreadCacheManager.UpdateOrLoadSharedFromFile(tempFile.Uri);
+            ThreadCache? otherCache = ThreadCache.Factory.UpdateOrLoadSharedFromFile(tempFile.Uri);
 
             //
             // Assert
@@ -175,7 +175,7 @@ namespace Celestus.Storage.Cache.Test
             //
             // Act
             //
-            using ThreadCache? cache = ThreadCacheManager.UpdateOrLoadSharedFromFile(tempFile.Uri);
+            using ThreadCache? cache = ThreadCache.Factory.UpdateOrLoadSharedFromFile(tempFile.Uri);
 
             //
             // Assert

@@ -11,41 +11,32 @@ public class TestThreadCacheManager
         //
         // Arrange
         //
-        ThreadCacheManager.SetCleanupInterval(TimeSpan.FromMilliseconds(10));
+        ThreadCache.Factory.SetCleanupInterval(TimeSpan.FromMilliseconds(10));
 
         //
         // Act
         //
-        var tracked = new List<WeakReference>();
+        const string CACHE_KEY = nameof(VerifyThatGetOrCreateSharedCreatesNewCacheWithKey);
 
-        var referrer = new List<ThreadCache>();
-
-        long hashOriginal = 0;
-
-        var cacheKey = nameof(VerifyThatGetOrCreateSharedCreatesNewCacheWithKey);
-        tracked.Add(Weak.CreateReference(() =>
+        object Prepare(out long hash)
         {
-            var originalCache = ThreadCacheManager.GetOrCreateShared(cacheKey);
-            _ = originalCache.TrySet(cacheKey, 15);
+            var originalCache = ThreadCache.Factory.GetOrCreateShared(CACHE_KEY);
+            _ = originalCache.TrySet(CACHE_KEY, 15);
 
-            hashOriginal = originalCache.GetHashCode();
+            hash = originalCache.GetHashCode();
 
-            referrer.Add(originalCache); return originalCache;
-        }));
+            return originalCache;
+        }
 
-        // Run some code that is expected to release the references
-        referrer.Clear();
-
-        // No exceptions should be thrown during cleanup
-        GC.Collect();
-        GC.WaitForPendingFinalizers();
+        var helper = new GarbageCollectionHelper<long>();
+        var hashOriginal = helper.ActAndCollect(Prepare, out var released);
 
         //
         // Assert
         //
-        using ThreadCache? newThreadCache = ThreadCacheManager.GetOrCreateShared(cacheKey);
+        using ThreadCache? newThreadCache = ThreadCache.Factory.GetOrCreateShared(CACHE_KEY);
 
-        Assert.IsFalse(tracked.Any(o => o.IsAlive), "All objects should have been released");
+        Assert.IsTrue(released);
         Assert.AreNotEqual(hashOriginal, newThreadCache.GetHashCode());
     }
 }

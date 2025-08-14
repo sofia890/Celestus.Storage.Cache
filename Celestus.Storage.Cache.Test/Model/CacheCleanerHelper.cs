@@ -1,25 +1,27 @@
 ﻿namespace Celestus.Storage.Cache.Test.Model
 {
-    public static class CacheCleanerHelper
+    internal static class CacheCleanerHelper
     {
-        public static CacheCleanerBase<string> GetCleaner(Type cleanerTypeToTest, int cleanupIntervalInMs, out object context)
+        public static CacheCleanerBase<string> GetCleaner(Type cleanerTypeToTest, int cleanupIntervalInMs, out CacheCleanerContext context)
         {
+            context = new CacheCleanerContext();
+
+            CacheCleanerBase<string> cleaner;
+
             if (cleanerTypeToTest == typeof(CacheCleaner<string>))
             {
-                context = new object();
+                cleaner = new CacheCleaner<string>(cleanupIntervalInMs);
+            }
+            else
+            {
+                Assert.AreEqual(cleanerTypeToTest, typeof(ThreadCacheCleaner<string>));
 
-                return new CacheCleaner<string>(cleanupIntervalInMs);
+                cleaner = new ThreadCacheCleaner<string>(cleanupIntervalInMs);
             }
 
-            Assert.AreEqual(cleanerTypeToTest, typeof(ThreadCacheCleaner<string>));
+            cleaner.RegisterCollection(new(context.Storage));
 
-            var threadContext = new CacheCleanerThreadContext();
-            context = threadContext;
-
-            var threadCache = new ThreadCacheCleaner<string>(cleanupIntervalInMs);
-            threadCache.RegisterCollection(new(threadContext.Storage));
-
-            return threadCache;
+            return cleaner;
         }
     }
 }

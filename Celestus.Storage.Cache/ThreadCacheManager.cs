@@ -1,97 +1,37 @@
 ﻿namespace Celestus.Storage.Cache
 {
-    public static class ThreadCacheManager
+    public partial class ThreadCache
     {
-        // Track items that need to be disposed. This is needed due to code generator
-        // not being able to implement dispose pattern correctly. Could not impose
-        // pattern in a clean and user friendly way.
-        readonly static Dictionary<string, CacheCleanerBase<string>> _cleaners = [];
+        public static ThreadCacheManager Factory = new();
 
-        readonly static Dictionary<string, WeakReference<ThreadCache>> _caches = [];
-        readonly static CacheFactoryCleaner<ThreadCache> _factoryCleaner = new(_caches, _cleaners);
-
-        readonly static object _lock = new();
-
-        public static bool IsLoaded(string key)
+        public class ThreadCacheManager : CacheManagerBase<string, ThreadCache>
         {
-            return _caches.ContainsKey(key);
-        }
-
-        public static ThreadCache GetOrCreateShared(string key = "")
-        {
-            var usedKey = (key.Length > 0) ? key : Guid.NewGuid().ToString();
-
-            lock (_lock)
+            public void Remove(string key)
             {
-                if (_caches.TryGetValue(usedKey, out var cacheReference) &&
-                    cacheReference.TryGetTarget(out var threadCache))
+                lock (this)
                 {
-                    return threadCache;
-                }
-                else
-                {
-                    threadCache = new ThreadCache(usedKey);
-
-                    _caches[usedKey] = new(threadCache);
-
-                    if (threadCache.Cache.Cleaner != null)
+                    if (_caches.TryGetValue(key, out var cacheReference))
                     {
-                        _cleaners[usedKey] = threadCache.Cache.Cleaner;
-                    }
-
-                    return threadCache;
-                }
-            }
-        }
-
-        public static ThreadCache? UpdateOrLoadSharedFromFile(Uri path, int timeout = ThreadCache.NO_TIMEOUT)
-        {
-            if (ThreadCache.TryCreateFromFile(path) is not ThreadCache loadedCache)
-            {
-                return null;
-            }
-            else if (IsLoaded(loadedCache.Key))
-            {
-                lock (_lock)
-                {
-                    var threadCacheReference = _caches[loadedCache.Key];
-
-                    if (threadCacheReference.TryGetTarget(out var threadCache) &&
-                        threadCache.TrySetCache(loadedCache.Cache, timeout))
-                    {
-                        return threadCache;
-                    }
-                    else
-                    {
-                        return null;
+                        _ = _caches.TryRemove(key, out _);
                     }
                 }
             }
-            else
-            {
-                lock (_lock)
-                {
-                    _caches[loadedCache.Key] = new(loadedCache);
-                }
 
-                return loadedCache;
+            #region CacheManagerBase
+            protected override ThreadCache? TryCreateFromFile(Uri path)
+            {
+                return ThreadCache.TryCreateFromFile(path);
             }
-        }
 
-        public static void Remove(string key)
-        {
-            lock (_lock)
+            protected override bool Update(ThreadCache from, ThreadCache to, TimeSpan? timeout)
             {
-                if (_caches.TryGetValue(key, out var cacheReference))
+                lock (this)
                 {
-                    _caches.Remove(key);
+                    var timeoutInMs = timeout?.Milliseconds ?? DEFAULT_TIMEOUT_IN_MS;
+                    return to.TrySetCache(from.Cache.ToCache(), timeoutInMs);
                 }
             }
-        }
-
-        public static void SetCleanupInterval(TimeSpan interval)
-        {
-            _factoryCleaner.SetCleanupInterval(interval);
+            #endregion
         }
     }
 }

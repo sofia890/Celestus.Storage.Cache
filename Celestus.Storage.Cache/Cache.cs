@@ -5,21 +5,19 @@ using System.Text.Json.Serialization;
 namespace Celestus.Storage.Cache
 {
     [JsonConverter(typeof(CacheJsonConverter))]
-    public class Cache : IDisposable
+    public partial class Cache : CacheBase<string>, IDisposable, ICloneable
     {
         private bool _disposed = false;
 
         internal Dictionary<string, CacheEntry> Storage { get; set; }
 
-        internal CacheCleanerBase<string> Cleaner { get; private set; }
-
-        public string Key { get; init; }
+        internal override CacheCleanerBase<string> Cleaner { get; }
 
         public Cache(
             string key,
             Dictionary<string, CacheEntry> storage,
             CacheCleanerBase<string> cleaner,
-            bool doNotSetRemoval = false)
+            bool doNotSetRemoval = false) : base(key)
         {
             Storage = storage;
             Cleaner = cleaner;
@@ -29,7 +27,7 @@ namespace Celestus.Storage.Cache
                 Cleaner.RegisterRemovalCallback(new(TryRemove));
             }
 
-            Key = key;
+            Cleaner.RegisterCollection(new(Storage));
         }
 
         public Cache(string key) : this(key, [], new CacheCleaner<string>())
@@ -57,7 +55,7 @@ namespace Celestus.Storage.Cache
             return expiration;
         }
 
-        public void Set<DataType>(string key, DataType value, TimeSpan? duration = null)
+        public override void Set<DataType>(string key, DataType value, TimeSpan? duration = null)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 
@@ -86,6 +84,21 @@ namespace Celestus.Storage.Cache
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 
             Set(key, value, GetExpiration(duration), out entry);
+        }
+
+        public override DataType? Get<DataType>(string key)
+            where DataType : class
+        {
+            var result = TryGet<DataType>(key, out var _);
+
+            if (!result.result)
+            {
+                throw new InvalidOperationException();
+            }
+            else
+            {
+                return result.data;
+            }
         }
 
         public (bool result, DataType? data) TryGet<DataType>(string key)
@@ -169,6 +182,14 @@ namespace Celestus.Storage.Cache
             }
         }
 
+        public Cache ToCache()
+        {
+            var clone = new Cache(Key);
+            clone.Storage = Storage.ToDictionary();
+
+            return clone;
+        }
+
         #region IDisposable
         public void Dispose()
         {
@@ -190,7 +211,7 @@ namespace Celestus.Storage.Cache
             }
         }
 
-        public bool IsDisposed => _disposed;
+        public override bool IsDisposed => _disposed;
         #endregion
 
         #region IEquatable
@@ -231,6 +252,13 @@ namespace Celestus.Storage.Cache
             }
 
             return hash.ToHashCode();
+        }
+        #endregion
+
+        #region ICloneable
+        public object Clone()
+        {
+            return ToCache();
         }
         #endregion
     }

@@ -9,7 +9,7 @@ public class TestCacheCleaners
 {
     [TestMethod]
     [DataRow(typeof(CacheCleaner<string>))]
-    [DataRow(typeof(ThreadCacheCleaner<string>))]
+    // ThreadCacheCleaner does not prune on new entries due to optimization.
     public void VerifyThatExpiredElementsAreRemovedWhenNewEntryIsTracked(Type cleanerTypeToTest)
     {
         //
@@ -36,7 +36,7 @@ public class TestCacheCleaners
 
     [TestMethod]
     [DataRow(typeof(CacheCleaner<string>))]
-    [DataRow(typeof(ThreadCacheCleaner<string>))]
+    // ThreadCacheCleaner does not prune on accesses due to optimization.
     public void VerifyThatExpiredElementsAreRemovedWhenEntryIsAccessed(Type cleanerTypeToTest)
     {
         //
@@ -48,16 +48,16 @@ public class TestCacheCleaners
         cleaner.RegisterRemovalCallback(new(removalTracker.TryRemove));
 
         const string KEY = "Key";
-        CleanerHelper.TrackNewEntry(cleaner, KEY, DateTime.UtcNow, context, out var entry);
+        CleanerHelper.TrackNewEntry(cleaner, KEY, DateTime.UtcNow.AddDays(1), context, out var entry);
 
         //
         // Act & Assert
         //
         Assert.IsFalse(removalTracker.EntryRemoved.WaitOne(ThreadCacheConstants.SHORT_DELAY_IN_MS));
 
-        cleaner.EntryAccessed(ref entry, KEY);
+        cleaner.EntryAccessed(ref entry, KEY, long.MaxValue);
 
-        Assert.IsTrue(removalTracker.EntryRemoved.WaitOne());
+        Assert.IsTrue(removalTracker.EntryRemoved.WaitOne(ThreadCacheConstants.SHORT_DELAY_IN_MS));
         Assert.IsFalse(removalTracker.EntryRemoved.WaitOne(ThreadCacheConstants.SHORT_DELAY_IN_MS));
 
         Assert.AreEqual(1, removalTracker.RemovedKeys.Count);

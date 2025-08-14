@@ -45,10 +45,10 @@ public class TestThreadCacheDisposal
         // Arrange
         //
         const string testKey = "disposal-test-key";
-        var cache1 = ThreadCacheManager.GetOrCreateShared(testKey);
+        var cache1 = ThreadCache.Factory.GetOrCreateShared(testKey);
 
         // Verify it's loaded
-        Assert.IsTrue(ThreadCacheManager.IsLoaded(testKey));
+        Assert.IsTrue(ThreadCache.Factory.TryLoad(testKey, out _));
 
         //
         // Act
@@ -58,7 +58,7 @@ public class TestThreadCacheDisposal
         //
         // Assert - Factory should create a new instance
         //
-        using var cache2 = ThreadCacheManager.GetOrCreateShared(testKey);
+        using var cache2 = ThreadCache.Factory.GetOrCreateShared(testKey);
 
         Assert.IsFalse(ReferenceEquals(cache1, cache2));
     }
