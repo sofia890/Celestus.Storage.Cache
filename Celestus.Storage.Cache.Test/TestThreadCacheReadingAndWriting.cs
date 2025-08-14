@@ -38,12 +38,12 @@ namespace Celestus.Storage.Cache.Test
             //
             // Arrange
             //
-            const int DURATION_IN_MS = 8;
+            var DURATION_IN_MS = TimeSpan.FromMilliseconds(8);
             using var cache = new ThreadCache(DURATION_IN_MS * 2);
 
             const int VALUE = 23;
             const string KEY = "key";
-            _ = cache.TrySet(KEY, VALUE, duration: TimeSpan.FromMilliseconds(DURATION_IN_MS));
+            _ = cache.TrySet(KEY, VALUE, duration: DURATION_IN_MS);
 
             //
             // Act
@@ -155,7 +155,7 @@ namespace Celestus.Storage.Cache.Test
                     startSignal.WaitOne();
 
                     var key = id.ToString();
-                    _ = cache.TrySet(key, id, timeout: THREAD_TEST_TIMEOUT);
+                    _ = cache.TrySet(key, id, timeoutInMs: THREAD_TEST_TIMEOUT);
 
                     for (int i = 1; i <= N_ITERATION; i++)
                     {
@@ -195,7 +195,7 @@ namespace Celestus.Storage.Cache.Test
 
             const string KEY = "hammer";
             const int THREAD_TEST_TIMEOUT = 10000;
-            _ = cache.TrySet(KEY, 0, timeout: THREAD_TEST_TIMEOUT);
+            _ = cache.TrySet(KEY, 0, timeoutInMs: THREAD_TEST_TIMEOUT);
 
             ManualResetEvent startSignal = new(false);
 

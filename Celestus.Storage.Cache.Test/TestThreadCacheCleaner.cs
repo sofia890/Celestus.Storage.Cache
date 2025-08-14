@@ -13,7 +13,7 @@ public class TestThreadCacheCleaner
         // Arrange
         //
         var cleanerType = typeof(ThreadCacheCleaner<string>);
-        using var cleaner = CacheCleanerHelper.GetCleaner(cleanerType, ThreadCacheConstants.LONG_INTERVAL_IN_MS, out var context);
+        using var cleaner = CacheCleanerHelper.GetCleaner(cleanerType, CacheConstants.LongDuration, out var context);
 
         RemovalTracker removalTracker = new();
         cleaner.RegisterRemovalCallback(new(removalTracker.TryRemove));
@@ -30,9 +30,9 @@ public class TestThreadCacheCleaner
         //
         // Assert
         //
-        Assert.IsFalse(removalTracker.EntryRemoved.WaitOne(ThreadCacheConstants.LONG_INTERVAL_IN_MS / 2));
+        Assert.IsFalse(removalTracker.EntryRemoved.WaitOne(CacheConstants.LongDuration / 2));
 
-        Assert.IsTrue(removalTracker.EntryRemoved.WaitOne(ThreadCacheConstants.LONG_INTERVAL_IN_MS * 2));
+        Assert.IsTrue(removalTracker.EntryRemoved.WaitOne(CacheConstants.LongDuration * 2));
 
         Assert.AreEqual(1, removalTracker.RemovedKeys.Count);
         Assert.AreEqual(KEY_1, removalTracker.RemovedKeys.First());

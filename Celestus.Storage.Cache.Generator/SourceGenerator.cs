@@ -191,7 +191,7 @@ namespace Celestus.Storage.Cache.Generator
                     {{indentation}}            value = ({{methodIdentifier}}({{parameters}}), {{tupleOutVariableAssignment}});
                     {{indentation}}            
                     {{indentation}}            // Avoid throwing an exception if TrySet(...) fails. Just try next time the value is fetched.
-                    {{indentation}}            _ = {{cacheStore}}.TrySet(uniqueKey, value, duration: TimeSpan.FromMilliseconds({{durationInMs}}), timeout: {{timeoutInMilliseconds}});
+                    {{indentation}}            _ = {{cacheStore}}.TrySet(uniqueKey, value, {{timeoutInMilliseconds}}, duration: TimeSpan.FromMilliseconds({{durationInMs}}));
                     {{indentation}}        }
                     {{indentation}}        else
                     {{indentation}}        {

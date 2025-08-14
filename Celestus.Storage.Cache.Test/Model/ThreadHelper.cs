@@ -22,7 +22,7 @@ namespace Celestus.Storage.Cache.Test.Model
             Func<DataType> initBackgroundThread,
             Action<DataType> cleanupBackgroundThread,
             Func<ReturnType> actionInThisThread,
-            int timeout = ThreadCache.NO_TIMEOUT)
+            TimeSpan timeout)
         {
             ManualResetEvent done = new(false);
             ManualResetEvent backgroundThreadReady = new(false);
@@ -43,10 +43,13 @@ namespace Celestus.Storage.Cache.Test.Model
 
             _ = done.Set();
 
+            done.Dispose();
+            backgroundThreadReady.Dispose();
+
             return results;
         }
 
-        public static ReturnType DoWhileLocked<ReturnType>(ThreadCache cache, Func<ReturnType> action, int timeout = ThreadCache.NO_TIMEOUT)
+        public static ReturnType DoWhileLocked<ReturnType>(ThreadCache cache, Func<ReturnType> action, TimeSpan timeout)
         {
             return DoUntil(() => _ = cache.ThreadLock(),
                            (cacheLock) => cacheLock.Dispose(),

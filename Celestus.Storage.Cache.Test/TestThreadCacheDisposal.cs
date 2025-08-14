@@ -92,7 +92,7 @@ public class TestThreadCacheDisposal
         //
         // Arrange
         //
-        using var cache = new ThreadCache("actor-disposal-test", cleaningIntervalInMs: 1000);
+        using var cache = new ThreadCache("actor-disposal-test", cleaningInterval: CacheConstants.ShortDuration);
 
         // Add some data to ensure the actor is working
         _ = cache.TrySet("test-key", "test-value");
@@ -107,7 +107,7 @@ public class TestThreadCacheDisposal
         //
 
         // Give some time for background task to shut down
-        Thread.Sleep(ThreadCacheConstants.WAIT_FOR_THREAD_IN_MS);
+        Thread.Sleep(CacheConstants.ShortDuration);
 
         // No exceptions should be thrown during cleanup
         GC.Collect();

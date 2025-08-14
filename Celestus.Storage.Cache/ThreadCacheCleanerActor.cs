@@ -23,9 +23,9 @@ namespace Celestus.Storage.Cache
             }
         );
 
-        public ThreadCacheCleanerActor(int cleanupIntervalInMs)
+        public ThreadCacheCleanerActor(TimeSpan interval)
         {
-            _cleanupIntervalInTicks = TimeSpan.FromMilliseconds(cleanupIntervalInMs).Ticks;
+            _cleanupIntervalInTicks = interval.Ticks;
             _signalHandlerTask = Task.Run(HandleSignals);
         }
 

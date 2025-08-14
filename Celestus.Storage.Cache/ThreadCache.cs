@@ -36,18 +36,18 @@ namespace Celestus.Storage.Cache
         {
         }
 
-        public ThreadCache(string key, int cleaningIntervalInMs = CLEANER_INTERVAL_IN_MS) :
-            this(key, cleaner: new ThreadCacheCleaner<string>(cleaningIntervalInMs))
+        public ThreadCache(string key, TimeSpan? cleaningInterval = null) :
+            this(key, cleaner: new ThreadCacheCleaner<string>(cleaningInterval ?? TimeSpan.FromMilliseconds(CLEANER_INTERVAL_IN_MS)))
         {
         }
 
-        public ThreadCache(int cleaningIntervalInMs = CLEANER_INTERVAL_IN_MS) :
-            this(string.Empty, cleaningIntervalInMs)
+        public ThreadCache(TimeSpan? cleaningInterval = null) :
+            this(string.Empty, cleaningInterval)
         {
         }
 
         public ThreadCache(string key) :
-            this(key, CLEANER_INTERVAL_IN_MS)
+            this(key, TimeSpan.FromMilliseconds(CLEANER_INTERVAL_IN_MS))
         {
         }
 
@@ -86,11 +86,16 @@ namespace Celestus.Storage.Cache
             _lock.ExitWriteLock();
         }
 
-        public bool TrySet<DataType>(string key, DataType value, TimeSpan? duration = null, int timeout = NO_TIMEOUT)
+        public bool TrySet<DataType>(string key, DataType value, TimeSpan? duration = null, TimeSpan? timeout = null)
+        {
+            return TrySet(key, value, timeout?.Milliseconds ?? NO_TIMEOUT, duration);
+        }
+
+        public bool TrySet<DataType>(string key, DataType value, int timeoutInMs, TimeSpan? duration = null)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 
-            if (!_lock.TryEnterWriteLock(timeout))
+            if (!_lock.TryEnterWriteLock(timeoutInMs))
             {
                 return false;
             }
@@ -113,7 +118,23 @@ namespace Celestus.Storage.Cache
             return result;
         }
 
-        public (bool result, DataType? data) TryGet<DataType>(string key, int timeout = NO_TIMEOUT)
+        public (bool result, DataType? data) TryGet<DataType>(string key, TimeSpan? timeout = null)
+        {
+            ObjectDisposedException.ThrowIf(IsDisposed, this);
+
+            if (!_lock.TryEnterReadLock(timeout?.Milliseconds ?? DEFAULT_TIMEOUT_IN_MS))
+            {
+                return (false, default);
+            }
+
+            var result = Cache.TryGet<DataType>(key);
+
+            _lock.ExitReadLock();
+
+            return result;
+        }
+
+        public (bool result, DataType? data) TryGet<DataType>(string key, int timeout)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 
@@ -134,7 +155,12 @@ namespace Celestus.Storage.Cache
             return TryRemove(keys, timeout: NO_TIMEOUT);
         }
 
-        public bool TryRemove(List<string> keys, int timeout = NO_TIMEOUT)
+        public bool TryRemove(List<string> keys, TimeSpan? timeout = null)
+        {
+            return TryRemove(keys, timeout?.Milliseconds ?? DEFAULT_TIMEOUT_IN_MS);
+        }
+
+        public bool TryRemove(List<string> keys, int timeout)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 

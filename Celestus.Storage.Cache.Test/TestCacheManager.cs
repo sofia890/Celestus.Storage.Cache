@@ -14,7 +14,7 @@ namespace Celestus.Storage.Cache.Test
             //
             // Arrange
             //
-            Cache.Factory.SetCleanupInterval(TimeSpan.FromMilliseconds(ThreadCacheConstants.SHORT_DELAY_IN_MS));
+            Cache.Factory.SetCleanupInterval(CacheConstants.ShortDuration);
 
             const string CACHE_KEY = nameof(VerifyThatCacheManager);
             const string ITEM_KEY = "a";
@@ -36,7 +36,7 @@ namespace Celestus.Storage.Cache.Test
             //
             var hashOriginal = helper.ActAndCollect(Prepare, out var released);
 
-            Thread.Sleep(ThreadCacheConstants.SHORT_DELAY_IN_MS * 2);
+            Thread.Sleep(CacheConstants.ShortDuration * 2);
 
             //
             // Assert

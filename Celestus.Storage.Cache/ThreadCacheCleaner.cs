@@ -2,13 +2,13 @@
 
 namespace Celestus.Storage.Cache
 {
-    public class ThreadCacheCleaner<KeyType>(int cleanupIntervalInMs) :  CacheCleanerBase<KeyType>
+    public class ThreadCacheCleaner<KeyType>(TimeSpan interval) :  CacheCleanerBase<KeyType>
         where KeyType : notnull
     {
         const int DEFAULT_INTERVAL_IN_MS = 60000;
-        readonly ThreadCacheCleanerActor<KeyType> _server = new(cleanupIntervalInMs);
+        readonly ThreadCacheCleanerActor<KeyType> _server = new(interval);
 
-        public ThreadCacheCleaner() : this(DEFAULT_INTERVAL_IN_MS)
+        public ThreadCacheCleaner() : this(interval: TimeSpan.FromMilliseconds(DEFAULT_INTERVAL_IN_MS))
         {
 
         }

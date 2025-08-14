@@ -3,18 +3,18 @@ using System.Text.Json;
 
 namespace Celestus.Storage.Cache
 {
-    public class CacheCleaner<KeyType>(int cleanupIntervalInMs) : CacheCleanerBase<KeyType>()
+    public class CacheCleaner<KeyType>(TimeSpan interval) : CacheCleanerBase<KeyType>()
         where KeyType : notnull
     {
         const int DEFAULT_INTERVAL = 5000;
 
         WeakReference<IEnumerable<KeyValuePair<KeyType, CacheEntry>>> _collectionReference = new(new Dictionary<KeyType, CacheEntry>());
 
-        long _cleanupIntervalInTicks = TimeSpan.FromMilliseconds(cleanupIntervalInMs).Ticks;
+        long _cleanupIntervalInTicks = interval.Ticks;
         long _nextCleanupOpportunityInTicks = 0;
         WeakReference<Func<List<KeyType>, bool>>? _removalCallbackReference;
 
-        public CacheCleaner() : this(cleanupIntervalInMs: DEFAULT_INTERVAL)
+        public CacheCleaner() : this(interval: TimeSpan.FromMilliseconds(DEFAULT_INTERVAL))
         {
         }
 

@@ -69,7 +69,7 @@ public class TestCacheCleaning
 
         const string KEY_1 = "Hamster";
         const bool VALUE_1 = true;
-        cache.Set(KEY_1, VALUE_1, ThreadCacheConstants.INSTANT_TIMEOUT);
+        cache.Set(KEY_1, VALUE_1, CacheConstants.ZeroDuration);
 
         //
         // Act
@@ -118,8 +118,7 @@ public class TestCacheCleaning
         //
         // Arrange
         //
-        const int CLEAN_INTERVAL_IN_MS = 1;
-        using var cache = new Cache(new CacheCleaner<string>(cleanupIntervalInMs: CLEAN_INTERVAL_IN_MS), false);
+        using var cache = new Cache(new CacheCleaner<string>(interval: CacheConstants.ShortDuration), false);
 
         static byte[] CreateElement()
         {
@@ -141,10 +140,10 @@ public class TestCacheCleaning
 
         for (int i = 0; i < N_ITERATIONS; i++)
         {
-            cache.Set(keys.Next(), CreateElement(), TimeSpan.FromMilliseconds(CLEAN_INTERVAL_IN_MS));
+            cache.Set(keys.Next(), CreateElement(), CacheConstants.ShortDuration);
         }
 
-        ThreadHelper.SpinWait(CLEAN_INTERVAL_IN_MS);
+        ThreadHelper.SpinWait(CacheConstants.ShortDuration);
 
         _ = cache.TryGet<byte[]>(firstKey);
 

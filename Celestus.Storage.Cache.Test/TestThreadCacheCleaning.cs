@@ -118,8 +118,7 @@ public class TestThreadCacheCleaning
         //
         // Arrange
         //
-        const int CLEAN_INTERVAL_IN_MS = 5;
-        using var cache = new ThreadCache(CLEAN_INTERVAL_IN_MS);
+        using var cache = new ThreadCache(CacheConstants.ShortDuration);
 
         static byte[] CreateElement()
         {
@@ -141,10 +140,10 @@ public class TestThreadCacheCleaning
 
         for (int i = 0; i < N_ITERATIONS; i++)
         {
-            _ = cache.TrySet(keys.Next(), CreateElement(), TimeSpan.FromMilliseconds(CLEAN_INTERVAL_IN_MS));
+            _ = cache.TrySet(keys.Next(), CreateElement(), CacheConstants.ShortDuration);
         }
 
-        ThreadHelper.SpinWait(ThreadCacheConstants.LONG_INTERVAL_IN_MS);
+        ThreadHelper.SpinWait(CacheConstants.LongDuration);
 
         _ = cache.TryGet<byte[]>(firstKey);
 

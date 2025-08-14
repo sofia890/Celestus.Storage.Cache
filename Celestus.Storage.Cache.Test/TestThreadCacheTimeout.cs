@@ -6,8 +6,6 @@ namespace Celestus.Storage.Cache.Test
     [TestClass]
     public sealed class TestThreadCacheTimeout
     {
-        const int THREAD_TIMEOUT = 1000;
-
         [TestMethod]
         public void VerifyThatSetCanTimeout()
         {
@@ -22,7 +20,11 @@ namespace Celestus.Storage.Cache.Test
             //
             // Act
             //
-            var setResult = ThreadHelper.DoWhileLocked(cache, () => cache.TrySet(KEY, 0, timeout: 1), THREAD_TIMEOUT);
+            var setResult = ThreadHelper.DoWhileLocked(
+                cache,
+                () => cache.TrySet(KEY, 0, timeout: CacheConstants.VeryShortDuration),
+                CacheConstants.ShortDuration
+            );
 
             //
             // Assert
@@ -44,7 +46,11 @@ namespace Celestus.Storage.Cache.Test
             //
             // Act
             //
-            var getResult = ThreadHelper.DoWhileLocked(cache, () => cache.TryGet<int>(KEY, timeout: 1), THREAD_TIMEOUT);
+            var getResult = ThreadHelper.DoWhileLocked(
+                cache,
+                () => cache.TryGet<int>(KEY, timeout: CacheConstants.VeryShortDuration),
+                CacheConstants.ShortDuration
+            );
 
             //
             // Assert
@@ -66,7 +72,11 @@ namespace Celestus.Storage.Cache.Test
             //
             // Act
             //
-            var getResult = ThreadHelper.DoWhileLocked(cache, () => cache.TryRemove([KEY], timeout: 1), THREAD_TIMEOUT);
+            var getResult = ThreadHelper.DoWhileLocked(
+                cache,
+                () => cache.TryRemove([KEY], timeout: CacheConstants.VeryShortDuration),
+                CacheConstants.ShortDuration
+            );
 
             //
             // Assert
@@ -94,7 +104,7 @@ namespace Celestus.Storage.Cache.Test
             var loadedCache = ThreadHelper.DoWhileLocked(
                 cache,
                 () => ThreadCache.Factory.UpdateOrLoadSharedFromFile(tempFile.Uri, timeout: TimeSpan.FromMilliseconds(1)),
-                THREAD_TIMEOUT
+                CacheConstants.ShortDuration
               );
 
             //
