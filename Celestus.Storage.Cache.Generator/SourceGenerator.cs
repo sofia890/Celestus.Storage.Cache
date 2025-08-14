@@ -325,7 +325,14 @@ namespace Celestus.Storage.Cache.Generator
                 _ = outputTuple.Append($", {parameter.Type} {Name.TryGetName(parameter)}");
             }
 
-            return $"({outputTuple.ToString().Substring(2)})";
+            if (outputTuple.Length > 2)
+            {
+                return $"({outputTuple.ToString().Substring(2)})";
+            }
+            else
+            {
+                return string.Empty;
+            }
         }
 
         private string GetHashCodeForInputParameters(MethodDeclarationSyntax methodDeclaration, string indentation)
@@ -378,10 +385,10 @@ namespace Celestus.Storage.Cache.Generator
 
         private string GetIndentation(int depth)
         {
-            const char _char = ' ';
-            const int amount = 4;
+            const char INDENT_CHAR = ' ';
+            const int NROF_CHARS_PER_INDENT = 4;
 
-            return new string(_char, depth++ * amount);
+            return new string(INDENT_CHAR, depth++ * NROF_CHARS_PER_INDENT);
         }
 
         private void ReportUnknownCacheAttribute(SourceProductionContext context, Location location)
