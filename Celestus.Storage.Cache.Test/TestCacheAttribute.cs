@@ -99,6 +99,30 @@ namespace Celestus.Storage.Cache.Test
         }
 
         [TestMethod]
+        public void VerifyThatCachedParametersAreNotMixedUp()
+        {
+            //
+            // Arrange
+            //
+            SimpleClass simpleClass = new();
+
+            //
+            // Act
+            //
+            const int A = 30;
+            const int B = 15;
+            const int C = 50;
+            var returned = simpleClass.CalculateManyParamsCached(A, B, C, out var d, out var e, out var f);
+
+            //
+            // Assert
+            //
+            const int EXPECTED_RETURN = A + B + C;
+            Assert.AreEqual(EXPECTED_RETURN, returned);
+            Assert.AreEqual(A, d);
+            Assert.AreEqual(B, e);
+            Assert.AreEqual(C, f);
+        }
 
         [TestMethod]
         public void VerifyThatVoidMethodsCanBeHandled()

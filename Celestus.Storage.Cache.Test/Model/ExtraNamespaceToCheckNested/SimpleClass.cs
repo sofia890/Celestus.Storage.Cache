@@ -46,6 +46,18 @@ namespace Celestus.Storage.Cache.Test.Model.ExtraNamespaceToCheckNested
             return a;
         }
         
+
+        [Cache(timeoutInMilliseconds: CALCULATE_TIMEOUT)]
+        public int CalculateManyParams(int a, int b, int c, out int d, out int e, out int f)
+        {
+            d = a;
+            e = b;
+            f = c;
+
+            return a + b + c;
+        }
+
+        [Cache(timeoutInMilliseconds: CALCULATE_TIMEOUT)]
         public void CalculateNoReturn(int a, out int b)
         {
             b = a;
