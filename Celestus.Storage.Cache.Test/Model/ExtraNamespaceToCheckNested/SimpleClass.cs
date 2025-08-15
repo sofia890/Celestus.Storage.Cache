@@ -10,6 +10,7 @@ namespace Celestus.Storage.Cache.Test.Model.ExtraNamespaceToCheckNested
         public const int CALCULATE_WITTH_SLEEP_TIMEOUT = 10;
         public const int CALCULATION_SLEEP = 5;
         public const int CALCULATE_WITTH_SLEEP_DURATION = 100;
+        public const int NO_PARAMETER_RESULT = 100;
 
         [Cache(timeoutInMilliseconds: ExampleReferenceClass.Value + 5, key: "keyTest" + "55")]
         public int Calculate((int a, int b) inData, out int c)
@@ -31,6 +32,23 @@ namespace Celestus.Storage.Cache.Test.Model.ExtraNamespaceToCheckNested
             ThreadHelper.SpinWait(CALCULATION_SLEEP);
 
             return Calculate(inData, out c);
+        }
+
+        [Cache(timeoutInMilliseconds: CALCULATE_TIMEOUT)]
+        public int CalculateNoParameters()
+        {
+            return NO_PARAMETER_RESULT;
+        }
+
+        [Cache(timeoutInMilliseconds: CALCULATE_TIMEOUT)]
+        public int CalculateNoOutParameters(int a)
+        {
+            return a;
+        }
+        
+        public void CalculateNoReturn(int a, out int b)
+        {
+            b = a;
         }
     }
 }

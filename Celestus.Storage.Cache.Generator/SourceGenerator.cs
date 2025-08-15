@@ -3,8 +3,10 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
 using System.Collections.Generic;
+using System.Data.Common;
 using System.Diagnostics;
 using System.Linq;
+using System.Reflection.Metadata;
 using System.Text;
 using System.Threading;
 
@@ -143,11 +145,56 @@ namespace Celestus.Storage.Cache.Generator
             var parameterDeclarations = MethodHelper.GetParameterDeclaration(methodDeclaration);
             var parameters = MethodHelper.GetParameters(methodDeclaration);
             var outputParameters = MethodHelper.GetOutputParameters(methodDeclaration);
-            var tupleDeclaration = GetOutputTuple(methodDeclaration, outputParameters);
-            var tupleOutVariableAssignment = GetOutputTupleOutVariableAssignment(outputParameters);
+            var tupleDeclaration = GetValueDeclaration(methodDeclaration, outputParameters);
+            var tupleOutVariableAssignment = GetOutputTupleOutVariableAssignment(methodDeclaration, outputParameters);
             var cacheAttributes = CacheAttributeHelper.GetCacheAttributes(methodDeclaration.AttributeLists, (location) => ReportUnknownCacheAttribute(context, location));
             var cacheStore = Name.GetCacheStoreVariableName(methodDeclaration);
+            string timeoutInMilliseconds = GetTimeoutInMs(cacheAttributes);
+            string durationInMs = GetDurationInMs(cacheAttributes);
+            string uniqueKeyBase = GetUniqueIdentifier(methodIdentifier, cacheAttributes);
+            var indentation = GetIndentation(namespaceContext.depth);
+            var indentationDeeper = indentation + "            ";
+            var hacCodeInputParameters = GetHashCodeForParameters(methodDeclaration, indentation + "        ");
+            var outVariableAssignment = GetOutVariableAssignment(methodDeclaration, outputParameters, indentationDeeper);
+            var cacheElement = GetCacheElement(methodDeclaration, parameters, tupleOutVariableAssignment);
+            string returnExpression = GetReturnExpression(methodDeclaration, tupleOutVariableAssignment);
+            string methodCall = GetMethodCall(methodDeclaration, methodIdentifier, parameters);
 
+            string sourceCode =
+                $$"""
+                {{namespaceContext.header}}
+                {{indentation}}{{classInfo.modifiers}} class {{classInfo.name}}
+                {{indentation}}{
+                {{indentation}}    {{methodModifiers}} {{returnType}} {{methodIdentifier}}Cached{{parameterDeclarations}}
+                {{indentation}}    {
+                {{hacCodeInputParameters}}
+                {{indentation}}        var uniqueKeyBase = {{uniqueKeyBase}};
+                {{indentation}}        var uniqueKey = $"{uniqueKeyBase}-{hashCode}";
+                {{indentation}}        
+                {{indentation}}        if ({{cacheStore}}.TryGet<{{tupleDeclaration}}>(uniqueKey, timeout: {{timeoutInMilliseconds}}) is not (result: true, var value))
+                {{indentation}}        {
+                {{indentation}}            {{methodCall}}
+                {{indentation}}            value = {{cacheElement}};
+                {{indentation}}            
+                {{indentation}}            // Avoid throwing an exception if TrySet(...) fails. Just try next time the value is fetched.
+                {{indentation}}            _ = {{cacheStore}}.TrySet(uniqueKey, value, {{timeoutInMilliseconds}}, duration: TimeSpan.FromMilliseconds({{durationInMs}}));
+                {{indentation}}        }
+                {{indentation}}        else
+                {{indentation}}        {
+                {{outVariableAssignment}}
+                {{indentation}}        }
+                {{indentation}}        
+                {{indentation}}        {{returnExpression}}
+                {{indentation}}    }
+                {{indentation}}}
+                {{namespaceContext.footer}}
+                """;
+
+            context.AddSource($"{namespaceContext.path}{classInfo.name}.{methodIdentifier}.g.cs", sourceCode.Trim());
+        }
+
+        private static string GetTimeoutInMs(Dictionary<string, (string value, NameColonSyntax syntax)> cacheAttributes)
+        {
             string timeoutInMilliseconds = $"{CacheAttribute.DEFAULT_TIMEOUT}";
 
             if (cacheAttributes.TryGetValue("timeoutInMilliseconds", out var timeout))
@@ -155,6 +202,11 @@ namespace Celestus.Storage.Cache.Generator
                 timeoutInMilliseconds = timeout.value;
             }
 
+            return timeoutInMilliseconds;
+        }
+
+        private static string GetDurationInMs(Dictionary<string, (string value, NameColonSyntax syntax)> cacheAttributes)
+        {
             string durationInMs = $"{CacheAttribute.DEFAULT_DURATION}";
 
             if (cacheAttributes.TryGetValue("durationInMs", out var duration))
@@ -162,49 +214,82 @@ namespace Celestus.Storage.Cache.Generator
                 durationInMs = duration.value;
             }
 
-            string uniqueKeyBase = methodIdentifier;
+            return durationInMs;
+        }
+
+        private static string GetUniqueIdentifier(string methodIdentifier, Dictionary<string, (string value, NameColonSyntax syntax)> cacheAttributes)
+        {
+            string uniqueKeyBase = $"\"{methodIdentifier}\"";
 
             if (cacheAttributes.TryGetValue("key", out var key))
             {
                 uniqueKeyBase = key.value;
             }
 
-            var indentation = GetIndentation(namespaceContext.depth);
-            var indentationDeeper = indentation + "            ";
+            return uniqueKeyBase;
+        }
 
-            var hacCodeInputParameters = GetHashCodeForInputParameters(methodDeclaration, indentation + "        ");
-            var outVariableAssignment = GetOutVariableAssignment(outputParameters, indentationDeeper);
+        private static string GetMethodCall(MethodDeclarationSyntax methodDeclaration, string methodIdentifier, string parameters)
+        {
+            var methodCall = $"{methodIdentifier}({parameters});";
 
-            string sourceCode =
-                $$"""
-                    {{namespaceContext.header}}
-                    {{indentation}}{{classInfo.modifiers}} class {{classInfo.name}}
-                    {{indentation}}{
-                    {{indentation}}    {{methodModifiers}} {{returnType}} {{methodIdentifier}}Cached{{parameterDeclarations}}
-                    {{indentation}}    {
-                    {{hacCodeInputParameters}}
-                    {{indentation}}        var uniqueKeyBase = {{uniqueKeyBase}};
-                    {{indentation}}        var uniqueKey = $"{uniqueKeyBase}-{hashCode}";
-                    {{indentation}}        
-                    {{indentation}}        if ({{cacheStore}}.TryGet<{{tupleDeclaration}}>(uniqueKey, timeout: {{timeoutInMilliseconds}}) is not (result: true, var value))
-                    {{indentation}}        {
-                    {{indentation}}            value = ({{methodIdentifier}}({{parameters}}), {{tupleOutVariableAssignment}});
-                    {{indentation}}            
-                    {{indentation}}            // Avoid throwing an exception if TrySet(...) fails. Just try next time the value is fetched.
-                    {{indentation}}            _ = {{cacheStore}}.TrySet(uniqueKey, value, {{timeoutInMilliseconds}}, duration: TimeSpan.FromMilliseconds({{durationInMs}}));
-                    {{indentation}}        }
-                    {{indentation}}        else
-                    {{indentation}}        {
-                    {{outVariableAssignment}}
-                    {{indentation}}        }
-                    {{indentation}}        
-                    {{indentation}}        return value.returnValue;
-                    {{indentation}}    }
-                    {{indentation}}}
-                    {{namespaceContext.footer}}
-                    """;
+            if (!ReturnsNull(methodDeclaration))
+            {
+                methodCall = $"var result = {methodCall}";
+            }
 
-            context.AddSource($"{namespaceContext.path}{classInfo.name}.{methodIdentifier}.g.cs", sourceCode.Trim());
+            return methodCall;
+        }
+
+        private static string GetReturnExpression(MethodDeclarationSyntax methodDeclaration, string tupleOutVariableAssignment)
+        {
+            if (!ReturnsNull(methodDeclaration))
+            {
+                var returnValue = "return value";
+
+                if (tupleOutVariableAssignment.Length != 0)
+                {
+                    returnValue += ".returnValue";
+                }
+
+                return $"{returnValue};";
+            }
+            else
+            {
+                return "// No return value!";
+            }
+        }
+
+        private static string GetCacheElement(MethodDeclarationSyntax methodDeclaration, string parameters, string tupleOutVariableAssignment)
+        {
+            var value = string.Empty;
+
+            if (tupleOutVariableAssignment.Length > 0)
+            {
+                if (!ReturnsNull(methodDeclaration))
+                {
+                    value = $"(returnValue: result, {tupleOutVariableAssignment})";
+                } 
+                else if (tupleOutVariableAssignment.Contains(","))
+                {
+                    value = $"({tupleOutVariableAssignment})";
+                }
+                else
+                {
+                    value = $"{tupleOutVariableAssignment}";
+                }
+            }
+            else
+            {
+                value  = "result";
+            }
+
+            return value;
+        }
+
+        private static bool ReturnsNull(MethodDeclarationSyntax methodDeclaration)
+        {
+            return methodDeclaration.ReturnType.ToString() == "void";
         }
 
         void ProcessClass(SourceProductionContext context,
@@ -311,23 +396,56 @@ namespace Celestus.Storage.Cache.Generator
             };
         }
 
-        private string GetOutputTuple(MethodDeclarationSyntax methodDeclaration, List<ParameterSyntax> outParameters)
+        private string GetValueDeclaration(MethodDeclarationSyntax methodDeclaration, List<ParameterSyntax> outParameters)
         {
-            StringBuilder outputTuple = new();
+            StringBuilder outputTupleBuilder = new();
+            int nrOfParameters = 0;
 
-            if (methodDeclaration.ReturnType.GetType() != typeof(void))
+            if (!ReturnsNull(methodDeclaration))
             {
-                _ = outputTuple.Append($", {methodDeclaration.ReturnType} returnValue");
+                _ = outputTupleBuilder.Append($", {methodDeclaration.ReturnType}");
+
+                nrOfParameters++;
+                
+                if (outParameters.Count > 0)
+                {
+                    _ = outputTupleBuilder.Append(" returnValue");
+                }
             }
 
-            foreach (var parameter in outParameters)
+            if (outParameters.Count == 1 && ReturnsNull(methodDeclaration))
             {
-                _ = outputTuple.Append($", {parameter.Type} {Name.TryGetName(parameter)}");
+                var parameter = outParameters.First();
+                _ = outputTupleBuilder.Append(parameter.Type);
+
+                nrOfParameters++;
+            }
+            else if (outParameters.Count == 1 && !ReturnsNull(methodDeclaration))
+            {
+                var parameter = outParameters.First();
+                _ = outputTupleBuilder.Append($", {parameter.Type} {Name.TryGetName(parameter)}");
+
+                nrOfParameters++;
+            }
+            else
+            {
+                foreach (var parameter in outParameters)
+                {
+                    _ = outputTupleBuilder.Append($", {parameter.Type} {Name.TryGetName(parameter)}");
+
+                    nrOfParameters++;
+                }
             }
 
-            if (outputTuple.Length > 2)
+            var outputTuple = outputTupleBuilder.ToString().Trim([' ', ',']);
+
+            if (nrOfParameters == 1)
             {
-                return $"({outputTuple.ToString().Substring(2)})";
+                return $"{outputTuple}";
+            }
+            else if (nrOfParameters > 1)
+            {
+                return $"({outputTuple})";
             }
             else
             {
@@ -335,7 +453,7 @@ namespace Celestus.Storage.Cache.Generator
             }
         }
 
-        private string GetHashCodeForInputParameters(MethodDeclarationSyntax methodDeclaration, string indentation)
+        private string GetHashCodeForParameters(MethodDeclarationSyntax methodDeclaration, string indentation)
         {
             var inputParameters = MethodHelper.GetInputParameters(methodDeclaration);
 
@@ -358,26 +476,46 @@ namespace Celestus.Storage.Cache.Generator
             return inputCheck.ToString().TrimEnd();
         }
 
-        private string GetOutputTupleOutVariableAssignment(List<ParameterSyntax> outParameters)
+        private string GetOutputTupleOutVariableAssignment(MethodDeclarationSyntax methodDeclaration, List<ParameterSyntax> outParameters)
         {
             StringBuilder variableAssignment = new();
 
-            foreach (var parameter in outParameters)
+            if (outParameters.Count == 1 && ReturnsNull(methodDeclaration))
             {
-                _ = variableAssignment.Append($", {Name.TryGetName(parameter)}");
+                var name = Name.TryGetName(outParameters.First());
+
+                _ = variableAssignment.Append(name);
+            }
+            else
+            {
+                foreach (var parameter in outParameters)
+                {
+                    var name = Name.TryGetName(parameter);
+
+                    _ = variableAssignment.Append($", {name}: {name}");
+                }
             }
 
             return variableAssignment.ToString().Trim([' ', ',']);
         }
 
-        private string GetOutVariableAssignment(List<ParameterSyntax> outParameters, string indentation)
+        private string GetOutVariableAssignment(MethodDeclarationSyntax methodDeclaration, List<ParameterSyntax> outParameters, string indentation)
         {
             StringBuilder variableAssignment = new();
 
-            foreach (var parameter in outParameters)
+            if (outParameters.Count == 1 && ReturnsNull(methodDeclaration))
             {
+                var parameter = outParameters.First();
                 var parameterName = Name.TryGetName(parameter);
-                _ = variableAssignment.AppendLine($"{indentation}{parameterName} = value.{parameterName};");
+                _ = variableAssignment.AppendLine($"{indentation}{parameterName} = value;");
+            }
+            else
+            {
+                foreach (var parameter in outParameters)
+                {
+                    var parameterName = Name.TryGetName(parameter);
+                    _ = variableAssignment.AppendLine($"{indentation}{parameterName} = value.{parameterName};");
+                }
             }
 
             return variableAssignment.ToString().TrimEnd();

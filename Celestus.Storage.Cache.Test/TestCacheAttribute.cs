@@ -99,6 +99,28 @@ namespace Celestus.Storage.Cache.Test
         }
 
         [TestMethod]
+
+        [TestMethod]
+        public void VerifyThatVoidMethodsCanBeHandled()
+        {
+            //
+            // Arrange
+            //
+            SimpleClass simpleClass = new();
+
+            //
+            // Act
+            //
+            const int A = 30569;
+            simpleClass.CalculateNoReturnCached(A, out var b);
+
+            //
+            // Assert
+            //
+            Assert.AreEqual(A, b);
+        }
+
+        [TestMethod]
         public void VerifyThatCachedDataIsCorrectOnFollowUpHit()
         {
             //
@@ -144,6 +166,46 @@ namespace Celestus.Storage.Cache.Test
             const int EXPECTED_C = 27;
             Assert.AreEqual(EXPECTED_RETURN, returned);
             Assert.AreEqual(EXPECTED_C, c);
+        }
+
+        [TestMethod]
+        public void VerifyThatNoParameterMethodsWork()
+        {
+            //
+            // Arrange
+            //
+            SimpleClass simpleClass = new();
+
+            //
+            // Act
+            //
+            var returned = simpleClass.CalculateNoParametersCached();
+
+            //
+            // Assert
+            //
+            Assert.AreEqual(SimpleClass.NO_PARAMETER_RESULT, returned);
+        }
+
+        [TestMethod]
+        public void VerifyThatNoOutParameterMethodsWork()
+        {
+            //
+            // Arrange
+            //
+            SimpleClass simpleClass = new();
+
+            const int VALUE = 123579;
+
+            //
+            // Act
+            //
+            var returned = simpleClass.CalculateNoOutParametersCached(VALUE);
+
+            //
+            // Assert
+            //
+            Assert.AreEqual(VALUE, returned);
         }
 
         [TestMethod]
