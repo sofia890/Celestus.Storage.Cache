@@ -32,7 +32,7 @@ namespace Celestus.Storage.Cache.Generator
             var parameters = methodDeclaration.ParameterList.Parameters;
             return parameters.Select(x => $"{x.Modifiers} {x.Identifier}".Trim())
                              .Aggregate("", (a, b) => $"{a}, {b}")
-                             .Substring(2);
+                             .Trim([' ', ',']);
         }
 
         public static List<ParameterSyntax> GetOutputParameters(MethodDeclarationSyntax methodDeclaration)

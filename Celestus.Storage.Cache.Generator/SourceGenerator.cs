@@ -305,7 +305,7 @@ namespace Celestus.Storage.Cache.Generator
             return new NamespaceContext()
             {
                 header = headerBuilder.ToString().Trim(),
-                footer = footerBuilder.ToString().TrimEnd(),
+                footer = footerBuilder.ToString().Trim(),
                 path = pathBuilder.ToString(),
                 depth = depth
             };
@@ -367,7 +367,7 @@ namespace Celestus.Storage.Cache.Generator
                 _ = variableAssignment.Append($", {Name.TryGetName(parameter)}");
             }
 
-            return variableAssignment.ToString().Substring(2);
+            return variableAssignment.ToString().Trim([' ', ',']);
         }
 
         private string GetOutVariableAssignment(List<ParameterSyntax> outParameters, string indentation)
