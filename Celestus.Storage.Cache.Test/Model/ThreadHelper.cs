@@ -34,8 +34,6 @@ namespace Celestus.Storage.Cache.Test.Model
 
                 _ = done.WaitOne(timeout);
                 cleanupBackgroundThread(data);
-
-                done.Dispose();
             });
 
             backgroundThreadReady.WaitOne();
