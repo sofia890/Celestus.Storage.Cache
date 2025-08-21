@@ -1,54 +1,90 @@
-﻿using System.Collections.Concurrent;
+﻿using System.Diagnostics.CodeAnalysis;
 
 namespace Celestus.Storage.Cache
 {
-    public abstract class CacheManagerBase<CacheKeyType, CacheType>
+    public class CacheTimeoutException(string Message) : TimeoutException(Message);
+    public class LoadTimeoutException(string Message) : CacheTimeoutException(Message);
+    public class CleanupTimeoutException(string Message) : CacheTimeoutException(Message);
+    public class SetTimeoutException(string Message) : CacheTimeoutException(Message);
+    public class SetFromFileTimeoutException(string Message) : CacheTimeoutException(Message);
+
+    public abstract class CacheManagerBase<CacheKeyType, CacheType> : IDisposable
         where CacheKeyType : class
         where CacheType : CacheBase<CacheKeyType>
     {
-        // Track items that need to be disposed. This is needed due to code generator
-        // not being able to implement dispose pattern correctly. Could not impose
-        // pattern in a clean and user friendly way.
-        readonly protected ConcurrentQueue<FactoryEntry<CacheKeyType, CacheType>> resources = [];
+        const int LOCK_TIMEOUT = 5000;
 
-        readonly protected ConcurrentDictionary<string, WeakReference<CacheType>> _caches = [];
+        readonly ReaderWriterLockSlim _lock = new();
+        readonly protected Dictionary<string, WeakReference<CacheType>> _caches = [];
         readonly protected CacheManagerCleaner<string, CacheKeyType, CacheType> _factoryCleaner;
+        private bool _isDisposed;
 
         public CacheManagerBase()
         {
-            _factoryCleaner = new(new(resources));
+            _factoryCleaner = new();
+            _factoryCleaner.SetElementExpiredCallback(new(CacheExpired));
         }
 
-        public bool TryLoad(string key, out CacheType? cache)
+        public bool TryLoad(string key, [NotNullWhen(true)] out CacheType? cache)
         {
+            ObjectDisposedException.ThrowIf(_isDisposed, this);
+
             cache = default;
 
-            return _caches.TryGetValue(key, out var cacheReference) &&
-                    cacheReference.TryGetTarget(out cache);
+            if (_lock.TryEnterReadLock(LOCK_TIMEOUT))
+            {
+                bool result = false;
+
+                if (_caches.TryGetValue(key, out var cacheReference) &&
+                    cacheReference.TryGetTarget(out cache))
+                {
+                    result = !cache.IsDisposed;
+                }
+
+                _lock.ExitReadLock();
+
+                return result;
+            }
+            else
+            {
+                throw new LoadTimeoutException("Could not lock resource for reading.");
+            }
         }
 
         public CacheType GetOrCreateShared(string key = "")
         {
+            ObjectDisposedException.ThrowIf(_isDisposed, this);
+
             var usedKey = (key.Length > 0) ? key : Guid.NewGuid().ToString();
 
-            if (_caches.TryGetValue(usedKey, out var cacheReference) &&
-                cacheReference.TryGetTarget(out var cache))
+            if (TryLoad(key, out var cache))
             {
                 return cache;
             }
             else
             {
-                var createdCache = (CacheType)Activator.CreateInstance(typeof(CacheType), [usedKey])!;
-                _caches[usedKey] = new(createdCache);
+                if (_lock.TryEnterWriteLock(LOCK_TIMEOUT))
+                {
+                    var createdCache = (CacheType)Activator.CreateInstance(typeof(CacheType), [usedKey])!;
+                    _caches[usedKey] = new(createdCache);
 
-                resources.Enqueue(new(new(createdCache), createdCache.Cleaner));
+                    _lock.ExitWriteLock();
 
-                return createdCache;
+                    _factoryCleaner.MonitorElement(createdCache);
+
+                    return createdCache;
+                }
+                else
+                {
+                    throw new SetTimeoutException("Could not lock resource for writing.");
+                }
             }
         }
 
         public CacheType? UpdateOrLoadSharedFromFile(Uri path, TimeSpan? timeout = null)
         {
+            ObjectDisposedException.ThrowIf(_isDisposed, this);
+
             if (TryCreateFromFile(path) is not CacheType loadedCache)
             {
                 return null;
@@ -69,11 +105,36 @@ namespace Celestus.Storage.Cache
             }
             else
             {
-                _caches[loadedCache.Key] = new(loadedCache);
+                if (_lock.TryEnterWriteLock(LOCK_TIMEOUT))
+                {
+                    _caches[loadedCache.Key] = new(loadedCache);
 
-                resources.Enqueue(new(new(loadedCache), loadedCache.Cleaner));
+                    _lock.ExitWriteLock();
 
-                return loadedCache;
+                    _factoryCleaner.MonitorElement(loadedCache);
+
+                    return loadedCache;
+                }
+                else
+                {
+                    throw new SetFromFileTimeoutException("Could not lock resource for writing.");
+                }
+            }
+        }
+
+        internal void CacheExpired(string key)
+        {
+            ObjectDisposedException.ThrowIf(_isDisposed, this);
+            
+            if (_lock.TryEnterWriteLock(LOCK_TIMEOUT))
+            {                
+                _caches.Remove(key, out var cacheReference);
+
+                _lock.ExitWriteLock();
+            }
+            else
+            {
+                throw new CleanupTimeoutException("Could not lock resource for writing.");
             }
         }
 
@@ -85,5 +146,27 @@ namespace Celestus.Storage.Cache
         protected abstract CacheType? TryCreateFromFile(Uri path);
 
         protected abstract bool Update(CacheType from, CacheType to, TimeSpan? timeout);
+
+        #region IDisposable
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_isDisposed)
+            {
+                if (disposing)
+                {
+                    _factoryCleaner.Dispose();
+                    _lock.Dispose();
+                }
+
+                _isDisposed = true;
+            }
+        }
+
+        public void Dispose()
+        {
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
+        }
+        #endregion
     }
 }

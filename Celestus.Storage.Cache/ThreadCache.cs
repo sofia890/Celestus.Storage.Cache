@@ -232,7 +232,7 @@ namespace Celestus.Storage.Cache
         }
 
         #region IDisposable
-        public void Dispose()
+        public override void Dispose()
         {
             Dispose(true);
             GC.SuppressFinalize(this);

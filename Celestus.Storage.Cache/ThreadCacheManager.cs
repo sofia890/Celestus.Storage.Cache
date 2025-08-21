@@ -12,7 +12,7 @@
                 {
                     if (_caches.TryGetValue(key, out var cacheReference))
                     {
-                        _ = _caches.TryRemove(key, out _);
+                        _ = _caches.Remove(key, out _);
                     }
                 }
             }

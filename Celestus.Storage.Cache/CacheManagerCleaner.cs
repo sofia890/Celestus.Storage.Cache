@@ -3,67 +3,89 @@ using System.Collections.Concurrent;
 
 namespace Celestus.Storage.Cache
 {
-    public record FactoryEntry<CacheKeyType, CacheType>(WeakReference<CacheType> Cache, CacheCleanerBase<CacheKeyType> Cleaner)
+    public record FactoryEntry<CacheKeyType, CacheType>(WeakReference<CacheType> CacheReference, CacheCleanerBase<CacheKeyType> Cleaner)
         where CacheKeyType : class
         where CacheType : CacheBase<CacheKeyType>;
 
-    public class CacheManagerCleaner<ManagerKeyType, CacheKeyType, CacheType>
+    public class CacheManagerCleaner<ManagerKeyType, CacheKeyType, CacheType> : IDisposable
         where ManagerKeyType : class
         where CacheKeyType : class
         where CacheType : CacheBase<CacheKeyType>
     {
         public const int DEFAULT_INTERVAL_IN_MS = 10000;
 
-        WeakReference<ConcurrentQueue<FactoryEntry<CacheKeyType, CacheType>>> _elements;
+        Queue<FactoryEntry<CacheKeyType, CacheType>> _elements = [];
+        WeakReference<Action<string>>? _elementExpiredCallback;
 
-        long cleanupIntervalInTicks = TimeSpan.FromMilliseconds(DEFAULT_INTERVAL_IN_MS).Ticks;
+        long cleanupIntervalInMilliseconds = TimeSpan.FromMilliseconds(DEFAULT_INTERVAL_IN_MS).Milliseconds;
+        private bool _isDisposed;
         readonly Timer _timer;
 
-        public CacheManagerCleaner(WeakReference<ConcurrentQueue<FactoryEntry<CacheKeyType, CacheType>>> elements)
+        public CacheManagerCleaner()
         {
-            _elements = elements;
-
-            _timer = new Timer(Cleanup, null, cleanupIntervalInTicks, cleanupIntervalInTicks);
+            _timer = new Timer(Cleanup, null, cleanupIntervalInMilliseconds, cleanupIntervalInMilliseconds);
         }
 
         public void Cleanup(object? state)
         {
-            if (_elements.TryGetTarget(out var elements))
+            var remainingElements = new List<FactoryEntry<CacheKeyType, CacheType>>();
+
+            while (_elements.TryDequeue(out var entry))
             {
-                var remainingElements = new List<FactoryEntry<CacheKeyType, CacheType>>();
-
-                while (elements.TryDequeue(out var entry))
+                if (!entry.CacheReference.TryGetTarget(out var cache))
                 {
-                    if (!entry.Cache.TryGetTarget(out var abc))
-                    {
-                        entry.Cleaner.Dispose();
-                    }
-                    else if (abc.IsDisposed)
-                    {
-                        throw new NotImplementedException();
-                    }
-                    else
-                    {
-                        remainingElements.Add(entry);
-                    }
+                    entry.Cleaner.Dispose();
                 }
-
-                foreach (var entry in remainingElements)
+                else if (cache.IsDisposed)
                 {
-                    elements.Enqueue(entry);
+                    // Need to cleanup dictionary.
+                }
+                else
+                {
+                    remainingElements.Add(entry);
                 }
             }
-            else
+
+            foreach (var entry in remainingElements)
             {
-                _timer.Dispose();
+                _elements.Enqueue(entry);
             }
+        }
+
+        public void MonitorElement(CacheType cache)
+        {
+            _elements.Enqueue(new(new(cache), cache.Cleaner));
+        }
+
+        public void SetElementExpiredCallback(WeakReference<Action<string>> callback)
+        {
+            _elementExpiredCallback = callback;
         }
 
         public void SetCleanupInterval(TimeSpan interval)
         {
-            cleanupIntervalInTicks = interval.Ticks;
+            cleanupIntervalInMilliseconds = interval.Milliseconds;
 
-            _timer.Change(cleanupIntervalInTicks, cleanupIntervalInTicks);
+            _timer.Change(cleanupIntervalInMilliseconds, cleanupIntervalInMilliseconds);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_isDisposed)
+            {
+                if (disposing)
+                {
+                    _timer.Dispose();
+                }
+
+                _isDisposed = true;
+            }
+        }
+
+        public void Dispose()
+        {
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
         }
     }
 }

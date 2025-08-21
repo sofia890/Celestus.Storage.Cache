@@ -13,10 +13,7 @@
             Key = key;
         }
 
-        public void Dispose()
-        {
-            throw new NotImplementedException();
-        }
+        public abstract void Dispose();
 
         public abstract void Set<DataType>(string key, DataType value, TimeSpan? duration = null);
 
