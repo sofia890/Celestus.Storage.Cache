@@ -1,5 +1,4 @@
 ﻿using Celestus.Serialization;
-using System.Collections.Concurrent;
 using System.Text.Json.Serialization;
 
 namespace Celestus.Storage.Cache
@@ -191,7 +190,7 @@ namespace Celestus.Storage.Cache
         }
 
         #region IDisposable
-        public void Dispose()
+        public override void Dispose()
         {
             Dispose(true);
             GC.SuppressFinalize(this);
