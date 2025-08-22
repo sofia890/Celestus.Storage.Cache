@@ -117,6 +117,8 @@ namespace Celestus.Storage.Cache
                 }
                 else
                 {
+                    loadedCache.Dispose();
+
                     throw new SetFromFileTimeoutException("Could not lock resource for writing.");
                 }
             }
