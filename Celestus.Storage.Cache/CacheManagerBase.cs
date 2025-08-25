@@ -8,13 +8,13 @@ namespace Celestus.Storage.Cache
     public class SetTimeoutException(string Message) : CacheTimeoutException(Message);
     public class SetFromFileTimeoutException(string Message) : CacheTimeoutException(Message);
 
-    public abstract class CacheManagerBase<CacheKeyType, CacheType> : IDisposable
+    public abstract class CacheManagerBase<CacheKeyType, CacheType> : IDisposable, ICacheManager<CacheType>
         where CacheKeyType : class
         where CacheType : CacheBase<CacheKeyType>
     {
-        const int LOCK_TIMEOUT = 5000;
+        private int _lockTimeoutInMs = 5000;
 
-        readonly ReaderWriterLockSlim _lock = new();
+        protected readonly ReaderWriterLockSlim _lock = new();
         readonly protected Dictionary<string, WeakReference<CacheType>> _caches = [];
         readonly protected CacheManagerCleaner<string, CacheKeyType, CacheType> _factoryCleaner;
         private bool _isDisposed;
@@ -31,7 +31,7 @@ namespace Celestus.Storage.Cache
 
             cache = default;
 
-            if (_lock.TryEnterReadLock(LOCK_TIMEOUT))
+            if (_lock.TryEnterReadLock(_lockTimeoutInMs))
             {
                 bool result = false;
 
@@ -63,7 +63,7 @@ namespace Celestus.Storage.Cache
             }
             else
             {
-                if (_lock.TryEnterWriteLock(LOCK_TIMEOUT))
+                if (_lock.TryEnterWriteLock(_lockTimeoutInMs))
                 {
                     var createdCache = (CacheType)Activator.CreateInstance(typeof(CacheType), [usedKey])!;
                     _caches[usedKey] = new(createdCache);
@@ -105,7 +105,7 @@ namespace Celestus.Storage.Cache
             }
             else
             {
-                if (_lock.TryEnterWriteLock(LOCK_TIMEOUT))
+                if (_lock.TryEnterWriteLock(_lockTimeoutInMs))
                 {
                     _caches[loadedCache.Key] = new(loadedCache);
 
@@ -128,7 +128,7 @@ namespace Celestus.Storage.Cache
         {
             ObjectDisposedException.ThrowIf(_isDisposed, this);
             
-            if (_lock.TryEnterWriteLock(LOCK_TIMEOUT))
+            if (_lock.TryEnterWriteLock(_lockTimeoutInMs))
             {                
                 _caches.Remove(key, out var cacheReference);
 
@@ -143,6 +143,19 @@ namespace Celestus.Storage.Cache
         public void SetCleanupInterval(TimeSpan interval)
         {
             _factoryCleaner.SetCleanupInterval(interval);
+        }
+
+        public void SetLockTimeoutInterval(TimeSpan interval)
+        {
+            _lockTimeoutInMs = interval.Milliseconds;
+        }
+
+        public void Remove(string key)
+        {
+            lock (this)
+            {
+                _caches.Remove(key);
+            }
         }
 
         protected abstract CacheType? TryCreateFromFile(Uri path);

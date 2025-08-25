@@ -6,18 +6,9 @@
 
         public class ThreadCacheManager : CacheManagerBase<string, ThreadCache>
         {
-            public void Remove(string key)
-            {
-                lock (this)
-                {
-                    if (_caches.TryGetValue(key, out var cacheReference))
-                    {
-                        _ = _caches.Remove(key, out _);
-                    }
-                }
-            }
 
             #region CacheManagerBase
+
             protected override ThreadCache? TryCreateFromFile(Uri path)
             {
                 return ThreadCache.TryCreateFromFile(path);
