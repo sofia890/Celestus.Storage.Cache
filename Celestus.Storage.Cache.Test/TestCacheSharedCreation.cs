@@ -83,7 +83,7 @@ namespace Celestus.Storage.Cache.Test
             cache.Set(ELEMENT_KEY, ELEMENT_VALUE);
 
             using var tempFile = new TempFile();
-            cache.SaveToFile(tempFile.Uri);
+            _ = cache.TrySaveToFile(tempFile.Uri);
 
             //
             // Act
@@ -115,7 +115,7 @@ namespace Celestus.Storage.Cache.Test
             // Act
             //
             using var tempFile = new TempFile();
-            cache.SaveToFile(tempFile.Uri);
+            _ = cache.TrySaveToFile(tempFile.Uri);
 
             cache.Set(KEY_1, VALUE_1 * 2, duration: longDuration);
 
@@ -140,7 +140,7 @@ namespace Celestus.Storage.Cache.Test
             //
             // Arrange
             //
-            using var tempFile = new TempFile(createFile: true);
+            using var tempFile = new TempFile();
 
             //
             // Act

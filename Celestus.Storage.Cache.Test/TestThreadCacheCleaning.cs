@@ -101,7 +101,7 @@ public class TestThreadCacheCleaning
         // Act
         //
         using var tempFile = new TempFile();
-        cache.TrySaveToFile(tempFile.Uri);
+        _ = cache.TrySaveToFile(tempFile.Uri);
 
         using ThreadCache? loadedCache = ThreadCache.TryCreateFromFile(tempFile.Uri);
 
@@ -131,7 +131,7 @@ public class TestThreadCacheCleaning
         _ = cache.TrySet(firstKey, CreateElement(), TimeSpan.FromDays(1));
 
         using var tempFile1 = new TempFile();
-        cache.TrySaveToFile(tempFile1.Uri);
+        _ = cache.TrySaveToFile(tempFile1.Uri);
 
         //
         // Act
@@ -148,7 +148,7 @@ public class TestThreadCacheCleaning
         _ = cache.TryGet<byte[]>(firstKey);
 
         using var tempFile2 = new TempFile();
-        cache.TrySaveToFile(tempFile2.Uri);
+        _ = cache.TrySaveToFile(tempFile2.Uri);
 
         //
         // Assert

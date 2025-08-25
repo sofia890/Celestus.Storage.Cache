@@ -9,11 +9,10 @@
         /// <summary>
         /// Initializes a new instance of the TempFile class.
         /// </summary>
-        /// <param name="createFile">If true, creates the temporary file immediately; otherwise, the file is created when first written to.</param>
         /// <param name="content">The initial content to write to the file if createFile is true. If null, an empty string is written.</param>
-        public TempFile(bool createFile = false, string? content = null)
+        public TempFile(string? content = null)
         {
-            if (createFile)
+            if (content != null)
             {
                 WriteAllText(content ?? string.Empty);
             }

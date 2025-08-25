@@ -140,6 +140,21 @@ namespace Celestus.Storage.Cache.Generator
                 return;
             }
 
+            var cacheAttributes = CacheAttributeHelper.GetCacheAttributes(methodDeclaration.AttributeLists, (location) => ReportUnknownCacheAttribute(context, location));
+
+            if (cacheAttributes.TryGetValue("enableFilePersistence", out var timeout))
+            {
+                context.ReportDiagnostic(Diagnostic.Create(
+                    id: "CelestusCache3",
+                    category: "ArgumentException",
+                    message: "The enableFilePersistence attribute is not allowed on a method.",
+                    severity: DiagnosticSeverity.Warning,
+                    defaultSeverity: DiagnosticSeverity.Warning,
+                    isEnabledByDefault: true,
+                    warningLevel: 4,
+                    location: Location.Create(methodDeclaration.SyntaxTree, timeout.syntax.Span)));
+            }
+
             var methodModifiers = methodDeclaration.Modifiers;
             var returnType = methodDeclaration.ReturnType;
             var parameterDeclarations = MethodHelper.GetParameterDeclaration(methodDeclaration);
@@ -147,7 +162,6 @@ namespace Celestus.Storage.Cache.Generator
             var outputParameters = MethodHelper.GetOutputParameters(methodDeclaration);
             var tupleDeclaration = GetValueDeclaration(methodDeclaration, outputParameters);
             var tupleOutVariableAssignment = GetOutputTupleOutVariableAssignment(methodDeclaration, outputParameters);
-            var cacheAttributes = CacheAttributeHelper.GetCacheAttributes(methodDeclaration.AttributeLists, (location) => ReportUnknownCacheAttribute(context, location));
             var cacheStore = Name.GetCacheStoreVariableName(methodDeclaration);
             string timeoutInMilliseconds = GetTimeoutInMs(cacheAttributes);
             string durationInMs = GetDurationInMs(cacheAttributes);
@@ -215,6 +229,18 @@ namespace Celestus.Storage.Cache.Generator
             }
 
             return durationInMs;
+        }
+
+        private static string ShouldBePersistent(Dictionary<string, (string value, NameColonSyntax syntax)> cacheAttributes)
+        {
+            if (!cacheAttributes.TryGetValue("enableFilePersistence", out var enablePersistence))
+            {
+                return "false";
+            }
+            else
+            {
+                return enablePersistence.value;
+            }
         }
 
         private static string GetUniqueIdentifier(string methodIdentifier, Dictionary<string, (string value, NameColonSyntax syntax)> cacheAttributes)
@@ -325,12 +351,14 @@ namespace Celestus.Storage.Cache.Generator
                     location: Location.Create(classDeclaration.SyntaxTree, timeout.syntax.Span)));
             }
 
-            string cacheKey = string.Empty;
+            string cacheKey = "string.Empty";
 
             if (cacheAttributes.TryGetValue("key", out var key))
             {
                 cacheKey = key.value;
             }
+
+            var persistent = ShouldBePersistent(cacheAttributes);
 
             var indentation = GetIndentation(namespaceContext.depth);
 
@@ -343,13 +371,13 @@ namespace Celestus.Storage.Cache.Generator
 
             if (ClassHelper.HasStaticMethods(classDeclaration))
             {
-                _ = builder.AppendLine($"{indentation}    readonly static private ThreadCache _staticThreadCache = ThreadCache.Factory.GetOrCreateShared({cacheKey});");
+                _ = builder.AppendLine($"{indentation}    readonly static private ThreadCache _staticThreadCache = ThreadCache.Factory.GetOrCreateShared({cacheKey}, {persistent});");
                 _ = builder.AppendLine($"{indentation}    public static ThreadCache StaticThreadCache => _staticThreadCache;");
             }
 
             if (ClassHelper.HasNonStaticMethods(classDeclaration))
             {
-                _ = builder.AppendLine($"{indentation}    readonly private ThreadCache _threadCache = ThreadCache.Factory.GetOrCreateShared({cacheKey});");
+                _ = builder.AppendLine($"{indentation}    readonly private ThreadCache _threadCache = ThreadCache.Factory.GetOrCreateShared({cacheKey}, {persistent});");
                 _ = builder.AppendLine($"{indentation}    public ThreadCache ThreadCache => _threadCache;");
             }
 

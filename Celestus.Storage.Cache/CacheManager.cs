@@ -14,11 +14,8 @@
 
             protected override bool Update(Cache from, Cache to, TimeSpan? timeout)
             {
-                lock (this)
-                {
-                    // Make a copy to sever any direct connection.
-                    to.Storage = from.Storage.ToDictionary();
-                }
+                // Make a copy to sever any direct connection.
+                to.Storage = from.Storage.ToDictionary();
 
                 return true;
             }

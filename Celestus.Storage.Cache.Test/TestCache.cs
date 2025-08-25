@@ -34,7 +34,7 @@ public class TestCache
         // Act
         //
         using var tempFile = new TempFile();
-        cache.SaveToFile(tempFile.Uri);
+        _ = cache.TrySaveToFile(tempFile.Uri);
 
         using Cache? otherCache = Cache.TryCreateFromFile(tempFile.Uri);
 
@@ -66,7 +66,7 @@ public class TestCache
         // Act
         //
         using var tempFile = new TempFile();
-        cache.SaveToFile(tempFile.Uri);
+        _ = cache.TrySaveToFile(tempFile.Uri);
 
         cache.Set(KEY_1, VALUE_1 * 2);
 
@@ -91,7 +91,7 @@ public class TestCache
         //
         using Cache cache = new();
 
-        using var tempFile = new TempFile(createFile: true);
+        using var tempFile = new TempFile();
 
         //
         // Act

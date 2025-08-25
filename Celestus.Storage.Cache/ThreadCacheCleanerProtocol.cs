@@ -4,17 +4,15 @@
     {
         TrackEntryInd,
         RegisterRemovalCallbackInd,
-        Registercollection,
+        RegisterCollection,
         ResetInd,
         Stop
     }
 
     internal record Signal(CleanerProtocol SignalId);
 
-    internal record TrackEntryInd<KeyType>(KeyType Key, CacheEntry Entry) : Signal(CleanerProtocol.TrackEntryInd);
-
     internal record RegisterRemovalCallbackInd<KeyType>(WeakReference<Func<List<KeyType>, bool>> Callback) : Signal(CleanerProtocol.RegisterRemovalCallbackInd);
-    internal record RegistercollectionInd<KeyType>(WeakReference<IEnumerable<KeyValuePair<KeyType, CacheEntry>>> collection) : Signal(CleanerProtocol.Registercollection);
+    internal record RegisterCollectionInd<KeyType>(WeakReference<IEnumerable<KeyValuePair<KeyType, CacheEntry>>> collection) : Signal(CleanerProtocol.RegisterCollection);
 
     internal record ResetInd(long CleanupIntervalInTicks) : Signal(CleanerProtocol.ResetInd);
 }

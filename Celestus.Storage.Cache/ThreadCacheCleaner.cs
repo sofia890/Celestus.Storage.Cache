@@ -41,7 +41,7 @@ namespace Celestus.Storage.Cache
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 
-            _ = _server.CleanerPort.Writer.TryWrite(new RegistercollectionInd<KeyType>(collection));
+            _ = _server.CleanerPort.Writer.TryWrite(new RegisterCollectionInd<KeyType>(collection));
         }
 
         public override void ReadSettings(ref Utf8JsonReader reader, JsonSerializerOptions options)

@@ -96,21 +96,20 @@ namespace Celestus.Storage.Cache.Test
             cache.TrySet(KEY, 1);
 
             using var tempFile = new TempFile();
-            cache.TrySaveToFile(tempFile.Uri);
+            _ = cache.TrySaveToFile(tempFile.Uri);
 
             //
-            // Act
+            // Act & Assert
             //
-            var loadedCache = ThreadHelper.DoWhileLocked(
-                cache,
-                () => ThreadCache.Factory.UpdateOrLoadSharedFromFile(tempFile.Uri, timeout: TimeSpan.FromMilliseconds(1)),
-                CacheConstants.ShortDuration
-              );
-
-            //
-            // Assert
-            //
-            Assert.IsNull(loadedCache);
+            Assert.ThrowsException<UpdateFromFileTimeoutException>(
+                () =>
+                {
+                    var loadedCache = ThreadHelper.DoWhileLocked(
+                        cache,
+                        () => ThreadCache.Factory.UpdateOrLoadSharedFromFile(tempFile.Uri, timeout: TimeSpan.FromMilliseconds(1)),
+                        CacheConstants.LongDuration);
+                }
+            );
         }
     }
 }

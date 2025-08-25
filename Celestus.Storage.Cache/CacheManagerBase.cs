@@ -1,4 +1,6 @@
 ﻿using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace Celestus.Storage.Cache
 {
@@ -7,6 +9,8 @@ namespace Celestus.Storage.Cache
     public class CleanupTimeoutException(string Message) : CacheTimeoutException(Message);
     public class SetTimeoutException(string Message) : CacheTimeoutException(Message);
     public class SetFromFileTimeoutException(string Message) : CacheTimeoutException(Message);
+    public class UpdateFromFileTimeoutException(string Message) : CacheTimeoutException(Message);
+    public class PersistenceMismatchException(string Message) : Exception(Message);
 
     public abstract class CacheManagerBase<CacheKeyType, CacheType> : IDisposable, ICacheManager<CacheType>
         where CacheKeyType : class
@@ -51,7 +55,7 @@ namespace Celestus.Storage.Cache
             }
         }
 
-        public CacheType GetOrCreateShared(string key = "")
+        public CacheType GetOrCreateShared(string key = "", bool persistent = false, string persistentStorageLocation = "")
         {
             ObjectDisposedException.ThrowIf(_isDisposed, this);
 
@@ -59,20 +63,26 @@ namespace Celestus.Storage.Cache
 
             if (TryLoad(key, out var cache))
             {
+                if (persistent != cache.Persistent)
+                {
+                    throw new PersistenceMismatchException($"Inconsistent persistence configuration for key '{key}'.");
+                }
+
                 return cache;
             }
             else
             {
                 if (_lock.TryEnterWriteLock(_lockTimeoutInMs))
                 {
-                    var createdCache = (CacheType)Activator.CreateInstance(typeof(CacheType), [usedKey])!;
-                    _caches[usedKey] = new(createdCache);
+                    CacheType cacheToTrack = (CacheType)Activator.CreateInstance(typeof(CacheType), [usedKey, persistent, persistentStorageLocation])!;
+
+                    _caches[usedKey] = new(cacheToTrack);
 
                     _lock.ExitWriteLock();
 
-                    _factoryCleaner.MonitorElement(createdCache);
+                    _factoryCleaner.MonitorElement(cacheToTrack);
 
-                    return createdCache;
+                    return cacheToTrack;
                 }
                 else
                 {
@@ -84,6 +94,8 @@ namespace Celestus.Storage.Cache
         public CacheType? UpdateOrLoadSharedFromFile(Uri path, TimeSpan? timeout = null)
         {
             ObjectDisposedException.ThrowIf(_isDisposed, this);
+
+            int timeoutInMs = timeout?.Milliseconds ?? _lockTimeoutInMs;
 
             if (TryCreateFromFile(path) is not CacheType loadedCache)
             {
@@ -99,13 +111,13 @@ namespace Celestus.Storage.Cache
                     }
                     else
                     {
-                        return null;
+                        throw new UpdateFromFileTimeoutException("Could not lock resource for writing.");
                     }
                 }
             }
             else
             {
-                if (_lock.TryEnterWriteLock(_lockTimeoutInMs))
+                if (_lock.TryEnterWriteLock(timeoutInMs))
                 {
                     _caches[loadedCache.Key] = new(loadedCache);
 

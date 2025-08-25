@@ -98,9 +98,8 @@ public class TestCacheCleaning
         // Act
         //
         var path = new Uri(Path.GetTempFileName());
-        cache.SaveToFile(path);
-
-        var _ = Cache.TryCreateFromFile(path);
+        _ = cache.TrySaveToFile(path);
+        _ = Cache.TryCreateFromFile(path);
 
         File.Delete(path.AbsolutePath);
 
@@ -131,7 +130,7 @@ public class TestCacheCleaning
         cache.Set(firstKey, CreateElement(), TimeSpan.FromDays(1));
 
         var path_1 = new Uri(Path.GetTempFileName());
-        cache.SaveToFile(path_1);
+        _ = cache.TrySaveToFile(path_1);
 
         //
         // Act
@@ -148,7 +147,7 @@ public class TestCacheCleaning
         _ = cache.TryGet<byte[]>(firstKey);
 
         var path_2 = new Uri(Path.GetTempFileName());
-        cache.SaveToFile(path_2);
+        _ = cache.TrySaveToFile(path_2);
 
         //
         // Assert

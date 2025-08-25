@@ -101,7 +101,7 @@ namespace Celestus.Storage.Cache.Test
             // Act
             //
             var path = new Uri(Path.GetTempFileName());
-            cache.TrySaveToFile(path);
+            _ = cache.TrySaveToFile(path);
 
             _ = cache.TrySet(KEY_1, VALUE_1 * 2);
 

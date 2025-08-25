@@ -1,6 +1,5 @@
 ﻿using Celestus.Serialization;
 using System.Text.Json.Serialization;
-using System.Threading;
 
 namespace Celestus.Storage.Cache
 {
@@ -18,16 +17,21 @@ namespace Celestus.Storage.Cache
 
         internal override CacheCleanerBase<string> Cleaner { get => Cache.Cleaner; }
 
-        public ThreadCache(string key, Cache cache) : base(key)
+        public ThreadCache(string key, Cache cache, bool persistent = false, string persistentStorageLocation = "") :
+            base(key, persistent: persistent, persistentStorageLocation)
         {
-            Cache = cache;
+            // Not persistent or no persistent data loaded.
+            if (!persistent || Cache == null)
+            {
+                Cache = cache;
+            }
 
             Cache.Cleaner.RegisterRemovalCallback(new(TryRemove));
             Cache.Cleaner.RegisterCollection(new(Cache.Storage));
         }
 
-        public ThreadCache(string key, CacheCleanerBase<string> cleaner) :
-            this(key, new Cache(cleaner, doNotSetRemoval: true))
+        public ThreadCache(string key, CacheCleanerBase<string> cleaner, bool persistent = false, string persistentStorageLocation = "") :
+            this(key, new Cache(cleaner, doNotSetRemoval: true), persistent: persistent, persistentStorageLocation: persistentStorageLocation)
         {
         }
 
@@ -36,18 +40,26 @@ namespace Celestus.Storage.Cache
         {
         }
 
-        public ThreadCache(string key, TimeSpan? cleaningInterval = null) :
-            this(key, cleaner: new ThreadCacheCleaner<string>(cleaningInterval ?? TimeSpan.FromMilliseconds(CLEANER_INTERVAL_IN_MS)))
-        {
-        }
-
-        public ThreadCache(TimeSpan? cleaningInterval = null) :
-            this(string.Empty, cleaningInterval)
-        {
-        }
-
         public ThreadCache(string key) :
-            this(key, TimeSpan.FromMilliseconds(CLEANER_INTERVAL_IN_MS))
+            this(key, new Cache(doNotSetRemoval: true))
+        {
+        }
+
+        public ThreadCache(string key, TimeSpan? cleaningInterval, bool persistent = false, string persistentStorageLocation = "") :
+            this(key,
+                cleaner: new ThreadCacheCleaner<string>(cleaningInterval ?? TimeSpan.FromMilliseconds(CLEANER_INTERVAL_IN_MS)),
+                persistent: persistent,
+                persistentStorageLocation: persistentStorageLocation)
+        {
+        }
+
+        public ThreadCache(TimeSpan? cleaningInterval = null, bool persistent = false, string persistentStorageLocation = "") :
+            this(string.Empty, cleaningInterval, persistent: persistent, persistentStorageLocation: persistentStorageLocation)
+        {
+        }
+
+        public ThreadCache(string key, bool persistent, string persistentStorageLocation = "") :
+            this(key, TimeSpan.FromMilliseconds(CLEANER_INTERVAL_IN_MS), persistent: persistent, persistentStorageLocation: persistentStorageLocation)
         {
         }
 
@@ -106,8 +118,8 @@ namespace Celestus.Storage.Cache
             return true;
         }
 
-        public override DataType? Get<DataType>(string key)
-            where DataType : class
+        public override DataType Get<DataType>(string key) 
+            where DataType : default
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 
@@ -176,7 +188,7 @@ namespace Celestus.Storage.Cache
             return result;
         }
 
-        public bool TrySaveToFile(Uri path)
+        public override bool TrySaveToFile(Uri path)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 
@@ -197,7 +209,7 @@ namespace Celestus.Storage.Cache
             return Serialize.TryCreateFromFile<ThreadCache>(path);
         }
 
-        public bool TryLoadFromFile(Uri path)
+        public override bool TryLoadFromFile(Uri path)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 
@@ -238,10 +250,17 @@ namespace Celestus.Storage.Cache
             GC.SuppressFinalize(this);
         }
 
+        ~ThreadCache()
+        {
+            Dispose(false);
+        }
+
         protected virtual void Dispose(bool disposing)
         {
             if (!_disposed)
             {
+                HandlePersistentFinalization();
+
                 if (disposing)
                 {
                     Factory.Remove(Key);

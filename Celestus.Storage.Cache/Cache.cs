@@ -16,9 +16,16 @@ namespace Celestus.Storage.Cache
             string key,
             Dictionary<string, CacheEntry> storage,
             CacheCleanerBase<string> cleaner,
-            bool doNotSetRemoval = false) : base(key)
+            bool doNotSetRemoval = false,
+            bool persistent = false,
+            string persistentStorageLocation = "") : base(key, persistent, persistentStorageLocation)
         {
-            Storage = storage;
+            // Not persistent or no persistent data loaded.
+            if (!persistent || Storage == null)
+            {
+                Storage = storage;
+            }
+
             Cleaner = cleaner;
 
             if (!doNotSetRemoval)
@@ -29,16 +36,23 @@ namespace Celestus.Storage.Cache
             Cleaner.RegisterCollection(new(Storage));
         }
 
-        public Cache(string key) : this(key, [], new CacheCleaner<string>())
+        public Cache(string key, bool persistent = false, string persistentStorageLocation = "") :
+            this(key, [], new CacheCleaner<string>(), persistent: persistent, persistentStorageLocation: persistentStorageLocation)
         {
         }
 
-        public Cache() : this(string.Empty)
+        public Cache(bool doNotSetRemoval = false) :
+            this(string.Empty,
+                [],
+                new CacheCleaner<string>(),
+                persistent: false,
+                persistentStorageLocation: "",
+                doNotSetRemoval: doNotSetRemoval)
         {
         }
 
-        public Cache(CacheCleanerBase<string> cleaner, bool doNotSetRemoval = false) :
-            this(string.Empty, [], cleaner, doNotSetRemoval)
+        public Cache(CacheCleanerBase<string> cleaner, bool persistent = false, string persistentStorageLocation = "", bool doNotSetRemoval = false) :
+            this(string.Empty, [], cleaner, persistent: persistent, persistentStorageLocation: persistentStorageLocation, doNotSetRemoval: doNotSetRemoval)
         {
         }
 
@@ -85,16 +99,16 @@ namespace Celestus.Storage.Cache
             Set(key, value, GetExpiration(duration), out entry);
         }
 
-        public override DataType? Get<DataType>(string key)
-            where DataType : class
+        public override DataType? Get<DataType>(string key) 
+            where DataType : default
         {
-            var result = TryGet<DataType>(key, out var _);
+            var result = TryGet<DataType>(key);
 
             if (!result.result)
             {
                 throw new InvalidOperationException();
             }
-            else
+            else 
             {
                 return result.data;
             }
@@ -102,17 +116,12 @@ namespace Celestus.Storage.Cache
 
         public (bool result, DataType? data) TryGet<DataType>(string key)
         {
-            return TryGet<DataType>(key, out var _);
-        }
-
-        public (bool result, DataType? data) TryGet<DataType>(string key, out CacheEntry? entry)
-        {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 
             bool found = false;
             DataType? value = default;
 
-            if (Storage.TryGetValue(key, out entry))
+            if (Storage.TryGetValue(key, out var entry))
             {
                 var currentTimeInTicks = DateTime.UtcNow.Ticks;
                 found = entry.Expiration >= currentTimeInTicks;
@@ -151,11 +160,13 @@ namespace Celestus.Storage.Cache
             return anyRemoved;
         }
 
-        public void SaveToFile(Uri path)
+        public override bool TrySaveToFile(Uri path)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 
             Serialize.SaveToFile(this, path);
+
+            return true;
         }
 
         public static Cache? TryCreateFromFile(Uri path)
@@ -163,7 +174,7 @@ namespace Celestus.Storage.Cache
             return Serialize.TryCreateFromFile<Cache>(path);
         }
 
-        public bool TryLoadFromFile(Uri path)
+        public override bool TryLoadFromFile(Uri path)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 
@@ -175,7 +186,7 @@ namespace Celestus.Storage.Cache
             }
             else
             {
-                Storage = loadedData.Storage;
+                Storage = loadedData.Storage.ToDictionary();
 
                 return true;
             }
@@ -196,10 +207,17 @@ namespace Celestus.Storage.Cache
             GC.SuppressFinalize(this);
         }
 
+        ~Cache()
+        {
+            Dispose(false);
+        }
+
         protected virtual void Dispose(bool disposing)
         {
             if (!_disposed)
             {
+                HandlePersistentFinalization();
+
                 if (disposing)
                 {
                     Cleaner.Dispose();

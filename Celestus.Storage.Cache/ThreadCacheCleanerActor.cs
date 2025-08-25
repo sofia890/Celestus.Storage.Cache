@@ -10,7 +10,7 @@ namespace Celestus.Storage.Cache
 
         long _cleanupIntervalInTicks;
         long _nextCleanupOpportunityInTicks = 0;
-        WeakReference<Func<List<KeyType>, bool>> _removalCallbackReference = new((keys) => false);
+        WeakReference<Func<List<KeyType>, bool>>? _removalCallbackReference = null;
         WeakReference<IEnumerable<KeyValuePair<KeyType, CacheEntry>>> _collectionReference = new(new Dictionary<KeyType, CacheEntry>());
         private bool _disposed = false;
         private readonly Task _signalHandlerTask;
@@ -66,7 +66,7 @@ namespace Celestus.Storage.Cache
                             _removalCallbackReference = payload.Callback;
                             break;
 
-                        case CleanerProtocol.Registercollection when rawSignal is RegistercollectionInd<KeyType> payload:
+                        case CleanerProtocol.RegisterCollection when rawSignal is RegisterCollectionInd<KeyType> payload:
                             _collectionReference = payload.collection;
                             break;
 
@@ -104,7 +104,7 @@ namespace Celestus.Storage.Cache
                     }
                 }
 
-                if (expiredKeys.Count > 0 && _removalCallbackReference.TryGetTarget(out var callback))
+                if (expiredKeys.Count > 0 && (_removalCallbackReference?.TryGetTarget(out var callback) ?? false))
                 {
                     _ = callback(expiredKeys);
                 }

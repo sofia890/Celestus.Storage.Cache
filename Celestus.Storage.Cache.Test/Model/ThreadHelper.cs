@@ -49,7 +49,7 @@ namespace Celestus.Storage.Cache.Test.Model
 
         public static ReturnType DoWhileLocked<ReturnType>(ThreadCache cache, Func<ReturnType> action, TimeSpan timeout)
         {
-            return DoUntil(() => _ = cache.ThreadLock(),
+            return DoUntil(() => cache.ThreadLock(),
                            (cacheLock) => cacheLock.Dispose(),
                            action,
                            timeout);

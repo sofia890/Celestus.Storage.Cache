@@ -64,7 +64,7 @@ namespace Celestus.Storage.Cache.Test
             using (var cache = new Cache("test-key"))
             {
                 cache.Set("test-item", "test-value");
-                cache.SaveToFile(tempFile.Uri);
+                _ = cache.TrySaveToFile(tempFile.Uri);
             }
 
             manager.Dispose();
@@ -133,7 +133,7 @@ namespace Celestus.Storage.Cache.Test
             using var cache = new ThreadCache("test-key");
 
             _ = cache.TrySet("test-item", "test-value");
-            cache.TrySaveToFile(tempFile.Uri);
+            _ = cache.TrySaveToFile(tempFile.Uri);
 
             manager.Dispose();
 

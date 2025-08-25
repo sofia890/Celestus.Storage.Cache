@@ -16,11 +16,12 @@
 
             protected override bool Update(ThreadCache from, ThreadCache to, TimeSpan? timeout)
             {
-                lock (this)
-                {
-                    var timeoutInMs = timeout?.Milliseconds ?? DEFAULT_TIMEOUT_IN_MS;
-                    return to.TrySetCache(from.Cache.ToCache(), timeoutInMs);
-                }
+                // Should really be a read lock and not a write lock but we have write lock easily
+                // available.
+                using var _ = from.ThreadLock();
+
+                var timeoutInMs = timeout?.Milliseconds ?? DEFAULT_TIMEOUT_IN_MS;
+                return to.TrySetCache(from.Cache.ToCache(), timeoutInMs);
             }
             #endregion
         }
