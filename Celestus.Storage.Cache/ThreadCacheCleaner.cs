@@ -12,11 +12,6 @@ namespace Celestus.Storage.Cache
         {
 
         }
-        public override void TrackEntry(ref CacheEntry entry, KeyType key)
-        {
-            // For performance the entries are directly taken from storage.
-            ObjectDisposedException.ThrowIf(IsDisposed, this);
-        }
 
         public override void EntryAccessed(ref CacheEntry entry, KeyType key)
         {
@@ -30,18 +25,11 @@ namespace Celestus.Storage.Cache
             ObjectDisposedException.ThrowIf(IsDisposed, this);
         }
 
-        public override void RegisterRemovalCallback(WeakReference<Func<List<KeyType>, bool>> callback)
+        public override void RegisterCache(WeakReference<CacheBase<KeyType>> cache)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 
-            _ = _server.CleanerPort.Writer.TryWrite(new RegisterRemovalCallbackInd<KeyType>(callback));
-        }
-
-        public override void RegisterCollection(WeakReference<IEnumerable<KeyValuePair<KeyType, CacheEntry>>> collection)
-        {
-            ObjectDisposedException.ThrowIf(IsDisposed, this);
-
-            _ = _server.CleanerPort.Writer.TryWrite(new RegisterCollectionInd<KeyType>(collection));
+            _ = _server.CleanerPort.Writer.TryWrite(new RegisterCacheInd<KeyType>(cache));
         }
 
         public override void ReadSettings(ref Utf8JsonReader reader, JsonSerializerOptions options)

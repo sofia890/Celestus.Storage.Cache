@@ -37,17 +37,23 @@ namespace Celestus.Storage.Cache
 
             if (_lock.TryEnterReadLock(_lockTimeoutInMs))
             {
-                bool result = false;
-
-                if (_caches.TryGetValue(key, out var cacheReference) &&
-                    cacheReference.TryGetTarget(out cache))
+                try
                 {
-                    result = !cache.IsDisposed;
+                    bool result = false;
+
+                    if (_caches.TryGetValue(key, out var cacheReference) &&
+                        cacheReference.TryGetTarget(out cache))
+                    {
+                        result = !cache.IsDisposed;
+                    }
+
+                    return result;
+                }
+                finally
+                {
+                    _lock.ExitReadLock();
                 }
 
-                _lock.ExitReadLock();
-
-                return result;
             }
             else
             {
@@ -72,15 +78,20 @@ namespace Celestus.Storage.Cache
             }
             else
             {
+                CacheType cacheToTrack = (CacheType)Activator.CreateInstance(typeof(CacheType), [usedKey, persistent, persistentStorageLocation])!;
+
                 if (_lock.TryEnterWriteLock(_lockTimeoutInMs))
                 {
-                    CacheType cacheToTrack = (CacheType)Activator.CreateInstance(typeof(CacheType), [usedKey, persistent, persistentStorageLocation])!;
+                    try
+                    {
+                        _caches[usedKey] = new(cacheToTrack);
 
-                    _caches[usedKey] = new(cacheToTrack);
-
-                    _lock.ExitWriteLock();
-
-                    _factoryCleaner.MonitorElement(cacheToTrack);
+                        _factoryCleaner.MonitorElement(cacheToTrack);
+                    }
+                    finally
+                    {
+                        _lock.ExitWriteLock();
+                    }
 
                     return cacheToTrack;
                 }
@@ -117,13 +128,20 @@ namespace Celestus.Storage.Cache
             }
             else
             {
+                WeakReference<CacheType> cache = new(loadedCache);
+
                 if (_lock.TryEnterWriteLock(timeoutInMs))
                 {
-                    _caches[loadedCache.Key] = new(loadedCache);
+                    try
+                    {
+                        _caches[loadedCache.Key] = cache;
 
-                    _lock.ExitWriteLock();
-
-                    _factoryCleaner.MonitorElement(loadedCache);
+                        _factoryCleaner.MonitorElement(loadedCache);
+                    }
+                    finally
+                    {
+                        _lock.ExitWriteLock();
+                    }
 
                     return loadedCache;
                 }
@@ -141,10 +159,15 @@ namespace Celestus.Storage.Cache
             ObjectDisposedException.ThrowIf(_isDisposed, this);
             
             if (_lock.TryEnterWriteLock(_lockTimeoutInMs))
-            {                
-                _caches.Remove(key, out var cacheReference);
-
-                _lock.ExitWriteLock();
+            {
+                try
+                {
+                    _caches.Remove(key, out _);
+                }
+                finally
+                {
+                    _lock.ExitWriteLock();
+                }
             }
             else
             {

@@ -3,16 +3,17 @@
     internal enum CleanerProtocol
     {
         TrackEntryInd,
-        RegisterRemovalCallbackInd,
-        RegisterCollection,
+        RegisterCacheInd,
         ResetInd,
         Stop
     }
 
     internal record Signal(CleanerProtocol SignalId);
 
-    internal record RegisterRemovalCallbackInd<KeyType>(WeakReference<Func<List<KeyType>, bool>> Callback) : Signal(CleanerProtocol.RegisterRemovalCallbackInd);
-    internal record RegisterCollectionInd<KeyType>(WeakReference<IEnumerable<KeyValuePair<KeyType, CacheEntry>>> collection) : Signal(CleanerProtocol.RegisterCollection);
+    internal record RegisterCacheInd<KeyType>(WeakReference<CacheBase<KeyType>> Cache) : Signal(CleanerProtocol.RegisterCacheInd)
+        where KeyType : notnull;
 
     internal record ResetInd(long CleanupIntervalInTicks) : Signal(CleanerProtocol.ResetInd);
+
+    internal record StopInd() : Signal(CleanerProtocol.Stop);
 }

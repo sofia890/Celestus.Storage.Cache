@@ -64,6 +64,11 @@ namespace Celestus.Storage.Cache.Test
             // Act & Assert
             //
             Assert.ThrowsException<PersistenceMismatchException>(() => CacheHelper.GetOrCreateShared(cacheTypeToTest, CACHE_KEY));
+
+            // Need to dispose to trigger persistence logic before the tempo file is removed.
+            // Test runner has limited access to file system. Once file is deleted said runner
+            // cannot recreate the file by just writing to it.
+            cacheA.Dispose();
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using System.Reflection.PortableExecutable;
+using System.Text.Json;
 using System.Threading.Channels;
 
 namespace Celestus.Storage.Cache
@@ -7,11 +8,11 @@ namespace Celestus.Storage.Cache
         where KeyType : notnull
     {
         public const int DEFAULT_TIMEOUT_IN_MS = 5000;
+        public const int A_MOMENT_IN_MS = 500;
 
         long _cleanupIntervalInTicks;
         long _nextCleanupOpportunityInTicks = 0;
-        WeakReference<Func<List<KeyType>, bool>>? _removalCallbackReference = null;
-        WeakReference<IEnumerable<KeyValuePair<KeyType, CacheEntry>>> _collectionReference = new(new Dictionary<KeyType, CacheEntry>());
+        WeakReference<CacheBase<KeyType>>? _cacheReference = null;
         private bool _disposed = false;
         private readonly Task _signalHandlerTask;
 
@@ -62,12 +63,11 @@ namespace Celestus.Storage.Cache
                         default:
                             break;
 
-                        case CleanerProtocol.RegisterRemovalCallbackInd when rawSignal is RegisterRemovalCallbackInd<KeyType> payload:
-                            _removalCallbackReference = payload.Callback;
-                            break;
+                        case CleanerProtocol.Stop:
+                            return;
 
-                        case CleanerProtocol.RegisterCollection when rawSignal is RegisterCollectionInd<KeyType> payload:
-                            _collectionReference = payload.collection;
+                        case CleanerProtocol.RegisterCacheInd when rawSignal is RegisterCacheInd<KeyType> payload:
+                            _cacheReference = payload.Cache;
                             break;
 
                         case CleanerProtocol.ResetInd when rawSignal is ResetInd payload:
@@ -87,7 +87,8 @@ namespace Celestus.Storage.Cache
             {
                 return;
             }
-            else if (!_collectionReference.TryGetTarget(out var collection))
+            else if (_cacheReference == null ||
+                     !_cacheReference.TryGetTarget(out var cache))
             {
                 // Wait for reference to be available.
                 return;
@@ -96,17 +97,24 @@ namespace Celestus.Storage.Cache
             {
                 List<KeyType> expiredKeys = [];
 
-                foreach (var entry in collection)
+                var reader = CleanerPort.Reader;
+
+                foreach (var entry in cache.Storage)
                 {
+                    if (reader.Completion.IsCompleted)
+                    {
+                        return;
+                    }
+
                     if (CacheCleaner<KeyType>.ExpiredCriteria(entry.Value, timeInTicks))
                     {
                         expiredKeys.Add(entry.Key);
                     }
                 }
 
-                if (expiredKeys.Count > 0 && (_removalCallbackReference?.TryGetTarget(out var callback) ?? false))
+                if (expiredKeys.Count > 0 && (_cacheReference?.TryGetTarget(out var callback) ?? false))
                 {
-                    _ = callback(expiredKeys);
+                    _ = cache.TryRemove([..expiredKeys]);
                 }
 
                 _nextCleanupOpportunityInTicks = timeInTicks + _cleanupIntervalInTicks;
@@ -182,9 +190,10 @@ namespace Celestus.Storage.Cache
             {
                 if (disposing)
                 {
-                    _ = CleanerPort.Writer.TryComplete();
-
-                    _signalHandlerTask.Wait(TimeSpan.FromSeconds(5));
+                    CleanerPort.Writer.TryWrite(new StopInd());
+                    CleanerPort.Writer.Complete();
+                    _ = _signalHandlerTask.Wait(A_MOMENT_IN_MS); //WTF
+                    _signalHandlerTask.Dispose();
                 }
 
                 _disposed = true;

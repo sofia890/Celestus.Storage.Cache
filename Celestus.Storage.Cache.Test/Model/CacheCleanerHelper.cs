@@ -2,9 +2,9 @@
 {
     internal static class CacheCleanerHelper
     {
-        public static CacheCleanerBase<string> GetCleaner(Type cleanerTypeToTest, TimeSpan interval, out CacheCleanerContext context)
+        public static CacheCleanerBase<string> GetCleaner(Type cleanerTypeToTest, TimeSpan interval, out MockCache cache)
         {
-            context = new CacheCleanerContext();
+            cache = new MockCache();
 
             CacheCleanerBase<string> cleaner;
 
@@ -19,7 +19,7 @@
                 cleaner = new ThreadCacheCleaner<string>(interval);
             }
 
-            cleaner.RegisterCollection(new(context.Storage));
+            cleaner.RegisterCache(new(cache));
 
             return cleaner;
         }

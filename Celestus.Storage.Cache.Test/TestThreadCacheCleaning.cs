@@ -8,34 +8,6 @@ namespace Celestus.Storage.Cache.Test;
 public class TestThreadCacheCleaning
 {
     [TestMethod]
-    public void VerifyThatCleanerIsInformedOfNewEntries()
-    {
-        //
-        // Arrange
-        //
-        using var cleanerTester = new CacheCleanerTester();
-        using var cache = new ThreadCache(cleanerTester);
-
-        //
-        // Act
-        //
-        const string KEY_1 = "Hamster";
-        const int VALUE_1 = 123456;
-        _ = cache.TrySet(KEY_1, VALUE_1);
-
-        const string KEY_2 = "Lion";
-        const double VALUE_2 = 1.2567;
-        _ = cache.TrySet(KEY_2, VALUE_2);
-
-        //
-        // Assert
-        //
-        Assert.AreEqual(2, cleanerTester.TrackedKeys.Count);
-        Assert.AreEqual(KEY_1, cleanerTester.TrackedKeys[0]);
-        Assert.AreEqual(KEY_2, cleanerTester.TrackedKeys[1]);
-    }
-
-    [TestMethod]
     public void VerifyThatCleanerIsInformedWhenEntriesAreAccessed()
     {
         //
@@ -56,36 +28,8 @@ public class TestThreadCacheCleaning
         //
         // Assert
         //
-        Assert.AreEqual(1, cleanerTester.AccessedKeys.Count);
+        Assert.AreEqual(2, cleanerTester.AccessedKeys.Count);
         Assert.AreEqual(KEY_1, cleanerTester.AccessedKeys[0]);
-    }
-
-    [TestMethod]
-    public void VerifyThatCleanerIsGivenRemovalCallback()
-    {
-        //
-        // Arrange
-        //
-        using var cleanerTester = new CacheCleanerTester();
-        using var cache = new ThreadCache(cleanerTester);
-
-        const string KEY_1 = "Hamster";
-        const bool VALUE_1 = true;
-        const int INSTANT_TIMEOUT_IN_MS = 0;
-        _ = cache.TrySet(KEY_1, VALUE_1, TimeSpan.FromMilliseconds(INSTANT_TIMEOUT_IN_MS));
-
-        //
-        // Act
-        //
-        if (cleanerTester.RemovalCallback.TryGetTarget(out var callback))
-        {
-            callback([KEY_1]);
-        }
-
-        //
-        // Assert
-        //
-        Assert.AreEqual((false, default), cache.TryGet<bool>(KEY_1));
     }
 
     [TestMethod]
@@ -118,7 +62,11 @@ public class TestThreadCacheCleaning
         //
         // Arrange
         //
-        using var cache = new ThreadCache(CacheConstants.ShortDuration);
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+
+        var interval = CacheConstants.TimingDuration;
+        using var cache = new ThreadCache(interval);
 
         static byte[] CreateElement()
         {
@@ -143,9 +91,11 @@ public class TestThreadCacheCleaning
             _ = cache.TrySet(keys.Next(), CreateElement(), CacheConstants.ShortDuration);
         }
 
-        ThreadHelper.SpinWait(CacheConstants.LongDuration);
+        ThreadHelper.SpinWait(interval);
 
         _ = cache.TryGet<byte[]>(firstKey);
+
+        ThreadHelper.SpinWait(interval);
 
         using var tempFile2 = new TempFile();
         _ = cache.TrySaveToFile(tempFile2.Uri);

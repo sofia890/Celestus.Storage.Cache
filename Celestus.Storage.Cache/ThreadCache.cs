@@ -17,6 +17,9 @@ namespace Celestus.Storage.Cache
 
         internal override CacheCleanerBase<string> Cleaner { get => Cache.Cleaner; }
 
+        internal override Dictionary<string, CacheEntry> Storage { get => Cache.Storage; set => Cache.Storage = value; }
+
+
         public ThreadCache(string key, Cache cache, bool persistent = false, string persistentStorageLocation = "") :
             base(key, persistent: persistent, persistentStorageLocation)
         {
@@ -26,12 +29,11 @@ namespace Celestus.Storage.Cache
                 Cache = cache;
             }
 
-            Cache.Cleaner.RegisterRemovalCallback(new(TryRemove));
-            Cache.Cleaner.RegisterCollection(new(Cache.Storage));
+            Cache.Cleaner.RegisterCache(new(this));
         }
 
         public ThreadCache(string key, CacheCleanerBase<string> cleaner, bool persistent = false, string persistentStorageLocation = "") :
-            this(key, new Cache(cleaner, doNotSetRemoval: true), persistent: persistent, persistentStorageLocation: persistentStorageLocation)
+            this(key, new Cache(cleaner), persistent: persistent, persistentStorageLocation: persistentStorageLocation)
         {
         }
 
@@ -40,8 +42,7 @@ namespace Celestus.Storage.Cache
         {
         }
 
-        public ThreadCache(string key) :
-            this(key, new Cache(doNotSetRemoval: true))
+        public ThreadCache(string key) : this(key, new Cache())
         {
         }
 
@@ -79,14 +80,16 @@ namespace Celestus.Storage.Cache
                 return false;
             }
 
-            Cache = newCache;
+            try
+            {
+                Cache = newCache;
 
-            if (_lock.IsWriteLockHeld)
+                return true;
+            }
+            finally
             {
                 _lock.ExitWriteLock();
             }
-
-            return true;
         }
 
         public override void Set<DataType>(string key, DataType value, TimeSpan? duration = null)
@@ -112,13 +115,19 @@ namespace Celestus.Storage.Cache
                 return false;
             }
 
-            Cache.Set(key, value, out var entry, duration);
-            _lock.ExitWriteLock();
+            try
+            {
+                Cache.Set(key, value, out var entry, duration);
 
-            return true;
+                return true;
+            }
+            finally
+            {
+                _lock.ExitWriteLock();
+            }
         }
 
-        public override DataType Get<DataType>(string key) 
+        public override DataType? Get<DataType>(string key) 
             where DataType : default
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
@@ -139,11 +148,14 @@ namespace Celestus.Storage.Cache
                 return (false, default);
             }
 
-            var result = Cache.TryGet<DataType>(key);
-
-            _lock.ExitReadLock();
-
-            return result;
+            try
+            {
+                return Cache.TryGet<DataType>(key);
+            }
+            finally
+            {
+                _lock.ExitReadLock();
+            }
         }
 
         public (bool result, DataType? data) TryGet<DataType>(string key, int timeout)
@@ -155,24 +167,27 @@ namespace Celestus.Storage.Cache
                 return (false, default);
             }
 
-            var result = Cache.TryGet<DataType>(key);
-
-            _lock.ExitReadLock();
-
-            return result;
+            try
+            {
+                return Cache.TryGet<DataType>(key);
+            }
+            finally
+            {
+                _lock.ExitReadLock();
+            }
         }
 
-        public bool TryRemove(List<string> keys)
+        public override bool TryRemove(string[] keys)
         {
             return TryRemove(keys, timeout: NO_TIMEOUT);
         }
 
-        public bool TryRemove(List<string> keys, TimeSpan? timeout = null)
+        public bool TryRemove(string[] keys, TimeSpan? timeout = null)
         {
             return TryRemove(keys, timeout?.Milliseconds ?? DEFAULT_TIMEOUT_IN_MS);
         }
 
-        public bool TryRemove(List<string> keys, int timeout)
+        public bool TryRemove(string[] keys, int timeout)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 
@@ -181,11 +196,14 @@ namespace Celestus.Storage.Cache
                 return false;
             }
 
-            var result = Cache.TryRemove(keys);
-
-            _lock.ExitWriteLock();
-
-            return result;
+            try
+            {
+                return Cache.TryRemove(keys);
+            }
+            finally
+            {
+                _lock.ExitWriteLock();
+            }
         }
 
         public override bool TrySaveToFile(Uri path)
@@ -197,11 +215,16 @@ namespace Celestus.Storage.Cache
                 return false;
             }
 
-            Serialize.SaveToFile(this, path);
+            try
+            {
+                Serialize.SaveToFile(this, path);
 
-            _lock.ExitReadLock();
-
-            return true;
+                return true;
+            }
+            finally
+            {
+                _lock.ExitReadLock();
+            }
         }
 
         public static ThreadCache? TryCreateFromFile(Uri path)
@@ -218,10 +241,10 @@ namespace Celestus.Storage.Cache
                 return false;
             }
 
-            bool result = false;
-
             try
             {
+                bool result = false;
+
                 var loadedData = Serialize.TryCreateFromFile<ThreadCache>(path);
 
                 if (loadedData != null && Key == loadedData.Key)
@@ -230,6 +253,8 @@ namespace Celestus.Storage.Cache
 
                     result = true;
                 }
+
+                return result;
             }
             catch
             {
@@ -239,8 +264,6 @@ namespace Celestus.Storage.Cache
             {
                 _lock.ExitWriteLock();
             }
-
-            return result;
         }
 
         #region IDisposable

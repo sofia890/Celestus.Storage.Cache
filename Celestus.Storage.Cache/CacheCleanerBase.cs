@@ -3,6 +3,7 @@
 namespace Celestus.Storage.Cache
 {
     public abstract class CacheCleanerBase<KeyType> : IDisposable
+        where KeyType : notnull
     {
         private bool _disposed = false;
 
@@ -11,15 +12,11 @@ namespace Celestus.Storage.Cache
 
         }
 
-        public abstract void TrackEntry(ref CacheEntry entry, KeyType key);
-
         public abstract void EntryAccessed(ref CacheEntry entry, KeyType key);
 
         public abstract void EntryAccessed(ref CacheEntry entry, KeyType key, long timeInTicks);
 
-        public abstract void RegisterRemovalCallback(WeakReference<Func<List<KeyType>, bool>> callback);
-
-        public abstract void RegisterCollection(WeakReference<IEnumerable<KeyValuePair<KeyType, CacheEntry>>> collection);
+        public abstract void RegisterCache(WeakReference<CacheBase<KeyType>> cache);
 
         public abstract void ReadSettings(ref Utf8JsonReader reader, JsonSerializerOptions options);
 

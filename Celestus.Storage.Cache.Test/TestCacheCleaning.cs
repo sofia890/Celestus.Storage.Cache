@@ -1,3 +1,4 @@
+using Celestus.Io;
 using Celestus.Storage.Cache.Test.Model;
 
 namespace Celestus.Storage.Cache.Test;
@@ -5,34 +6,6 @@ namespace Celestus.Storage.Cache.Test;
 [TestClass]
 public class TestCacheCleaning
 {
-    [TestMethod]
-    public void VerifyThatCleanerIsInformedOfNewEntries()
-    {
-        //
-        // Arrange
-        //
-        var cleanerTester = new CacheCleanerTester();
-        var cache = new Cache(cleanerTester);
-
-        //
-        // Act
-        //
-        const string KEY_1 = "Hamster";
-        const int VALUE_1 = 123456;
-        cache.Set(KEY_1, VALUE_1);
-
-        const string KEY_2 = "Lion";
-        const double VALUE_2 = 1.2567;
-        cache.Set(KEY_2, VALUE_2);
-
-        //
-        // Assert
-        //
-        Assert.AreEqual(2, cleanerTester.TrackedKeys.Count);
-        Assert.AreEqual(KEY_1, cleanerTester.TrackedKeys[0]);
-        Assert.AreEqual(KEY_2, cleanerTester.TrackedKeys[1]);
-    }
-
     [TestMethod]
     public void VerifyThatCleanerIsInformedWhenEntriesAreAccessed()
     {
@@ -54,35 +27,8 @@ public class TestCacheCleaning
         //
         // Assert
         //
-        Assert.AreEqual(1, cleanerTester.AccessedKeys.Count);
+        Assert.AreEqual(2, cleanerTester.AccessedKeys.Count);
         Assert.AreEqual(KEY_1, cleanerTester.AccessedKeys[0]);
-    }
-
-    [TestMethod]
-    public void VerifyThatCleanerIsGivenRemovalCallback()
-    {
-        //
-        // Arrange
-        //
-        var cleanerTester = new CacheCleanerTester();
-        var cache = new Cache(cleanerTester);
-
-        const string KEY_1 = "Hamster";
-        const bool VALUE_1 = true;
-        cache.Set(KEY_1, VALUE_1, CacheConstants.ZeroDuration);
-
-        //
-        // Act
-        //
-        if (cleanerTester.RemovalCallback.TryGetTarget(out var callback))
-        {
-            callback([KEY_1]);
-        }
-
-        //
-        // Assert
-        //
-        Assert.AreEqual((false, default), cache.TryGet<bool>(KEY_1));
     }
 
     [TestMethod]
@@ -117,7 +63,10 @@ public class TestCacheCleaning
         //
         // Arrange
         //
-        using var cache = new Cache(new CacheCleaner<string>(interval: CacheConstants.ShortDuration), false);
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+
+        using var cache = new Cache(new CacheCleaner<string>(interval: CacheConstants.ShortDuration), persistent: false);
 
         static byte[] CreateElement()
         {
@@ -129,8 +78,9 @@ public class TestCacheCleaning
         var firstKey = keys.Next();
         cache.Set(firstKey, CreateElement(), TimeSpan.FromDays(1));
 
-        var path_1 = new Uri(Path.GetTempFileName());
-        _ = cache.TrySaveToFile(path_1);
+        using var tempFileA = new TempFile();
+
+        _ = cache.TrySaveToFile(tempFileA.Uri);
 
         //
         // Act
@@ -142,25 +92,30 @@ public class TestCacheCleaning
             cache.Set(keys.Next(), CreateElement(), CacheConstants.ShortDuration);
         }
 
-        ThreadHelper.SpinWait(CacheConstants.ShortDuration);
+        ThreadHelper.SpinWait(CacheConstants.TimingDuration);
 
-        _ = cache.TryGet<byte[]>(firstKey);
+        var result = cache.TryGet<byte[]>(firstKey);
 
-        var path_2 = new Uri(Path.GetTempFileName());
-        _ = cache.TrySaveToFile(path_2);
+        using var tempFileB = new TempFile();
+        _ = cache.TrySaveToFile(tempFileB.Uri);
+
+        var removeLast = cache.TryRemove([firstKey]);
+
+        for (int i = 0; i < N_ITERATIONS; i++)
+        {
+            cache.Set(keys.Next(), CreateElement(), CacheConstants.ShortDuration);
+        }
 
         //
         // Assert
         //
-        var file_1 = new FileInfo(path_1.AbsolutePath);
-        var file_2 = new FileInfo(path_2.AbsolutePath);
+        var fileA = tempFileA.ToFileInfo();
+        var fileB = tempFileB.ToFileInfo();
 
-        Assert.AreEqual(file_1.Length, file_2.Length);
-
-        file_1.Delete();
-        file_2.Delete();
+        Assert.IsTrue(removeLast);
+        Assert.IsTrue(result is (true, _));
+        Assert.AreEqual(fileA.Length, fileB.Length);
     }
-
 
     [TestMethod]
     public void VerifyThatMissingIntervalCausesCrash()

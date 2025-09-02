@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using System.ComponentModel.Design;
+using System.Text.Json;
 
 namespace Celestus.Storage.Cache.Test.Model
 {
@@ -10,10 +11,6 @@ namespace Celestus.Storage.Cache.Test.Model
 
         public List<string> AccessedKeys { get; set; } = [];
 
-        public List<string> TrackedKeys { get; set; } = [];
-
-        public WeakReference<Func<List<string>, bool>> RemovalCallback { get; set; } = new(_ => false);
-
         public WeakReference<IEnumerable<KeyValuePair<string, CacheEntry>>> StorageCollection { get; set; } = new(new Dictionary<string, CacheEntry>());
 
         public bool SettingsReadCorrectly { get; set; } = false;
@@ -21,6 +18,8 @@ namespace Celestus.Storage.Cache.Test.Model
         public bool SettingsWritten { get; set; } = false;
 
         public Guid Guid { get; set; } = Guid.NewGuid();
+
+        WeakReference<CacheBase<string>>? _cacheReference;
 
         public CacheCleanerTester() : base()
         {
@@ -50,39 +49,20 @@ namespace Celestus.Storage.Cache.Test.Model
             AccessedKeys.Add(key);
         }
 
-        public override void RegisterRemovalCallback(WeakReference<Func<List<string>, bool>> callback)
+        public override void RegisterCache(WeakReference<CacheBase<string>> cache)
         {
             if (IsDisposed)
             {
                 return;
             }
 
-            RemovalCallback = callback;
-        }
-
-        public override void RegisterCollection(WeakReference<IEnumerable<KeyValuePair<string, CacheEntry>>> collection)
-        {
-            if (IsDisposed)
-            {
-                return;
-            }
-
-            StorageCollection = collection;
-        }
-
-        public override void TrackEntry(ref CacheEntry entry, string key)
-        {
-            if (IsDisposed)
-            {
-                return;
-            }
-
-            TrackedKeys.Add(key);
+            _cacheReference = cache;
         }
 
         public override void ReadSettings(ref Utf8JsonReader reader, JsonSerializerOptions options)
         {
-            if (IsDisposed) throw new ObjectDisposedException(GetType().Name);
+            ObjectDisposedException.ThrowIf(IsDisposed, this);
+
             _ = reader.Read();
             _ = reader.Read();
             _ = reader.Read();
@@ -120,7 +100,6 @@ namespace Celestus.Storage.Cache.Test.Model
 
                 // Clear collections to help with garbage collection
                 AccessedKeys.Clear();
-                TrackedKeys.Clear();
             }
 
             base.Dispose(disposing);

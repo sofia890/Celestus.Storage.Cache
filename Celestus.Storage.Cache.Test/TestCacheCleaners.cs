@@ -9,59 +9,29 @@ public class TestCacheCleaners
 {
     [TestMethod]
     [DataRow(typeof(CacheCleaner<string>))]
-    // ThreadCacheCleaner does not prune on new entries due to optimization.
-    public void VerifyThatExpiredElementsAreRemovedWhenNewEntryIsTracked(Type cleanerTypeToTest)
-    {
-        //
-        // Arrange
-        //
-        using var cleaner = CacheCleanerHelper.GetCleaner(cleanerTypeToTest, CacheConstants.LongDuration, out var context);
-
-        RemovalTracker removalTracker = new();
-        cleaner.RegisterRemovalCallback(new(removalTracker.TryRemove));
-
-        const string KEY_1 = "Key1";
-        CleanerHelper.TrackNewEntry(cleaner, KEY_1, DateTime.UtcNow, context);
-
-        //
-        // Act & Assert
-        //
-        const string KEY_2 = "Key2";
-        CleanerHelper.TrackNewEntry(cleaner, KEY_2, DateTime.UtcNow.AddDays(1), context);
-
-        Assert.IsTrue(removalTracker.EntryRemoved.WaitOne(CacheConstants.VeryLongDuration));
-        Assert.AreEqual(1, removalTracker.RemovedKeys.Count);
-        Assert.AreEqual(KEY_1, removalTracker.RemovedKeys.First());
-    }
-
-    [TestMethod]
-    [DataRow(typeof(CacheCleaner<string>))]
     // ThreadCacheCleaner does not prune on accesses due to optimization.
     public void VerifyThatExpiredElementsAreRemovedWhenEntryIsAccessed(Type cleanerTypeToTest)
     {
         //
         // Arrange
         //
-        using var cleaner = CacheCleanerHelper.GetCleaner(cleanerTypeToTest, CacheConstants.LongDuration, out var context);
-
-        RemovalTracker removalTracker = new();
-        cleaner.RegisterRemovalCallback(new(removalTracker.TryRemove));
+        using var cleaner = CacheCleanerHelper.GetCleaner(cleanerTypeToTest, CacheConstants.LongDuration, out var cache);
 
         const string KEY = "Key";
-        CleanerHelper.TrackNewEntry(cleaner, KEY, DateTime.UtcNow.AddDays(1), context, out var entry);
+        CleanerHelper.AddEntryToCache(cleaner, KEY, DateTime.UtcNow.AddDays(1), cache, out var entry);
 
         //
         // Act & Assert
         //
-        Assert.IsFalse(removalTracker.EntryRemoved.WaitOne(CacheConstants.ShortDuration));
+        Assert.IsFalse(cache.EntryRemoved.WaitOne(CacheConstants.ShortDuration));
 
         cleaner.EntryAccessed(ref entry, KEY, long.MaxValue);
 
-        Assert.IsTrue(removalTracker.EntryRemoved.WaitOne(CacheConstants.ShortDuration));
-        Assert.IsFalse(removalTracker.EntryRemoved.WaitOne(CacheConstants.ShortDuration));
+        Assert.IsTrue(cache.EntryRemoved.WaitOne(CacheConstants.ShortDuration));
+        Assert.IsFalse(cache.EntryRemoved.WaitOne(CacheConstants.ShortDuration));
 
-        Assert.AreEqual(1, removalTracker.RemovedKeys.Count);
-        Assert.AreEqual(KEY, removalTracker.RemovedKeys.First());
+        Assert.AreEqual(1, cache.RemovedKeys.Count);
+        Assert.AreEqual(KEY, cache.RemovedKeys.First());
     }
 
     [TestMethod]
@@ -72,36 +42,39 @@ public class TestCacheCleaners
         //
         // Arrange
         //
-        var intervalInMs = CacheConstants.LongDuration;
-        using var cleaner = CacheCleanerHelper.GetCleaner(cleanerTypeToTest, intervalInMs, out var context);
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
 
-        RemovalTracker removalTracker = new();
-        cleaner.RegisterRemovalCallback(new(removalTracker.TryRemove));
+        var interval = CacheConstants.TimingDuration;
+        using var cleaner = CacheCleanerHelper.GetCleaner(cleanerTypeToTest, interval, out var cache);
 
         long nowInTicks = DateTime.UtcNow.Ticks;
 
         const string KEY_1 = "Key1";
-        CleanerHelper.TrackNewEntry(cleaner, KEY_1, DateTime.UtcNow.AddDays(1), context);
+        CleanerHelper.AddEntryToCache(cleaner, KEY_1, DateTime.UtcNow.AddDays(1), cache, out var entry_1);
+
+        // First cleanup attempt happens here.
+        cleaner.EntryAccessed(ref entry_1, KEY_1);
 
         const string KEY_2 = "Key2";
-        CleanerHelper.TrackNewEntry(cleaner, KEY_2, DateTime.UtcNow, context, out var entry_2);
+        CleanerHelper.AddEntryToCache(cleaner, KEY_2, DateTime.UtcNow, cache, out var entry_2);
 
         //
         // Act & Assert
         //
-        Assert.IsFalse(removalTracker.EntryRemoved.WaitOne(CacheConstants.ShortDuration));
+        Assert.IsFalse(cache.EntryRemoved.WaitOne(interval * 0.25));
 
         cleaner.EntryAccessed(ref entry_2, KEY_2);
 
-        Assert.IsFalse(removalTracker.EntryRemoved.WaitOne(CacheConstants.ShortDuration * 2));
+        Assert.IsFalse(cache.EntryRemoved.WaitOne(interval * 0.5));
 
-        Thread.Sleep(intervalInMs);
+        Thread.Sleep(interval);
         cleaner.EntryAccessed(ref entry_2, KEY_2);
 
-        Assert.IsTrue(removalTracker.EntryRemoved.WaitOne(CacheConstants.ShortDuration));
+        Assert.IsTrue(cache.EntryRemoved.WaitOne(interval * 0.5));
 
-        Assert.AreEqual(1, removalTracker.RemovedKeys.Count);
-        Assert.AreEqual(KEY_2, removalTracker.RemovedKeys.First());
+        Assert.AreEqual(1, cache.RemovedKeys.Count);
+        Assert.AreEqual(KEY_2, cache.RemovedKeys.First());
     }
 
     [TestMethod]
@@ -112,7 +85,7 @@ public class TestCacheCleaners
         //
         // Arrange
         //
-        using var cleanerA = CacheCleanerHelper.GetCleaner(cleanerTypeToTest, CacheConstants.ShortDuration, out var contextA);
+        using var cleanerA = CacheCleanerHelper.GetCleaner(cleanerTypeToTest, CacheConstants.ShortDuration, out var cacheA);
 
         using var stream = new MemoryStream();
         using Utf8JsonWriter writer = new(stream);
@@ -122,25 +95,22 @@ public class TestCacheCleaners
         //
         // Act
         //
-        using var cleanerB = CacheCleanerHelper.GetCleaner(cleanerTypeToTest, CacheConstants.VeryLongDuration, out var contextB);
+        using var cleanerB = CacheCleanerHelper.GetCleaner(cleanerTypeToTest, CacheConstants.VeryLongDuration, out var cacheB);
 
         Utf8JsonReader reader = new(stream.ToArray());
         cleanerB.ReadSettings(ref reader, new());
 
-        RemovalTracker removalTracker = new();
-        cleanerB.RegisterRemovalCallback(new(removalTracker.TryRemove));
-
         const string KEY = "Key";
-        CleanerHelper.TrackNewEntry(cleanerB, KEY, DateTime.UtcNow, contextB, out var entry);
+        CleanerHelper.AddEntryToCache(cleanerB, KEY, DateTime.UtcNow, cacheB, out var entry);
 
-        ThreadHelper.SpinWait(CacheConstants.ShortDuration);
+        ThreadHelper.SpinWait(CacheConstants.ShortDuration * 2);
 
         cleanerB.EntryAccessed(ref entry, KEY);
 
         //
         // Assert
         //
-        Assert.IsTrue(removalTracker.EntryRemoved.WaitOne(CacheConstants.VeryLongDuration / 2));
+        Assert.IsTrue(cacheB.EntryRemoved.WaitOne(CacheConstants.ShortDuration * 2));
     }
 
     [TestMethod]

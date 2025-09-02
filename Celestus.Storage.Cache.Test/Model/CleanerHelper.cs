@@ -2,26 +2,24 @@
 {
     internal static class CleanerHelper
     {
-        public static void TrackNewEntry(
+        public static void AddEntryToCache(
             CacheCleanerBase<string> cleaner,
             string key, DateTime expiration,
-            CacheCleanerContext context,
+            MockCache cache,
             out CacheEntry entry
         )
         {
             entry = new(expiration.Ticks, null);
 
-            lock (context)
+            lock (cache)
             {
-                context.Storage.Add(key, new(expiration.Ticks, new()));
+                cache.Storage.Add(key, new(expiration.Ticks, new()));
             }
-
-            cleaner.TrackEntry(ref entry, key);
         }
 
-        public static void TrackNewEntry(CacheCleanerBase<string> cleaner, string key, DateTime expiration, CacheCleanerContext context)
+        public static void AddEntryToCache(CacheCleanerBase<string> cleaner, string key, DateTime expiration, MockCache cache)
         {
-            TrackNewEntry(cleaner, key, expiration, context, out var _);
+            AddEntryToCache(cleaner, key, expiration, cache, out var _);
         }
     }
 }

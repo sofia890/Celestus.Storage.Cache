@@ -13,42 +13,52 @@ namespace Celestus.Storage.Cache
         where CacheType : CacheBase<CacheKeyType>
     {
         public const int DEFAULT_INTERVAL_IN_MS = 10000;
+        public const int A_MOMENT = 500;
 
         Queue<FactoryEntry<CacheKeyType, CacheType>> _elements = [];
         WeakReference<Action<string>>? _elementExpiredCallback;
 
-        long cleanupIntervalInMilliseconds = TimeSpan.FromMilliseconds(DEFAULT_INTERVAL_IN_MS).Milliseconds;
+        int cleanupIntervalInMilliseconds = TimeSpan.FromMilliseconds(DEFAULT_INTERVAL_IN_MS).Milliseconds;
         private bool _isDisposed;
-        readonly Timer _timer;
+        private bool _abort = false;
+        readonly Task _cleanerLoop;
 
         public CacheManagerCleaner()
         {
-            _timer = new Timer(Cleanup, null, cleanupIntervalInMilliseconds, cleanupIntervalInMilliseconds);
+            _cleanerLoop = Task.Run(Cleanup);
         }
 
-        public void Cleanup(object? state)
+        public async Task Cleanup()
         {
-            var remainingElements = new List<FactoryEntry<CacheKeyType, CacheType>>();
-
-            while (_elements.TryDequeue(out var entry))
+            while (!_abort)
             {
-                if (!entry.CacheReference.TryGetTarget(out var cache))
-                {
-                    entry.Cleaner.Dispose();
-                }
-                else if (cache.IsDisposed)
-                {
-                    // Need to cleanup dictionary.
-                }
-                else
-                {
-                    remainingElements.Add(entry);
-                }
-            }
+                var remainingElements = new List<FactoryEntry<CacheKeyType, CacheType>>();
 
-            foreach (var entry in remainingElements)
-            {
-                _elements.Enqueue(entry);
+                while (_elements.TryDequeue(out var entry) && !_abort)
+                {
+                    if (!entry.CacheReference.TryGetTarget(out var cache))
+                    {
+                        entry.Cleaner.Dispose();
+                    }
+                    else if (cache.IsDisposed)
+                    {
+                        // Need to cleanup dictionary.
+                    }
+                    else
+                    {
+                        remainingElements.Add(entry);
+                    }
+                }
+
+                if (!_abort)
+                {
+                    foreach (var entry in remainingElements)
+                    {
+                        _elements.Enqueue(entry);
+                    }
+                }
+
+                await Task.Delay(cleanupIntervalInMilliseconds);
             }
         }
 
@@ -65,8 +75,6 @@ namespace Celestus.Storage.Cache
         public void SetCleanupInterval(TimeSpan interval)
         {
             cleanupIntervalInMilliseconds = interval.Milliseconds;
-
-            _timer.Change(cleanupIntervalInMilliseconds, cleanupIntervalInMilliseconds);
         }
 
         protected virtual void Dispose(bool disposing)
@@ -75,7 +83,10 @@ namespace Celestus.Storage.Cache
             {
                 if (disposing)
                 {
-                    _timer.Dispose();
+                    _abort = true;
+
+                    _cleanerLoop.Wait(A_MOMENT);
+                    _cleanerLoop.Dispose();
                 }
 
                 _isDisposed = true;

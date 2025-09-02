@@ -8,7 +8,7 @@ namespace Celestus.Storage.Cache
     {
         private bool _disposed = false;
 
-        internal Dictionary<string, CacheEntry> Storage { get; set; }
+        internal override Dictionary<string, CacheEntry> Storage { get; set; }
 
         internal override CacheCleanerBase<string> Cleaner { get; }
 
@@ -16,7 +16,6 @@ namespace Celestus.Storage.Cache
             string key,
             Dictionary<string, CacheEntry> storage,
             CacheCleanerBase<string> cleaner,
-            bool doNotSetRemoval = false,
             bool persistent = false,
             string persistentStorageLocation = "") : base(key, persistent, persistentStorageLocation)
         {
@@ -28,12 +27,7 @@ namespace Celestus.Storage.Cache
 
             Cleaner = cleaner;
 
-            if (!doNotSetRemoval)
-            {
-                Cleaner.RegisterRemovalCallback(new(TryRemove));
-            }
-
-            Cleaner.RegisterCollection(new(Storage));
+            Cleaner.RegisterCache(new(this));
         }
 
         public Cache(string key, bool persistent = false, string persistentStorageLocation = "") :
@@ -41,18 +35,17 @@ namespace Celestus.Storage.Cache
         {
         }
 
-        public Cache(bool doNotSetRemoval = false) :
+        public Cache() :
             this(string.Empty,
                 [],
                 new CacheCleaner<string>(),
                 persistent: false,
-                persistentStorageLocation: "",
-                doNotSetRemoval: doNotSetRemoval)
+                persistentStorageLocation: "")
         {
         }
 
-        public Cache(CacheCleanerBase<string> cleaner, bool persistent = false, string persistentStorageLocation = "", bool doNotSetRemoval = false) :
-            this(string.Empty, [], cleaner, persistent: persistent, persistentStorageLocation: persistentStorageLocation, doNotSetRemoval: doNotSetRemoval)
+        public Cache(CacheCleanerBase<string> cleaner, bool persistent = false, string persistentStorageLocation = "") :
+            this(string.Empty, [], cleaner, persistent: persistent, persistentStorageLocation: persistentStorageLocation)
         {
         }
 
@@ -89,7 +82,7 @@ namespace Celestus.Storage.Cache
             entry = new CacheEntry(expiration, value);
             Storage[key] = entry;
 
-            Cleaner.TrackEntry(ref entry, key);
+            Cleaner.EntryAccessed(ref entry, key);
         }
 
         public void Set<DataType>(string key, DataType value, out CacheEntry entry, TimeSpan? duration = null)
@@ -146,13 +139,13 @@ namespace Celestus.Storage.Cache
             return (found, value);
         }
 
-        public bool TryRemove(List<string> keys)
+        public override bool TryRemove(string[] keys)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 
             bool anyRemoved = false;
 
-            for (int i = 0; i < keys.Count; i++)
+            for (int i = 0; i < keys.Length; i++)
             {
                 anyRemoved |= Storage.Remove(keys[i]);
             }

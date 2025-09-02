@@ -1,4 +1,5 @@
-﻿namespace Celestus.Storage.Cache
+﻿
+namespace Celestus.Storage.Cache
 {
     public partial class ThreadCache
     {

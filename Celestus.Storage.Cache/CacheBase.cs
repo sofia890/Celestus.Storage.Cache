@@ -10,12 +10,14 @@ namespace Celestus.Storage.Cache
     public class NoPersistentPathException(string message) : CacheIoException(message);
 
     public abstract class CacheBase<KeyType> : IDisposable
+        where KeyType : notnull
     {
         public const int NO_TIMEOUT = -1;
 
         public string Key { get; init; }
         internal abstract CacheCleanerBase<KeyType> Cleaner { get; }
         public abstract bool IsDisposed { get; }
+        internal abstract Dictionary<KeyType, CacheEntry> Storage { get; set; }
 
 
         [MemberNotNullWhen(true, nameof(PersistentStorageLocation))]
@@ -44,7 +46,11 @@ namespace Celestus.Storage.Cache
 
         public abstract void Dispose();
 
+        public abstract DataType? Get<DataType>(string key);
+
         public abstract void Set<DataType>(string key, DataType value, TimeSpan? duration = null);
+
+        public abstract bool TryRemove(KeyType[] key);
 
         private Uri GetDefaultPersistentPath(string key)
         {
@@ -114,7 +120,5 @@ namespace Celestus.Storage.Cache
         public abstract bool TrySaveToFile(Uri path);
 
         public abstract bool TryLoadFromFile(Uri path);
-
-        public abstract DataType? Get<DataType>(string key);
     }
 }

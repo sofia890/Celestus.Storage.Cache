@@ -13,15 +13,15 @@ public class TestThreadCacheCleaner
         // Arrange
         //
         var cleanerType = typeof(ThreadCacheCleaner<string>);
-        using var cleaner = CacheCleanerHelper.GetCleaner(cleanerType, CacheConstants.LongDuration, out var context);
+        var interval = CacheConstants.TimingDuration;
+        using var cleaner = CacheCleanerHelper.GetCleaner(cleanerType, interval, out var cache);
 
-        RemovalTracker removalTracker = new();
-        cleaner.RegisterRemovalCallback(new(removalTracker.TryRemove));
+        cleaner.RegisterCache(new(cache));
 
         long nowInTicks = DateTime.UtcNow.Ticks;
 
         const string KEY_1 = "Key1";
-        CleanerHelper.TrackNewEntry(cleaner, KEY_1, DateTime.UtcNow, context);
+        CleanerHelper.AddEntryToCache(cleaner, KEY_1, DateTime.UtcNow, cache);
 
         //
         // Act
@@ -30,11 +30,11 @@ public class TestThreadCacheCleaner
         //
         // Assert
         //
-        Assert.IsFalse(removalTracker.EntryRemoved.WaitOne(CacheConstants.LongDuration / 2));
+        Assert.IsFalse(cache.EntryRemoved.WaitOne(interval / 2));
 
-        Assert.IsTrue(removalTracker.EntryRemoved.WaitOne(CacheConstants.LongDuration * 2));
+        Assert.IsTrue(cache.EntryRemoved.WaitOne(interval * 2));
 
-        Assert.AreEqual(1, removalTracker.RemovedKeys.Count);
-        Assert.AreEqual(KEY_1, removalTracker.RemovedKeys.First());
+        Assert.AreEqual(1, cache.RemovedKeys.Count);
+        Assert.AreEqual(KEY_1, cache.RemovedKeys.First());
     }
 }
