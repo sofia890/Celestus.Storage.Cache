@@ -15,6 +15,4 @@ namespace Celestus.Storage.Cache
     public class NotObjectTypeJsonException(string property, string value) : Exception($"Expected a known '{typeof(Type)}' encountered '{value}' in property '{property}'.");
 
     public class MissingInheritanceJsonException(string property, object? obj, Type expectedAncestor) : Exception($"Expected '{obj}' to inherit from '{expectedAncestor}' in property '{property}'.");
-
-    public class ObjectCreationJsonException(string property, Type type) : Exception($"Could not create an instance of '{type}'' found in property '{property}'.");
 }

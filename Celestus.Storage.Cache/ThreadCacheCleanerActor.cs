@@ -60,8 +60,6 @@ namespace Celestus.Storage.Cache
                     switch (rawSignal.SignalId)
                     {
                         default:
-                            break;
-
                         case CleanerProtocol.Stop:
                             return;
 

@@ -6,26 +6,9 @@
 
         public Uri Uri { get; init; } = new Uri(Path.GetTempFileName());
 
-        /// <summary>
-        /// Initializes a new instance of the TempFile class.
-        /// </summary>
-        /// <param name="content">The initial content to write to the file if createFile is true. If null, an empty string is written.</param>
-        public TempFile(string? content = null)
-        {
-            if (content != null)
-            {
-                WriteAllText(content ?? string.Empty);
-            }
-        }
-
-        public FileInfo ToFileInfo()
+         public FileInfo ToFileInfo()
         {
             return new FileInfo(Uri.AbsolutePath);
-        }
-
-        public void WriteAllText(string value)
-        {
-            File.WriteAllText(Uri.AbsolutePath, value);
         }
 
         #region IDisposable
