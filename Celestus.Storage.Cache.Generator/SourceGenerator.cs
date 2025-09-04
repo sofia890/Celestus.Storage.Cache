@@ -3,10 +3,8 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
 using System.Collections.Generic;
-using System.Data.Common;
 using System.Diagnostics;
 using System.Linq;
-using System.Reflection.Metadata;
 using System.Text;
 using System.Threading;
 
@@ -295,7 +293,7 @@ namespace Celestus.Storage.Cache.Generator
                 if (!ReturnsNull(methodDeclaration))
                 {
                     value = $"(returnValue: result, {tupleOutVariableAssignment})";
-                } 
+                }
                 else if (tupleOutVariableAssignment.Contains(","))
                 {
                     value = $"({tupleOutVariableAssignment})";
@@ -307,7 +305,7 @@ namespace Celestus.Storage.Cache.Generator
             }
             else
             {
-                value  = "result";
+                value = "result";
             }
 
             return value;
@@ -434,7 +432,7 @@ namespace Celestus.Storage.Cache.Generator
                 _ = outputTupleBuilder.Append($", {methodDeclaration.ReturnType}");
 
                 nrOfParameters++;
-                
+
                 if (outParameters.Count > 0)
                 {
                     _ = outputTupleBuilder.Append(" returnValue");

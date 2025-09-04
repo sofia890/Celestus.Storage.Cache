@@ -1,7 +1,4 @@
-﻿
-using System.Security.AccessControl;
-
-namespace Celestus.Storage.Cache.Test.Model
+﻿namespace Celestus.Storage.Cache.Test.Model
 {
     /// <summary>
     /// Helper class that extends CacheManager to expose the internal lock for testing

@@ -2,7 +2,7 @@
 
 namespace Celestus.Storage.Cache
 {
-    public class ThreadCacheCleaner<KeyType>(TimeSpan interval) :  CacheCleanerBase<KeyType>
+    public class ThreadCacheCleaner<KeyType>(TimeSpan interval) : CacheCleanerBase<KeyType>
         where KeyType : notnull
     {
         const int DEFAULT_INTERVAL_IN_MS = 60000;

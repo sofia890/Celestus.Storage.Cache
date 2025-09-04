@@ -1,7 +1,4 @@
-﻿
-using System.Collections.Concurrent;
-
-namespace Celestus.Storage.Cache
+﻿namespace Celestus.Storage.Cache
 {
     public record FactoryEntry<CacheKeyType, CacheType>(WeakReference<CacheType> CacheReference, CacheCleanerBase<CacheKeyType> Cleaner)
         where CacheKeyType : class

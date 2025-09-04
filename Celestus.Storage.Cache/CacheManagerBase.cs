@@ -1,6 +1,4 @@
 ﻿using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace Celestus.Storage.Cache
 {
@@ -112,7 +110,7 @@ namespace Celestus.Storage.Cache
             {
                 return null;
             }
-            else if(TryLoad(loadedCache.Key, out var cacheToUpdate) && cacheToUpdate != null)
+            else if (TryLoad(loadedCache.Key, out var cacheToUpdate) && cacheToUpdate != null)
             {
                 using (loadedCache)
                 {
@@ -157,7 +155,7 @@ namespace Celestus.Storage.Cache
         internal void CacheExpired(string key)
         {
             ObjectDisposedException.ThrowIf(_isDisposed, this);
-            
+
             if (_lock.TryEnterWriteLock(_lockTimeoutInMs))
             {
                 try

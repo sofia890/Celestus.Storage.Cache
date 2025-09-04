@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Celestus.Storage.Cache.Test.Model
+﻿namespace Celestus.Storage.Cache.Test.Model
 {
     internal static class CacheConstants
     {

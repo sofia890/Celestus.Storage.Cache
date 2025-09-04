@@ -1,5 +1,4 @@
 using Celestus.Io;
-using Celestus.Storage.Cache.Test.Model;
 
 namespace Celestus.Storage.Cache.Test
 {
@@ -58,7 +57,7 @@ namespace Celestus.Storage.Cache.Test
             // Arrange
             //
             var manager = new Cache.CacheManager();
-            
+
             // Create a valid test file
             using var tempFile = new TempFile();
             using (var cache = new Cache("test-key"))
@@ -127,7 +126,7 @@ namespace Celestus.Storage.Cache.Test
             // Arrange
             //
             var manager = new ThreadCache.ThreadCacheManager();
-            
+
             // Create a valid test file
             using var tempFile = new TempFile();
             using var cache = new ThreadCache("test-key");

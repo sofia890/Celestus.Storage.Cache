@@ -1,5 +1,4 @@
-﻿using System.Reflection.PortableExecutable;
-using System.Text.Json;
+﻿using System.Text.Json;
 using System.Threading.Channels;
 
 namespace Celestus.Storage.Cache
@@ -114,7 +113,7 @@ namespace Celestus.Storage.Cache
 
                 if (expiredKeys.Count > 0 && (_cacheReference?.TryGetTarget(out var callback) ?? false))
                 {
-                    _ = cache.TryRemove([..expiredKeys]);
+                    _ = cache.TryRemove([.. expiredKeys]);
                 }
 
                 _nextCleanupOpportunityInTicks = timeInTicks + _cleanupIntervalInTicks;

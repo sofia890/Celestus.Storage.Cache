@@ -97,7 +97,7 @@ namespace Celestus.Storage.Cache
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 
             _lock.EnterWriteLock();
-            Cache.Set(key, value, out var entry, duration);
+            Cache.Set(key, value, duration);
             _lock.ExitWriteLock();
         }
 
@@ -127,7 +127,7 @@ namespace Celestus.Storage.Cache
             }
         }
 
-        public override DataType? Get<DataType>(string key) 
+        public override DataType? Get<DataType>(string key)
             where DataType : default
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);

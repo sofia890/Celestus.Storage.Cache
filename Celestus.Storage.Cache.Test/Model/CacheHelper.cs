@@ -1,8 +1,6 @@
-using System.Security.AccessControl;
-
 namespace Celestus.Storage.Cache.Test.Model
 {
-	public static class CacheHelper
+    public static class CacheHelper
     {
         public static CacheBase<string> GetOrCreateShared(Type cacheType, string key, bool persistent = false, string persistentStorageLocation = "")
         {

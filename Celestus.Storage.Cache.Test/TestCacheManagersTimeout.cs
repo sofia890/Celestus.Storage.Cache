@@ -1,6 +1,5 @@
 using Celestus.Io;
 using Celestus.Storage.Cache.Test.Model;
-using System.Reflection;
 
 namespace Celestus.Storage.Cache.Test
 {
@@ -16,7 +15,7 @@ namespace Celestus.Storage.Cache.Test
             //
             // Arrange
             //
-            var manager =new CacheManagerHelper(CacheConstants.ShortDuration);
+            var manager = new CacheManagerHelper(CacheConstants.ShortDuration);
 
             //
             // Act & Assert

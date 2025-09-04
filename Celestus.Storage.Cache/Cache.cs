@@ -49,7 +49,7 @@ namespace Celestus.Storage.Cache
         {
         }
 
-        private long GetExpiration(TimeSpan? duration = null)
+        private static long GetExpiration(TimeSpan? duration = null)
         {
             long expiration = long.MaxValue;
 
@@ -92,7 +92,7 @@ namespace Celestus.Storage.Cache
             Set(key, value, GetExpiration(duration), out entry);
         }
 
-        public override DataType? Get<DataType>(string key) 
+        public override DataType? Get<DataType>(string key)
             where DataType : default
         {
             var result = TryGet<DataType>(key);
@@ -101,7 +101,7 @@ namespace Celestus.Storage.Cache
             {
                 throw new InvalidOperationException();
             }
-            else 
+            else
             {
                 return result.data;
             }
@@ -187,8 +187,10 @@ namespace Celestus.Storage.Cache
 
         public Cache ToCache()
         {
-            var clone = new Cache(Key);
-            clone.Storage = Storage.ToDictionary();
+            var clone = new Cache(Key)
+            {
+                Storage = Storage.ToDictionary()
+            };
 
             return clone;
         }

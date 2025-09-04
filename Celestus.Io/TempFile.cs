@@ -25,7 +25,7 @@
 
         public void WriteAllText(string value)
         {
-             File.WriteAllText(Uri.AbsolutePath, value);
+            File.WriteAllText(Uri.AbsolutePath, value);
         }
 
         #region IDisposable
