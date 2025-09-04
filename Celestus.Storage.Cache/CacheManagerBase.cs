@@ -10,24 +10,24 @@ namespace Celestus.Storage.Cache
     public class UpdateFromFileTimeoutException(string Message) : CacheTimeoutException(Message);
     public class PersistenceMismatchException(string Message) : Exception(Message);
 
-    public abstract class CacheManagerBase<CacheKeyType, CacheType> : IDisposable, ICacheManager<CacheType>
+    public abstract class CacheManagerBase<CacheKeyType, CacheType> : IDisposable, ICacheManager<CacheKeyType, CacheType>
         where CacheKeyType : class
         where CacheType : CacheBase<CacheKeyType>
     {
         private int _lockTimeoutInMs = 5000;
 
         protected readonly ReaderWriterLockSlim _lock = new();
-        readonly protected Dictionary<string, WeakReference<CacheType>> _caches = [];
-        readonly protected CacheManagerCleaner<string, CacheKeyType, CacheType> _factoryCleaner;
+        readonly protected Dictionary<CacheKeyType, WeakReference<CacheType>> _caches = [];
+        readonly protected CacheManagerCleaner<CacheKeyType, CacheKeyType, CacheType> _factoryCleaner;
         private bool _isDisposed;
 
         public CacheManagerBase()
         {
             _factoryCleaner = new();
-            _factoryCleaner.SetElementExpiredCallback(new(CacheExpired));
+            _factoryCleaner.RegisterManager(new(this));
         }
 
-        public bool TryLoad(string key, [NotNullWhen(true)] out CacheType? cache)
+        public bool TryLoad(CacheKeyType key, [NotNullWhen(true)] out CacheType? cache)
         {
             ObjectDisposedException.ThrowIf(_isDisposed, this);
 
@@ -59,12 +59,10 @@ namespace Celestus.Storage.Cache
             }
         }
 
-        public CacheType GetOrCreateShared(string key = "", bool persistent = false, string persistentStorageLocation = "")
+        public CacheType GetOrCreateShared(CacheKeyType key, bool persistent = false, string persistentStorageLocation = "")
         {
             ObjectDisposedException.ThrowIf(_isDisposed, this);
-
-            var usedKey = (key.Length > 0) ? key : Guid.NewGuid().ToString();
-
+            
             if (TryLoad(key, out var cache))
             {
                 if (persistent != cache.Persistent)
@@ -76,13 +74,13 @@ namespace Celestus.Storage.Cache
             }
             else
             {
-                CacheType cacheToTrack = (CacheType)Activator.CreateInstance(typeof(CacheType), [usedKey, persistent, persistentStorageLocation])!;
+                CacheType cacheToTrack = (CacheType)Activator.CreateInstance(typeof(CacheType), [key, persistent, persistentStorageLocation])!;
 
                 if (_lock.TryEnterWriteLock(_lockTimeoutInMs))
                 {
                     try
                     {
-                        _caches[usedKey] = new(cacheToTrack);
+                        _caches[key] = new(cacheToTrack);
 
                         _factoryCleaner.MonitorElement(cacheToTrack);
                     }
@@ -152,7 +150,7 @@ namespace Celestus.Storage.Cache
             }
         }
 
-        internal void CacheExpired(string key)
+        internal void CacheExpired(CacheKeyType key)
         {
             ObjectDisposedException.ThrowIf(_isDisposed, this);
 
@@ -183,7 +181,7 @@ namespace Celestus.Storage.Cache
             _lockTimeoutInMs = interval.Milliseconds;
         }
 
-        public void Remove(string key)
+        public void Remove(CacheKeyType key)
         {
             lock (this)
             {

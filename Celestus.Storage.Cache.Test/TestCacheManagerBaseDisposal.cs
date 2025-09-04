@@ -36,21 +36,6 @@ namespace Celestus.Storage.Cache.Test
         }
 
         [TestMethod]
-        public void VerifyThatGetOrCreateSharedWithEmptyKeyThrowsObjectDisposedExceptionAfterDisposal()
-        {
-            //
-            // Arrange
-            //
-            var manager = new Cache.CacheManager();
-            manager.Dispose();
-
-            //
-            // Act & Assert
-            //
-            Assert.ThrowsException<ObjectDisposedException>(() => manager.GetOrCreateShared());
-        }
-
-        [TestMethod]
         public void VerifyThatUpdateOrLoadSharedFromFileThrowsObjectDisposedExceptionAfterDisposal()
         {
             //

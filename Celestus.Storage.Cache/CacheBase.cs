@@ -14,7 +14,7 @@ namespace Celestus.Storage.Cache
     {
         public const int NO_TIMEOUT = -1;
 
-        public string Key { get; init; }
+        public KeyType Key { get; init; }
         internal abstract CacheCleanerBase<KeyType> Cleaner { get; }
         public abstract bool IsDisposed { get; }
         internal abstract Dictionary<KeyType, CacheEntry> Storage { get; set; }
@@ -24,7 +24,7 @@ namespace Celestus.Storage.Cache
         public Uri? PersistentStorageLocation { get; init; }
         private bool _persistentHandled = false;
 
-        public CacheBase(string key, bool persistent = false, string persistentStoragePath = "")
+        public CacheBase(KeyType key, bool persistent = false, string persistentStoragePath = "")
         {
             Key = key;
 
@@ -52,7 +52,7 @@ namespace Celestus.Storage.Cache
 
         public abstract bool TryRemove(KeyType[] key);
 
-        private static Uri GetDefaultPersistentPath(string key)
+        private static Uri GetDefaultPersistentPath(KeyType key)
         {
             string commonAppDataPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
             var appPath = System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName;

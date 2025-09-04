@@ -1,6 +1,6 @@
 ﻿namespace Celestus.Storage.Cache
 {
-    public record FactoryEntry<CacheKeyType, CacheType>(WeakReference<CacheType> CacheReference, CacheCleanerBase<CacheKeyType> Cleaner)
+    public record FactoryEntry<CacheKeyType, CacheType>(WeakReference<CacheType> CacheReference, CacheCleanerBase<CacheKeyType> Cleaner, CacheKeyType Key)
         where CacheKeyType : class
         where CacheType : CacheBase<CacheKeyType>;
 
@@ -13,7 +13,7 @@
         public const int STOP_TIMEOUT = 30000;
 
         readonly Queue<FactoryEntry<CacheKeyType, CacheType>> _elements = [];
-        WeakReference<Action<string>>? _elementExpiredCallback;
+        WeakReference<CacheManagerBase<CacheKeyType, CacheType>>? _cacheManager;
 
         int cleanupIntervalInMilliseconds = TimeSpan.FromMilliseconds(DEFAULT_INTERVAL_IN_MS).Milliseconds;
         private bool _isDisposed;
@@ -40,7 +40,16 @@
                     }
                     else if (cache.IsDisposed)
                     {
-                        // Need to cleanup dictionary.
+                        if (_cacheManager?.TryGetTarget(out var manager) ?? false)
+                        {
+                            manager.CacheExpired(cache.Key);
+                        }
+                        else
+                        {
+                            _elements.Enqueue(entry);
+
+                            break;
+                        }
                     }
                     else
                     {
@@ -69,12 +78,12 @@
 
         public void MonitorElement(CacheType cache)
         {
-            _elements.Enqueue(new(new(cache), cache.Cleaner));
+            _elements.Enqueue(new(new(cache), cache.Cleaner, cache.Key));
         }
 
-        public void SetElementExpiredCallback(WeakReference<Action<string>> callback)
+        public void RegisterManager(WeakReference<CacheManagerBase<CacheKeyType, CacheType>> manager)
         {
-            _elementExpiredCallback = callback;
+            _cacheManager = manager;
         }
 
         public void SetCleanupInterval(TimeSpan interval)

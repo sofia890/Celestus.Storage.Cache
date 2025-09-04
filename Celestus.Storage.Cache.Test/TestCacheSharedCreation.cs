@@ -7,20 +7,6 @@ namespace Celestus.Storage.Cache.Test
     public sealed class TestCacheSharedCreation
     {
         [TestMethod]
-        public void VerifyThatSharedCacheCreatesKeyWhenNotProvided()
-        {
-            //
-            // Arrange & Act
-            //
-            using var cache = Cache.Factory.GetOrCreateShared();
-
-            //
-            // Assert
-            //
-            Assert.AreNotEqual(default, cache.Key);
-        }
-
-        [TestMethod]
         public void VerifyThatSharedCacheFailsWhenLoadedFromCorruptFile()
         {
             //
