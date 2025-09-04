@@ -37,13 +37,13 @@ namespace Celestus.Storage.Cache.Test.Model.ExtraNamespaceToCheckNested
         [Cache(timeoutInMilliseconds: CALCULATE_TIMEOUT)]
         public int CalculateNoParameters()
         {
-            return NO_PARAMETER_RESULT;
+            return _justAnotherVariable + NO_PARAMETER_RESULT;
         }
 
         [Cache(timeoutInMilliseconds: CALCULATE_TIMEOUT)]
         public int CalculateNoOutParameters(int a)
         {
-            return a;
+            return _justAnotherVariable + a;
         }
 
 
@@ -54,13 +54,13 @@ namespace Celestus.Storage.Cache.Test.Model.ExtraNamespaceToCheckNested
             e = b;
             f = c;
 
-            return a + b + c;
+            return _justAnotherVariable + a + b + c;
         }
 
         [Cache(timeoutInMilliseconds: CALCULATE_TIMEOUT)]
         public void CalculateNoReturn(int a, out int b)
         {
-            b = a;
+            b = _justAnotherVariable + a;
         }
     }
 }
