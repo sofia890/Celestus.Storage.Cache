@@ -35,12 +35,12 @@ namespace Celestus.Storage.Cache.Generator
             }
 
             IncrementalValuesProvider<MethodDeclarationSyntax> methodProvider = context.SyntaxProvider.CreateSyntaxProvider(
-                predicate: (SyntaxNode node, CancellationToken cancelToken) =>
+                predicate: (node, cancelToken) =>
                 {
                     return node is MethodDeclarationSyntax methodDeclaration &&
                            CacheAttributeHelper.IsMarked(methodDeclaration);
                 },
-                transform: (GeneratorSyntaxContext ctx, CancellationToken cancelToken) =>
+                transform: (ctx, cancelToken) =>
                 {
                     var classDeclaration = (MethodDeclarationSyntax)ctx.Node;
                     return classDeclaration;
@@ -50,12 +50,12 @@ namespace Celestus.Storage.Cache.Generator
             context.RegisterSourceOutput(methodProvider, (sourceProductionContext, cachedMethod) => Execute(cachedMethod, sourceProductionContext));
 
             IncrementalValuesProvider<ClassDeclarationSyntax> classProvider = context.SyntaxProvider.CreateSyntaxProvider(
-                predicate: (SyntaxNode node, CancellationToken cancelToken) =>
+                predicate: (node, cancelToken) =>
                 {
                     return node is ClassDeclarationSyntax classDeclaration &&
                            CacheAttributeHelper.IsMarked(classDeclaration);
                 },
-                transform: (GeneratorSyntaxContext ctx, CancellationToken cancelToken) =>
+                transform: (ctx, cancelToken) =>
                 {
                     var classDeclaration = (ClassDeclarationSyntax)ctx.Node;
                     return classDeclaration;
@@ -168,7 +168,7 @@ namespace Celestus.Storage.Cache.Generator
             var indentationDeeper = indentation + "            ";
             var hacCodeInputParameters = GetHashCodeForParameters(methodDeclaration, indentation + "        ");
             var outVariableAssignment = GetOutVariableAssignment(methodDeclaration, outputParameters, indentationDeeper);
-            var cacheElement = GetCacheElement(methodDeclaration, parameters, tupleOutVariableAssignment);
+            var cacheElement = GetCacheElement(methodDeclaration, tupleOutVariableAssignment);
             string returnExpression = GetReturnExpression(methodDeclaration, tupleOutVariableAssignment);
             string methodCall = GetMethodCall(methodDeclaration, methodIdentifier, parameters);
 
@@ -284,9 +284,9 @@ namespace Celestus.Storage.Cache.Generator
             }
         }
 
-        private static string GetCacheElement(MethodDeclarationSyntax methodDeclaration, string parameters, string tupleOutVariableAssignment)
+        private static string GetCacheElement(MethodDeclarationSyntax methodDeclaration, string tupleOutVariableAssignment)
         {
-            var value = string.Empty;
+            string value;
 
             if (tupleOutVariableAssignment.Length > 0)
             {

@@ -111,7 +111,7 @@ namespace Celestus.Storage.Cache
                     }
                 }
 
-                if (expiredKeys.Count > 0 && (_cacheReference?.TryGetTarget(out var callback) ?? false))
+                if (expiredKeys.Count > 0)
                 {
                     _ = cache.TryRemove([.. expiredKeys]);
                 }

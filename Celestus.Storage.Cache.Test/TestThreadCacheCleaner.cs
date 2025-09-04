@@ -21,14 +21,10 @@ public class TestThreadCacheCleaner
         long nowInTicks = DateTime.UtcNow.Ticks;
 
         const string KEY_1 = "Key1";
-        CleanerHelper.AddEntryToCache(cleaner, KEY_1, DateTime.UtcNow, cache);
+        CleanerHelper.AddEntryToCache(KEY_1, DateTime.UtcNow, cache);
 
         //
-        // Act
-        //
-
-        //
-        // Assert
+        // Act & Assert
         //
         Assert.IsFalse(cache.EntryRemoved.WaitOne(interval / 2));
 

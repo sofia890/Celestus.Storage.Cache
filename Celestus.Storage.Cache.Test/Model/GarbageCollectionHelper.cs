@@ -4,7 +4,7 @@
     {
         public delegate object OperationDelegate(out Value value);
 
-        public Value? ActAndCollect(OperationDelegate operation, out bool wasReleased)
+        public static Value? ActAndCollect(OperationDelegate operation, out bool wasReleased)
         {
             List<WeakReference> weakReference = [];
             List<object> strongReference = [];

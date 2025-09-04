@@ -18,7 +18,7 @@ public class TestThreadCacheManager
         //
         const string CACHE_KEY = nameof(VerifyThatGetOrCreateSharedCreatesNewCacheWithKey);
 
-        object Prepare(out long hash)
+        static object Prepare(out long hash)
         {
             var originalCache = ThreadCache.Factory.GetOrCreateShared(CACHE_KEY);
             _ = originalCache.TrySet(CACHE_KEY, 15);
@@ -28,8 +28,7 @@ public class TestThreadCacheManager
             return originalCache;
         }
 
-        var helper = new GarbageCollectionHelper<long>();
-        var hashOriginal = helper.ActAndCollect(Prepare, out var released);
+        var hashOriginal = GarbageCollectionHelper<long>.ActAndCollect(Prepare, out var released);
 
         //
         // Assert

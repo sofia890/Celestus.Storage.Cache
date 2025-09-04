@@ -52,7 +52,7 @@ namespace Celestus.Storage.Cache
 
         public abstract bool TryRemove(KeyType[] key);
 
-        private Uri GetDefaultPersistentPath(string key)
+        private static Uri GetDefaultPersistentPath(string key)
         {
             string commonAppDataPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
             var appPath = System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName;

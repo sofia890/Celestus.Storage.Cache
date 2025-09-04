@@ -3,7 +3,7 @@ namespace Celestus.Storage.Cache
 {
     public partial class ThreadCache
     {
-        public static ThreadCacheManager Factory = new();
+        public static ThreadCacheManager Factory { get; } = new();
 
         public class ThreadCacheManager : CacheManagerBase<string, ThreadCache>
         {

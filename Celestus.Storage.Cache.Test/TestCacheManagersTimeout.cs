@@ -8,9 +8,7 @@ namespace Celestus.Storage.Cache.Test
     public class CacheManagerHelperBaseTimeout
     {
         [TestMethod]
-        [DataRow(typeof(CacheManagerHelper))]
-        [DataRow(typeof(ThreadCacheManagerHelper))]
-        public void VerifyThatTryLoadThrowsLoadTimeoutExceptionWhenReadLockCannotBeAcquired(Type cacheManagerTypeToTest)
+        public void VerifyThatTryLoadThrowsLoadTimeoutExceptionWhenReadLockCannotBeAcquired()
         {
             //
             // Arrange

@@ -10,7 +10,7 @@ namespace Celestus.Storage.Cache.Test.Model
 
         public List<string> AccessedKeys { get; set; } = [];
 
-        public WeakReference<IEnumerable<KeyValuePair<string, CacheEntry>>> StorageCollection { get; set; } = new(new Dictionary<string, CacheEntry>());
+        public WeakReference<IEnumerable<KeyValuePair<string, CacheEntry>>> StorageCollection { get; set; } = new([]);
 
         public bool SettingsReadCorrectly { get; set; } = false;
 
@@ -79,7 +79,8 @@ namespace Celestus.Storage.Cache.Test.Model
 
         public override void WriteSettings(Utf8JsonWriter writer, JsonSerializerOptions options)
         {
-            if (IsDisposed) throw new ObjectDisposedException(GetType().Name);
+            ObjectDisposedException.ThrowIf(IsDisposed, this);
+
             writer.WriteStartObject();
             writer.WritePropertyName(TEST_PROPERTY_NAME);
             writer.WriteStringValue(Guid);

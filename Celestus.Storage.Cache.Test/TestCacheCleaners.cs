@@ -18,7 +18,7 @@ public class TestCacheCleaners
         using var cleaner = CacheCleanerHelper.GetCleaner(cleanerTypeToTest, CacheConstants.LongDuration, out var cache);
 
         const string KEY = "Key";
-        CleanerHelper.AddEntryToCache(cleaner, KEY, DateTime.UtcNow.AddDays(1), cache, out var entry);
+        CleanerHelper.AddEntryToCache(KEY, DateTime.UtcNow.AddDays(1), cache, out var entry);
 
         //
         // Act & Assert
@@ -51,13 +51,13 @@ public class TestCacheCleaners
         long nowInTicks = DateTime.UtcNow.Ticks;
 
         const string KEY_1 = "Key1";
-        CleanerHelper.AddEntryToCache(cleaner, KEY_1, DateTime.UtcNow.AddDays(1), cache, out var entry_1);
+        CleanerHelper.AddEntryToCache( KEY_1, DateTime.UtcNow.AddDays(1), cache, out var entry_1);
 
         // First cleanup attempt happens here.
         cleaner.EntryAccessed(ref entry_1, KEY_1);
 
         const string KEY_2 = "Key2";
-        CleanerHelper.AddEntryToCache(cleaner, KEY_2, DateTime.UtcNow, cache, out var entry_2);
+        CleanerHelper.AddEntryToCache( KEY_2, DateTime.UtcNow, cache, out var entry_2);
 
         //
         // Act & Assert
@@ -85,7 +85,7 @@ public class TestCacheCleaners
         //
         // Arrange
         //
-        using var cleanerA = CacheCleanerHelper.GetCleaner(cleanerTypeToTest, CacheConstants.ShortDuration, out var cacheA);
+        using var cleanerA = CacheCleanerHelper.GetCleaner(cleanerTypeToTest, CacheConstants.ShortDuration, out _);
 
         using var stream = new MemoryStream();
         using Utf8JsonWriter writer = new(stream);
@@ -101,7 +101,7 @@ public class TestCacheCleaners
         cleanerB.ReadSettings(ref reader, new());
 
         const string KEY = "Key";
-        CleanerHelper.AddEntryToCache(cleanerB, KEY, DateTime.UtcNow, cacheB, out var entry);
+        CleanerHelper.AddEntryToCache(KEY, DateTime.UtcNow, cacheB, out var entry);
 
         ThreadHelper.SpinWait(CacheConstants.ShortDuration * 2);
 
@@ -132,7 +132,7 @@ public class TestCacheCleaners
         //
         // Arrange
         //
-        using var cleaner = CacheCleanerHelper.GetCleaner(cleanerTypeToTest, CacheConstants.ShortDuration, out var context);
+        using var cleaner = CacheCleanerHelper.GetCleaner(cleanerTypeToTest, CacheConstants.ShortDuration, out _);
 
         string json = "{\"ExtraParameter\":\"500\",\"_cleanupIntervalInTicks\":500}";
         CleaningHelper.ReadSettings(cleaner, json);

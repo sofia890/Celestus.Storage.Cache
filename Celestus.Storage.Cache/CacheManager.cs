@@ -2,7 +2,7 @@
 {
     public partial class Cache
     {
-        public static CacheManager Factory = new();
+        public static CacheManager Factory { get; } = new();
 
         public class CacheManager : CacheManagerBase<string, Cache>
         {

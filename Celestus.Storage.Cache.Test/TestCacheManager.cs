@@ -29,12 +29,10 @@ namespace Celestus.Storage.Cache.Test
                 return originalCache;
             }
 
-            var helper = new GarbageCollectionHelper<long>();
-
             //
             // Act
             //
-            var hashOriginal = helper.ActAndCollect(Prepare, out var released);
+            var hashOriginal = GarbageCollectionHelper<long>.ActAndCollect(Prepare, out var released);
 
             Thread.Sleep(CacheConstants.ShortDuration * 2);
 

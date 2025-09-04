@@ -58,19 +58,19 @@ namespace Celestus.Storage.Cache
             return new Cache(key, storage, cleaner);
         }
 
-        private string? GetKey(ref Utf8JsonReader reader)
+        private static string? GetKey(ref Utf8JsonReader reader)
         {
             _ = reader.Read();
             return reader.GetString();
         }
 
-        private Dictionary<string, CacheEntry>? GetStorage(ref Utf8JsonReader reader, JsonSerializerOptions options)
+        private static Dictionary<string, CacheEntry>? GetStorage(ref Utf8JsonReader reader, JsonSerializerOptions options)
         {
             _ = reader.Read();
             return JsonSerializer.Deserialize<Dictionary<string, CacheEntry>>(ref reader, options);
         }
 
-        private (CacheCleanerBase<string>? cleaner, bool cleanerConfigured) GetCleaner(ref Utf8JsonReader reader, JsonSerializerOptions options)
+        private static (CacheCleanerBase<string>? cleaner, bool cleanerConfigured) GetCleaner(ref Utf8JsonReader reader, JsonSerializerOptions options)
         {
             CacheCleanerBase<string>? cleaner = null;
             bool cleanerConfigured = false;
@@ -117,7 +117,7 @@ namespace Celestus.Storage.Cache
             return (cleaner, cleanerConfigured);
         }
 
-        private CacheCleanerBase<string>? CreateCleaner(ref Utf8JsonReader reader, JsonSerializerOptions options)
+        private static CacheCleanerBase<string>? CreateCleaner(ref Utf8JsonReader reader, JsonSerializerOptions options)
         {
             if (JsonSerializer.Deserialize<string>(ref reader, options) is not string typeString)
             {
@@ -137,10 +137,11 @@ namespace Celestus.Storage.Cache
             }
         }
 
-        private void ValidateConfiguration([NotNull] string? key,
-                                           [NotNull] Dictionary<string, CacheEntry>? storage,
-                                           [NotNull] CacheCleanerBase<string>? cleaner,
-                                           bool cleanerConfigured)
+        private static void ValidateConfiguration(
+            [NotNull] string? key,
+            [NotNull] Dictionary<string, CacheEntry>? storage,
+            [NotNull] CacheCleanerBase<string>? cleaner,
+            bool cleanerConfigured)
         {
             if (key == null)
             {

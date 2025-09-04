@@ -1,12 +1,9 @@
 ﻿
 namespace Celestus.Storage.Cache.Test.Model
 {
-    internal class MockCache : CacheBase<string>
+    internal class MockCache(string key = "", bool persistent = false, string persistentStoragePath = "") :
+        CacheBase<string>(key, persistent, persistentStoragePath)
     {
-        public MockCache(string key = "", bool persistent = false, string persistentStoragePath = "") : base(key, persistent, persistentStoragePath)
-        {
-        }
-
         public AutoResetEvent EntryRemoved { get; private set; } = new(false);
 
         public List<string> RemovedKeys { get; private set; } = [];

@@ -12,7 +12,7 @@
         public const int DEFAULT_INTERVAL_IN_MS = 10000;
         public const int A_MOMENT = 500;
 
-        Queue<FactoryEntry<CacheKeyType, CacheType>> _elements = [];
+        readonly Queue<FactoryEntry<CacheKeyType, CacheType>> _elements = [];
         WeakReference<Action<string>>? _elementExpiredCallback;
 
         int cleanupIntervalInMilliseconds = TimeSpan.FromMilliseconds(DEFAULT_INTERVAL_IN_MS).Milliseconds;

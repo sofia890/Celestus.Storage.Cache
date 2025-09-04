@@ -2,12 +2,7 @@
 {
     internal static class CleanerHelper
     {
-        public static void AddEntryToCache(
-            CacheCleanerBase<string> cleaner,
-            string key, DateTime expiration,
-            MockCache cache,
-            out CacheEntry entry
-        )
+        public static void AddEntryToCache(string key, DateTime expiration, MockCache cache, out CacheEntry entry)
         {
             entry = new(expiration.Ticks, null);
 
@@ -17,9 +12,9 @@
             }
         }
 
-        public static void AddEntryToCache(CacheCleanerBase<string> cleaner, string key, DateTime expiration, MockCache cache)
+        public static void AddEntryToCache(string key, DateTime expiration, MockCache cache)
         {
-            AddEntryToCache(cleaner, key, expiration, cache, out var _);
+            AddEntryToCache(key, expiration, cache, out var _);
         }
     }
 }
