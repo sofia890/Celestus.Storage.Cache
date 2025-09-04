@@ -19,10 +19,10 @@ namespace Celestus.Storage.Cache
         public abstract bool IsDisposed { get; }
         internal abstract Dictionary<KeyType, CacheEntry> Storage { get; set; }
 
-
         [MemberNotNullWhen(true, nameof(PersistentStorageLocation))]
         public bool Persistent { get => PersistentStorageLocation != null; }
         public Uri? PersistentStorageLocation { get; init; }
+        private bool _persistentHandled = false;
 
         public CacheBase(string key, bool persistent = false, string persistentStoragePath = "")
         {
@@ -104,7 +104,7 @@ namespace Celestus.Storage.Cache
 
         public void HandlePersistentFinalization()
         {
-            if (Persistent)
+            if (Persistent && !_persistentHandled)
             {
                 if (!File.Exists(PersistentStorageLocation.AbsolutePath))
                 {
@@ -115,6 +115,8 @@ namespace Celestus.Storage.Cache
                 {
                     throw new CacheSaveException($"Could not save cache for key '{Key}'.");
                 }
+
+                _persistentHandled = true;
             }
         }
         public abstract bool TrySaveToFile(Uri path);
