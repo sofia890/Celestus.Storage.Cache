@@ -10,7 +10,7 @@
         where CacheType : CacheBase<CacheKeyType>
     {
         public const int DEFAULT_INTERVAL_IN_MS = 10000;
-        public const int A_MOMENT = 500;
+        public const int STOP_TIMEOUT = 30000;
 
         readonly Queue<FactoryEntry<CacheKeyType, CacheType>> _elements = [];
         WeakReference<Action<string>>? _elementExpiredCallback;
@@ -90,15 +90,18 @@
                 {
                     _abort = true;
 
-                    try
+                    if (!_cleanerLoop.Wait(STOP_TIMEOUT))
                     {
-                        cleanerLoopCancellationTokenSource.Cancel();
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        _cleanerLoop.Dispose();
+                        try
+                        {
+                            cleanerLoopCancellationTokenSource.Cancel();
+                        }
+                        catch (OperationCanceledException)
+                        {
+                        }
                     }
 
+                    _cleanerLoop.Dispose();
                     cleanerLoopCancellationTokenSource.Dispose();
                 }
 
