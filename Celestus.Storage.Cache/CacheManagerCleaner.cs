@@ -19,10 +19,11 @@
         private bool _isDisposed;
         private bool _abort = false;
         readonly Task _cleanerLoop;
+        readonly CancellationTokenSource cleanerLoopCancellationTokenSource = new();
 
         public CacheManagerCleaner()
         {
-            _cleanerLoop = Task.Run(Cleanup);
+            _cleanerLoop = Task.Run(Cleanup, cleanerLoopCancellationTokenSource.Token);
         }
 
         public async Task Cleanup()
@@ -55,7 +56,14 @@
                     }
                 }
 
-                await Task.Delay(cleanupIntervalInMilliseconds);
+                try
+                {
+                    await Task.Delay(cleanupIntervalInMilliseconds, cleanerLoopCancellationTokenSource.Token);
+                }
+                catch (OperationCanceledException)
+                {
+                    // Do nothing
+                }
             }
         }
 
@@ -82,8 +90,16 @@
                 {
                     _abort = true;
 
-                    _cleanerLoop.Wait(A_MOMENT);
-                    _cleanerLoop.Dispose();
+                    try
+                    {
+                        cleanerLoopCancellationTokenSource.Cancel();
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        _cleanerLoop.Dispose();
+                    }
+
+                    cleanerLoopCancellationTokenSource.Dispose();
                 }
 
                 _isDisposed = true;

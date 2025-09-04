@@ -7,7 +7,7 @@ namespace Celestus.Storage.Cache
         where KeyType : notnull
     {
         public const int DEFAULT_TIMEOUT_IN_MS = 5000;
-        public const int A_MOMENT_IN_MS = 500;
+        public const int STOP_TIMEOUT = 30000;
 
         long _cleanupIntervalInTicks;
         long _nextCleanupOpportunityInTicks = 0;
@@ -191,7 +191,7 @@ namespace Celestus.Storage.Cache
                 {
                     CleanerPort.Writer.TryWrite(new StopInd());
                     CleanerPort.Writer.Complete();
-                    _ = _signalHandlerTask.Wait(A_MOMENT_IN_MS); //WTF
+                    _ = _signalHandlerTask.Wait(STOP_TIMEOUT);
                     _signalHandlerTask.Dispose();
                 }
 
