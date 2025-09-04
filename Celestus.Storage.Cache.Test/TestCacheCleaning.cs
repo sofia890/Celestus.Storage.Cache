@@ -66,7 +66,7 @@ public class TestCacheCleaning
         GC.Collect();
         GC.WaitForPendingFinalizers();
 
-        using var cache = new Cache(new CacheCleaner<string>(interval: CacheConstants.ShortDuration), persistent: false);
+        using var cache = new Cache(new CacheCleaner<string>(interval: CacheConstants.ShortDuration));
 
         static byte[] CreateElement()
         {
