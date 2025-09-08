@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using Celestus.Exceptions;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace Celestus.Storage.Cache
@@ -9,10 +10,9 @@ namespace Celestus.Storage.Cache
 
         public override ThreadCache? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            if (reader.TokenType != JsonTokenType.StartObject)
-            {
-                throw new StartTokenJsonException(reader.TokenType, JsonTokenType.StartObject);
-            }
+            Condition.ThrowIf<StartTokenJsonException>(
+                reader.TokenType != JsonTokenType.StartObject,
+                parameters: [reader.TokenType, JsonTokenType.StartObject]);
 
             string? key = null;
             Cache? cache = null;

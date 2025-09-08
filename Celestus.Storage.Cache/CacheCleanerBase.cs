@@ -22,6 +22,8 @@ namespace Celestus.Storage.Cache
 
         public abstract void WriteSettings(Utf8JsonWriter writer, JsonSerializerOptions options);
 
+        public abstract void SetCleaningInterval(TimeSpan interval);
+
         #region IDisposable
         public void Dispose()
         {

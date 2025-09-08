@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using Celestus.Exceptions;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace Celestus.Storage.Cache
@@ -12,10 +13,8 @@ namespace Celestus.Storage.Cache
 
             public override CacheEntry Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
             {
-                if (reader.TokenType != JsonTokenType.StartObject)
-                {
-                    throw new JsonException($"Invalid JSON for {nameof(CacheEntry)}.");
-                }
+                Condition.ThrowIf<JsonException>(reader.TokenType != JsonTokenType.StartObject,
+                                                 $"Invalid JSON for {nameof(CacheEntry)}.");
 
                 Type? type = null;
                 long? expiration = null;

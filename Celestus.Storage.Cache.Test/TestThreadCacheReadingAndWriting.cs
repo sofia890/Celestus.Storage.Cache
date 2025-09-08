@@ -38,23 +38,23 @@ namespace Celestus.Storage.Cache.Test
             //
             // Arrange
             //
-            var DURATION_IN_MS = TimeSpan.FromMilliseconds(8);
-            using var cache = new ThreadCache(DURATION_IN_MS * 2);
+            var interval = CacheConstants.ShortDuration;
+            using var cache = new ThreadCache(interval);
 
             const int VALUE = 23;
             const string KEY = "key";
-            _ = cache.TrySet(KEY, VALUE, duration: DURATION_IN_MS);
+            _ = cache.TrySet(KEY, VALUE, duration: interval);
 
             //
             // Act
             //
             var (resultPointA, _) = cache.TryGet<int>(KEY);
 
-            ThreadHelper.SpinWait(DURATION_IN_MS / 2);
+            ThreadHelper.SpinWait(interval / 2);
 
             var (resultPointB, _) = cache.TryGet<int>(KEY);
 
-            ThreadHelper.SpinWait(DURATION_IN_MS);
+            ThreadHelper.SpinWait(interval);
 
             var (resultPointC, _) = cache.TryGet<int>(KEY);
 

@@ -1,4 +1,7 @@
-﻿namespace Celestus.Storage.Cache
+﻿using Celestus.Exceptions;
+using System.Text.Json;
+
+namespace Celestus.Storage.Cache
 {
     public class CacheLock : IDisposable
     {
@@ -9,10 +12,8 @@
         {
             _lock = cacheLock;
 
-            if (!_lock.TryEnterWriteLock(timeoutInMs))
-            {
-                throw new TimeoutException($"Timed out while waiting to acquire a write lock on {nameof(ThreadCache)}.");
-            }
+            Condition.ThrowIf<TimeoutException>(!_lock.TryEnterWriteLock(timeoutInMs),
+                                                $"Timed out while waiting to acquire a write lock on {nameof(ThreadCache)}.");
         }
 
         #region IDisposable

@@ -1,5 +1,4 @@
-﻿
-namespace Celestus.Storage.Cache.Test.Model
+﻿namespace Celestus.Storage.Cache.Test.Model
 {
     internal class MockCache(string key = "", bool persistent = false, string persistentStoragePath = "") :
         CacheBase<string>(key, persistent, persistentStoragePath)
@@ -8,9 +7,10 @@ namespace Celestus.Storage.Cache.Test.Model
 
         public List<string> RemovedKeys { get; private set; } = [];
 
+        private bool _disposed = false;
 
         #region CacheBase<string>
-        public override bool IsDisposed => throw new NotImplementedException();
+        public override bool IsDisposed => _disposed;
 
         internal override CacheCleanerBase<string> Cleaner => throw new NotImplementedException();
 
@@ -18,7 +18,8 @@ namespace Celestus.Storage.Cache.Test.Model
 
         public override void Dispose()
         {
-            throw new NotImplementedException();
+            _disposed = true;
+            EntryRemoved.Dispose();
         }
 
         public override DataType? Get<DataType>(string key) where DataType : default

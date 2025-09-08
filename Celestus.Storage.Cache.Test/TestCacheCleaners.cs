@@ -45,8 +45,7 @@ public class TestCacheCleaners
         GC.Collect();
         GC.WaitForPendingFinalizers();
 
-        var interval = CacheConstants.TimingDuration;
-        using var cleaner = CacheCleanerHelper.GetCleaner(cleanerTypeToTest, interval, out var cache);
+        using var cleaner = CacheCleanerHelper.GetCleaner(cleanerTypeToTest, CacheConstants.VeryLongDuration, out var cache);
 
         long nowInTicks = DateTime.UtcNow.Ticks;
 
@@ -58,6 +57,9 @@ public class TestCacheCleaners
 
         const string KEY_2 = "Key2";
         CleanerHelper.AddEntryToCache( KEY_2, DateTime.UtcNow, cache, out var entry_2);
+
+        var interval = CacheConstants.TimingDuration;
+        cleaner.SetCleaningInterval(interval);
 
         //
         // Act & Assert
@@ -85,7 +87,8 @@ public class TestCacheCleaners
         //
         // Arrange
         //
-        using var cleanerA = CacheCleanerHelper.GetCleaner(cleanerTypeToTest, CacheConstants.ShortDuration, out _);
+        var interval = CacheConstants.TimingDuration;
+        using var cleanerA = CacheCleanerHelper.GetCleaner(cleanerTypeToTest, interval, out _);
 
         using var stream = new MemoryStream();
         using Utf8JsonWriter writer = new(stream);
@@ -103,14 +106,14 @@ public class TestCacheCleaners
         const string KEY = "Key";
         CleanerHelper.AddEntryToCache(KEY, DateTime.UtcNow, cacheB, out var entry);
 
-        ThreadHelper.SpinWait(CacheConstants.ShortDuration * 2);
+        ThreadHelper.SpinWait(interval * 2);
 
         cleanerB.EntryAccessed(ref entry, KEY);
 
         //
         // Assert
         //
-        Assert.IsTrue(cacheB.EntryRemoved.WaitOne(CacheConstants.ShortDuration * 2));
+        Assert.IsTrue(cacheB.EntryRemoved.WaitOne(interval * 2));
     }
 
     [TestMethod]

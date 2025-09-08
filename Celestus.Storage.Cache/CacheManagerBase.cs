@@ -1,4 +1,5 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using Celestus.Exceptions;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Celestus.Storage.Cache
 {
@@ -65,10 +66,9 @@ namespace Celestus.Storage.Cache
             
             if (TryLoad(key, out var cache))
             {
-                if (persistent != cache.Persistent)
-                {
-                    throw new PersistenceMismatchException($"Inconsistent persistence configuration for key '{key}'.");
-                }
+                Condition.ThrowIf<PersistenceMismatchException>(
+                    persistent != cache.Persistent,
+                    $"Inconsistent persistence configuration for key '{key}'.");
 
                 return cache;
             }
@@ -112,14 +112,11 @@ namespace Celestus.Storage.Cache
             {
                 using (loadedCache)
                 {
-                    if (Update(loadedCache, cacheToUpdate, timeout))
-                    {
-                        return cacheToUpdate;
-                    }
-                    else
-                    {
-                        throw new UpdateFromFileTimeoutException("Could not lock resource for writing.");
-                    }
+                    Condition.ThrowIf<UpdateFromFileTimeoutException>(
+                        !Update(loadedCache, cacheToUpdate, timeout),
+                        "Could not lock resource for writing.");
+
+                    return cacheToUpdate;
                 }
             }
             else
@@ -154,20 +151,16 @@ namespace Celestus.Storage.Cache
         {
             ObjectDisposedException.ThrowIf(_isDisposed, this);
 
-            if (_lock.TryEnterWriteLock(_lockTimeoutInMs))
+            Condition.ThrowIf<CleanupTimeoutException>(!_lock.TryEnterWriteLock(_lockTimeoutInMs),
+                                                       "Could not lock resource for writing.");
+
+            try
             {
-                try
-                {
-                    _caches.Remove(key, out _);
-                }
-                finally
-                {
-                    _lock.ExitWriteLock();
-                }
+                _caches.Remove(key, out _);
             }
-            else
+            finally
             {
-                throw new CleanupTimeoutException("Could not lock resource for writing.");
+                _lock.ExitWriteLock();
             }
         }
 

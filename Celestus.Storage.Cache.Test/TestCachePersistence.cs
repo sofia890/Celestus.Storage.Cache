@@ -47,7 +47,6 @@ namespace Celestus.Storage.Cache.Test
             loaded.Dispose();
         }
 
-
         [TestMethod]
         [DataRow(typeof(Cache))]
         [DataRow(typeof(ThreadCache))]

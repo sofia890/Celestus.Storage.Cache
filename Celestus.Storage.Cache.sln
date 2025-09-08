@@ -17,6 +17,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Celestus.Serialization", "C
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Celestus.Io", "Celestus.Io\Celestus.Io.csproj", "{11638F6F-9031-4AF5-B78F-4DB40B822DBF}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Celestus.Exceptions", "Celestus.Exceptions\Celestus.Exceptions.csproj", "{56BD4196-AF2A-4F75-8193-38CA072A0CB3}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -51,8 +53,15 @@ Global
 		{11638F6F-9031-4AF5-B78F-4DB40B822DBF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{11638F6F-9031-4AF5-B78F-4DB40B822DBF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{11638F6F-9031-4AF5-B78F-4DB40B822DBF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{56BD4196-AF2A-4F75-8193-38CA072A0CB3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{56BD4196-AF2A-4F75-8193-38CA072A0CB3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{56BD4196-AF2A-4F75-8193-38CA072A0CB3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{56BD4196-AF2A-4F75-8193-38CA072A0CB3}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {976CF955-AD1E-4A86-A43E-074D8AC4F905}
 	EndGlobalSection
 EndGlobal

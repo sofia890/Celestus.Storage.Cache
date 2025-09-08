@@ -46,6 +46,11 @@ namespace Celestus.Storage.Cache
             _server.WriteSettings(writer);
         }
 
+        public override void SetCleaningInterval(TimeSpan interval)
+        {
+            _ = _server.CleanerPort.Writer.TryWrite(new ResetInd(interval.Ticks));
+        }
+
         protected override void Dispose(bool disposing)
         {
             if (!IsDisposed)

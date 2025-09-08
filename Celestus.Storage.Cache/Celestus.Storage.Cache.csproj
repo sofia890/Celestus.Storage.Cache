@@ -14,6 +14,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Celestus.Exceptions\Celestus.Exceptions.csproj" />
     <ProjectReference Include="..\Celestus.Io\Celestus.Io.csproj" />
     <ProjectReference Include="..\Celestus.Serialization\Celestus.Serialization.csproj" />
   </ItemGroup>

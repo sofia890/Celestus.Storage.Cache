@@ -1,4 +1,5 @@
 ﻿
+using Celestus.Exceptions;
 using System.Text.Json;
 
 namespace Celestus.Storage.Cache
@@ -9,11 +10,12 @@ namespace Celestus.Storage.Cache
         const int DEFAULT_INTERVAL = 5000;
 
         long _cleanupIntervalInTicks = interval.Ticks;
-        long _nextCleanupOpportunityInTicks = 0;
+        long _nextCleanupOpportunityInTicks;
         WeakReference<CacheBase<KeyType>>? _cacheReference;
 
         public CacheCleaner() : this(interval: TimeSpan.FromMilliseconds(DEFAULT_INTERVAL))
         {
+            SetCleaningInterval(_cleanupIntervalInTicks);
         }
 
         private void Prune(long currentTimeInTicks)
@@ -69,6 +71,17 @@ namespace Celestus.Storage.Cache
             _cacheReference = cache;
         }
 
+        public override void SetCleaningInterval(TimeSpan interval)
+        {
+            SetCleaningInterval(interval.Ticks);
+        }
+
+        public void SetCleaningInterval(long _intervalInTicks)
+        {
+            _cleanupIntervalInTicks = _intervalInTicks;
+            _nextCleanupOpportunityInTicks = DateTime.UtcNow.Ticks + _cleanupIntervalInTicks;
+        }
+
         public override void ReadSettings(ref Utf8JsonReader reader, JsonSerializerOptions options)
         {
             bool intervalValueFound = false;
@@ -106,10 +119,7 @@ namespace Celestus.Storage.Cache
             }
 
         End:
-            if (!intervalValueFound)
-            {
-                throw new MissingValueJsonException(nameof(_cleanupIntervalInTicks));
-            }
+            Condition.ThrowIf<MissingValueJsonException>(!intervalValueFound, nameof(_cleanupIntervalInTicks));
         }
 
         public override void WriteSettings(Utf8JsonWriter writer, JsonSerializerOptions options)

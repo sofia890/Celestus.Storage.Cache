@@ -23,7 +23,7 @@ namespace Celestus.Storage.Cache.Test
             var setResult = ThreadHelper.DoWhileLocked(
                 cache,
                 () => cache.TrySet(KEY, 0, timeout: CacheConstants.VeryShortDuration),
-                CacheConstants.ShortDuration
+                CacheConstants.LongDuration
             );
 
             //

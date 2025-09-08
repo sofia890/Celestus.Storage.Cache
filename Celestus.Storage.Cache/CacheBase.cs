@@ -1,10 +1,18 @@
-﻿using Celestus.Io;
+﻿using Celestus.Exceptions;
+using Celestus.Io;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
 namespace Celestus.Storage.Cache
 {
-    public class CacheIoException(string message) : IOException(message);
+    public class CacheIoException(string message) : IOException(message)
+    {
+        public static void ThrowIf(bool condition, string message)
+        {
+            Condition.ThrowIf<InvalidOperationException>(condition, message);
+        }
+    }
+
     public class CacheLoadException(string message) : CacheIoException(message);
     public class CacheSaveException(string message) : CacheIoException(message);
     public class NoPersistentPathException(string message) : CacheIoException(message);
@@ -79,10 +87,8 @@ namespace Celestus.Storage.Cache
                 }
             }
 
-            if (!CanWrite.Test(filePath))
-            {
-                throw new NoPersistentPathException("Could not find any writeable path for application.");
-            }
+            NoPersistentPathException.ThrowIf(!CanWrite.Test(filePath),
+                                              "Could not find any writeable path for application.");
 
             return filePath;
         }
@@ -93,12 +99,8 @@ namespace Celestus.Storage.Cache
             {
                 var file = new FileInfo(PersistentStorageLocation.AbsolutePath);
 
-                if (file.Exists &&
-                    file.Length > 0 &&
-                    !TryLoadFromFile(PersistentStorageLocation))
-                {
-                    throw new CacheLoadException($"Could not load cache for key '{Key}'.");
-                }
+                CacheLoadException.ThrowIf(file.Exists && file.Length > 0 && !TryLoadFromFile(PersistentStorageLocation),
+                                           $"Could not load cache for key '{Key}'.");
             }
         }
 
@@ -111,10 +113,8 @@ namespace Celestus.Storage.Cache
                     _ = Directory.CreateDirectory(PersistentStorageLocation.AbsolutePath);
                 }
 
-                if (!TrySaveToFile(PersistentStorageLocation))
-                {
-                    throw new CacheSaveException($"Could not save cache for key '{Key}'.");
-                }
+                CacheSaveException.ThrowIf(!TrySaveToFile(PersistentStorageLocation),
+                                           $"Could not save cache for key '{Key}'.");
 
                 _persistentHandled = true;
             }

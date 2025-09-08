@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using Celestus.Exceptions;
+using System.Text.Json;
 using System.Threading.Channels;
 
 namespace Celestus.Storage.Cache
@@ -10,7 +11,7 @@ namespace Celestus.Storage.Cache
         public const int STOP_TIMEOUT = 30000;
 
         long _cleanupIntervalInTicks;
-        long _nextCleanupOpportunityInTicks = 0;
+        long _nextCleanupOpportunityInTicks;
         WeakReference<CacheBase<KeyType>>? _cacheReference = null;
         private bool _disposed = false;
         private readonly Task _signalHandlerTask;
@@ -26,6 +27,7 @@ namespace Celestus.Storage.Cache
         public ThreadCacheCleanerActor(TimeSpan interval)
         {
             _cleanupIntervalInTicks = interval.Ticks;
+            _nextCleanupOpportunityInTicks = DateTime.UtcNow.Ticks + _cleanupIntervalInTicks;
             _signalHandlerTask = Task.Run(HandleSignals);
         }
 
@@ -55,8 +57,6 @@ namespace Celestus.Storage.Cache
                     Signal rawSignal = signalTask.Result;
                     signalTask = null;
 
-                    if (_disposed) break;
-
                     switch (rawSignal.SignalId)
                     {
                         default:
@@ -69,9 +69,11 @@ namespace Celestus.Storage.Cache
 
                         case CleanerProtocol.ResetInd when rawSignal is ResetInd payload:
                             _cleanupIntervalInTicks = payload.CleanupIntervalInTicks;
-                            _nextCleanupOpportunityInTicks = 0;
+                            _nextCleanupOpportunityInTicks = DateTime.UtcNow.Ticks + _cleanupIntervalInTicks;
                             break;
                     }
+
+                    Prune(DateTime.UtcNow.Ticks);
                 }
             }
         }
@@ -158,10 +160,7 @@ namespace Celestus.Storage.Cache
             }
 
         End:
-            if (!intervalValueFound)
-            {
-                throw new MissingValueJsonException(nameof(_cleanupIntervalInTicks));
-            }
+            Condition.ThrowIf<MissingValueJsonException>(!intervalValueFound, nameof(_cleanupIntervalInTicks));
         }
 
         public void WriteSettings(Utf8JsonWriter writer)

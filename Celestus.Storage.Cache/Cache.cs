@@ -1,5 +1,6 @@
 ﻿using Celestus.Serialization;
 using System.Text.Json.Serialization;
+using Celestus.Exceptions;
 
 namespace Celestus.Storage.Cache
 {
@@ -97,14 +98,9 @@ namespace Celestus.Storage.Cache
         {
             var result = TryGet<DataType>(key);
 
-            if (!result.result)
-            {
-                throw new InvalidOperationException();
-            }
-            else
-            {
-                return result.data;
-            }
+            Condition.ThrowIf<InvalidOperationException>(!result.result);
+
+            return result.data;
         }
 
         public (bool result, DataType? data) TryGet<DataType>(string key)

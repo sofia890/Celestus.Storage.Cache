@@ -58,6 +58,11 @@ namespace Celestus.Storage.Cache.Test.Model
             _cacheReference = cache;
         }
 
+        public override void SetCleaningInterval(TimeSpan interval)
+        {
+            throw new NotImplementedException();
+        }
+
         public override void ReadSettings(ref Utf8JsonReader reader, JsonSerializerOptions options)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);

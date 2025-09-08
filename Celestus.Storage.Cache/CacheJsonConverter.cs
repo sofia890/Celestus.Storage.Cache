@@ -1,4 +1,5 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using Celestus.Exceptions;
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -11,10 +12,9 @@ namespace Celestus.Storage.Cache
 
         public override Cache Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            if (reader.TokenType != JsonTokenType.StartObject)
-            {
-                throw new StartTokenJsonException(reader.TokenType, JsonTokenType.StartObject);
-            }
+            Condition.ThrowIf<StartTokenJsonException>(
+                reader.TokenType != JsonTokenType.StartObject,
+                parameters: [reader.TokenType, JsonTokenType.StartObject]);
 
             string? key = null;
             Dictionary<string, CacheEntry>? storage = null;
@@ -143,22 +143,10 @@ namespace Celestus.Storage.Cache
             [NotNull] CacheCleanerBase<string>? cleaner,
             bool cleanerConfigured)
         {
-            if (key == null)
-            {
-                throw new MissingValueJsonException(nameof(Cache.Key));
-            }
-            else if (storage == null)
-            {
-                throw new MissingValueJsonException(nameof(Cache.Storage));
-            }
-            else if (cleaner == null)
-            {
-                throw new MissingValueJsonException(nameof(Cache.Cleaner));
-            }
-            else if (!cleanerConfigured)
-            {
-                throw new MissingValueJsonException(CONTENT_PROPERTY_NAME);
-            }
+            Condition.ThrowIf<MissingValueJsonException>(key == null, nameof(Cache.Key));
+            Condition.ThrowIf<MissingValueJsonException>(storage == null, nameof(Cache.Storage));
+            Condition.ThrowIf<MissingValueJsonException>(cleaner == null, nameof(Cache.Cleaner));
+            Condition.ThrowIf<MissingValueJsonException>(!cleanerConfigured, CONTENT_PROPERTY_NAME);
         }
 
         public override void Write(Utf8JsonWriter writer, Cache value, JsonSerializerOptions options)
