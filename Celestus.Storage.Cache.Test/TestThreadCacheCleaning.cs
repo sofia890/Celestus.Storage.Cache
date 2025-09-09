@@ -93,9 +93,10 @@ public class TestThreadCacheCleaning
 
         ThreadHelper.SpinWait(interval);
 
-        _ = cache.TryGet<byte[]>(firstKey);
-
-        ThreadHelper.SpinWait(interval);
+        ThreadHelper.DoPeriodicallyUntil(() => cache.TryGet<byte[]>(firstKey, CacheConstants.ShortDuration) is (false, _),
+                                         CacheConstants.TimingIterations,
+                                         CacheConstants.TimingIterationInterval,
+                                         CacheConstants.VeryLongDuration);
 
         using var tempFile2 = new TempFile();
         _ = cache.TrySaveToFile(tempFile2.Uri);

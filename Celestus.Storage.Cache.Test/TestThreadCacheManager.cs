@@ -28,7 +28,7 @@ public class TestThreadCacheManager
             return originalCache;
         }
 
-        var hashOriginal = GarbageCollectionHelper<long>.ActAndCollect(Prepare, out var released);
+        var hashOriginal = GarbageCollectionHelper<long>.ActAndCollect(Prepare, out var released, CacheConstants.TimingDuration);
 
         //
         // Assert
