@@ -8,5 +8,7 @@
         public static TimeSpan VeryLongDuration { get => TimeSpan.FromSeconds(60); }
         public static TimeSpan TimingDuration { get => TimeSpan.FromMilliseconds(400); }
         public static TimeSpan ZeroDuration { get => TimeSpan.Zero; }
+        public static int TimingIterations { get => 10; }
+        public static TimeSpan TimingIterationInterval { get => TimeSpan.FromMilliseconds(100); }
     }
 }

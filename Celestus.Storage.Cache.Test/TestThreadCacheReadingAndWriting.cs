@@ -38,7 +38,7 @@ namespace Celestus.Storage.Cache.Test
             //
             // Arrange
             //
-            var interval = CacheConstants.ShortDuration;
+            var interval = CacheConstants.TimingDuration;
             using var cache = new ThreadCache(interval);
 
             const int VALUE = 23;

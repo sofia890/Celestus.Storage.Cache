@@ -54,5 +54,50 @@ namespace Celestus.Storage.Cache.Test.Model
                            action,
                            timeout);
         }
+
+        public static bool DoPeriodicallyUntil(
+            Func<bool> action,
+            int maxIterations,
+            TimeSpan interval,
+            TimeSpan timeout)
+        {
+            bool Loop()
+            {
+                for (int i = 0; i < maxIterations; i++)
+                {
+                    if (action())
+                    {
+                        return true;
+                    }
+
+                    SpinWait(interval);
+                }
+
+                return false;
+            }
+
+            CancellationTokenSource cancellationTokenSource = new();
+            var task = Task.Run(Loop, cancellationTokenSource.Token);
+
+            if (!task.Wait(timeout))
+            {
+                try
+                {
+                    cancellationTokenSource.Cancel();
+                }
+                catch (TaskCanceledException)
+                {
+                    task.Dispose();
+                }
+
+                return false;
+            }
+            else
+            {
+                task.Dispose();
+
+                return task.Result;
+            }
+        }
     }
 }
