@@ -5,7 +5,6 @@
     <LangVersion>latest</LangVersion>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <RunSettingsFilePath>C:\Users\socarlss\source\repos\sofia890\Celestus.Storage.Cache\Celestus.Storage.Cache.Test\bin\Debug\net9.0\fine-code-coverage\coverage-tool-output\Celestus.Storage.Cache.Test-fcc-mscodecoverage-generated.runsettings</RunSettingsFilePath>
   </PropertyGroup>
 
   <ItemGroup>

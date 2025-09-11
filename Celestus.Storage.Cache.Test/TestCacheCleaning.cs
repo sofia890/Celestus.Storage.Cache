@@ -57,7 +57,6 @@ public class TestCacheCleaning
     }
 
     [TestMethod]
-    [DoNotParallelize]
     public void VerifyThatCacheFreesUpMemory()
     {
         //
@@ -94,17 +93,14 @@ public class TestCacheCleaning
 
         ThreadHelper.SpinWait(CacheConstants.TimingDuration);
 
+        // Triggers cleanup
         var result = cache.TryGet<byte[]>(firstKey);
 
         using var tempFileB = new TempFile();
         _ = cache.TrySaveToFile(tempFileB.Uri);
 
+        // Verify that the first key did not expire.
         var removeLast = cache.TryRemove([firstKey]);
-
-        for (int i = 0; i < N_ITERATIONS; i++)
-        {
-            cache.Set(keys.Next(), CreateElement(), CacheConstants.ShortDuration);
-        }
 
         //
         // Assert
