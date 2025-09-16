@@ -7,6 +7,25 @@ namespace Celestus.Storage.Cache.Test
     public sealed class TestCacheSharedCreation
     {
         [TestMethod]
+        public void VerifyThatLoadingFromNonExistentFileReturnsNull()
+        {
+            //
+            // Arrange
+            //
+            var nonExistentFile = new Uri("file:///non-existent-file.json");
+
+            //
+            // Act
+            //
+            var cache = Cache.TryCreateFromFile(nonExistentFile);
+
+            //
+            // Assert
+            //
+            Assert.IsNull(cache);
+        }
+
+        [TestMethod]
         public void VerifyThatSharedCacheFailsWhenLoadedFromCorruptFile()
         {
             //

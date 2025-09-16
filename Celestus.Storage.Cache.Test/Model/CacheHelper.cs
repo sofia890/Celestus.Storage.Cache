@@ -13,6 +13,19 @@ namespace Celestus.Storage.Cache.Test.Model
                 return Cache.Factory.GetOrCreateShared(key, persistent, persistentStorageLocation);
             }
         }
+
+        public static CacheBase<string>? TryCreateFromFile(Type cacheType, Uri path)
+        {
+            if (typeof(ThreadCache) == cacheType)
+            {
+                return ThreadCache.TryCreateFromFile(path);
+            }
+            else
+            {
+                return Cache.TryCreateFromFile(path);
+            }
+        }
+
         public static CacheBase<string> Create(Type cacheType, string key, bool persistent = false, string persistentStorageLocation = "")
         {
             return (CacheBase<string>)Activator.CreateInstance(cacheType, [key, persistent, persistentStorageLocation])!;

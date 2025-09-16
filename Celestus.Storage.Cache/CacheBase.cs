@@ -17,7 +17,7 @@ namespace Celestus.Storage.Cache
     public class CacheSaveException(string message) : CacheIoException(message);
     public class NoPersistentPathException(string message) : CacheIoException(message);
 
-    public abstract class CacheBase<KeyType> : IDisposable
+    public abstract class CacheBase<KeyType> : IDisposable, ICloneable
         where KeyType : notnull
     {
         public const int NO_TIMEOUT = -1;
@@ -52,11 +52,13 @@ namespace Celestus.Storage.Cache
             HandlePersistentInitialization();
         }
 
-        public abstract void Dispose();
+        public abstract DataType Get<DataType>(string key);
 
-        public abstract DataType? Get<DataType>(string key);
+        public abstract (bool result, DataType? data) TryGet<DataType>(string key);
 
         public abstract void Set<DataType>(string key, DataType value, TimeSpan? duration = null);
+
+        public abstract bool TrySet<DataType>(string key, DataType value, TimeSpan? duration = null);
 
         public abstract bool TryRemove(KeyType[] key);
 
@@ -87,8 +89,7 @@ namespace Celestus.Storage.Cache
                 }
             }
 
-            NoPersistentPathException.ThrowIf(!CanWrite.Test(filePath),
-                                              "Could not find any writeable path for application.");
+            NoPersistentPathException.ThrowIf(!CanWrite.Test(filePath), "Could not find any writeable path for application.");
 
             return filePath;
         }
@@ -99,8 +100,10 @@ namespace Celestus.Storage.Cache
             {
                 var file = new FileInfo(PersistentStorageLocation.AbsolutePath);
 
-                CacheLoadException.ThrowIf(file.Exists && file.Length > 0 && !TryLoadFromFile(PersistentStorageLocation),
-                                           $"Could not load cache for key '{Key}'.");
+                if (file.Exists && file.Length > 0)
+                {
+                    CacheLoadException.ThrowIf(!TryLoadFromFile(PersistentStorageLocation), $"Could not load cache for key '{Key}'.");
+                }
             }
         }
 
@@ -119,8 +122,17 @@ namespace Celestus.Storage.Cache
                 _persistentHandled = true;
             }
         }
+
         public abstract bool TrySaveToFile(Uri path);
 
         public abstract bool TryLoadFromFile(Uri path);
+
+        #region IDisposable
+        public abstract void Dispose();
+        #endregion
+
+        #region ICloneable
+        public abstract object Clone();
+        #endregion
     }
 }

@@ -15,6 +15,30 @@
             CacheExpired(key);
         }
 
+        public static void SetCleanupInterval(Type cacheType, TimeSpan interval)
+        {
+            if (typeof(Cache) == cacheType)
+            {
+                Cache.Factory.SetCleanupInterval(interval);
+            }
+            else
+            {
+                ThreadCache.Factory.SetCleanupInterval(interval);
+            }
+        }
+
+        public static void ResetCleanupInterval(Type cacheType)
+        {
+            if (typeof(Cache) == cacheType)
+            {
+                Cache.Factory.SetCleanupInterval(TimeSpan.FromMilliseconds(CacheManagerCleaner<string, string, Cache>.DEFAULT_INTERVAL_IN_MS));
+            }
+            else
+            {
+                ThreadCache.Factory.SetCleanupInterval(TimeSpan.FromMilliseconds(CacheManagerCleaner<string, string, Cache>.DEFAULT_INTERVAL_IN_MS));
+            }
+        }
+
         #region IDoWhileLocked
         public ReaderWriterLockSlim GetLock()
         {

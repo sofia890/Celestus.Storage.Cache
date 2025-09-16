@@ -15,10 +15,6 @@ namespace Celestus.Storage.Cache
 
         readonly ReaderWriterLockSlim _lock = new();
 
-        internal override CacheCleanerBase<string> Cleaner { get => Cache.Cleaner; }
-
-        internal override Dictionary<string, CacheEntry> Storage { get => Cache.Storage; set => Cache.Storage = value; }
-
 
         public ThreadCache(string key, Cache cache, bool persistent = false, string persistentStorageLocation = "") :
             base(key, persistent: persistent, persistentStorageLocation)
@@ -71,6 +67,13 @@ namespace Celestus.Storage.Cache
             return new CacheLock(_lock, timeout);
         }
 
+        public CacheLock ThreadLock(TimeSpan timeout)
+        {
+            ObjectDisposedException.ThrowIf(IsDisposed, this);
+
+            return new CacheLock(_lock, timeout.Milliseconds);
+        }
+
         internal bool TrySetCache(Cache newCache, int millisecondsTimeout)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
@@ -92,15 +95,43 @@ namespace Celestus.Storage.Cache
             }
         }
 
-        public override void Set<DataType>(string key, DataType value, TimeSpan? duration = null)
+        public (bool result, DataType data) TryGet<DataType>(string key, TimeSpan? timeout = null)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 
-            _lock.EnterWriteLock();
-            Cache.Set(key, value, duration);
-            _lock.ExitWriteLock();
+            if (!_lock.TryEnterReadLock(timeout?.Milliseconds ?? DEFAULT_TIMEOUT_IN_MS))
+            {
+                return (false, default);
+            }
+
+            try
+            {
+                return Cache.TryGet<DataType>(key);
+            }
+            finally
+            {
+                _lock.ExitReadLock();
+            }
         }
 
+        public (bool result, DataType data) TryGet<DataType>(string key, int timeout)
+        {
+            ObjectDisposedException.ThrowIf(IsDisposed, this);
+
+            if (!_lock.TryEnterReadLock(timeout))
+            {
+                return (false, default);
+            }
+
+            try
+            {
+                return Cache.TryGet<DataType>(key);
+            }
+            finally
+            {
+                _lock.ExitReadLock();
+            }
+        }
         public bool TrySet<DataType>(string key, DataType value, TimeSpan? duration = null, TimeSpan? timeout = null)
         {
             return TrySet(key, value, timeout?.Milliseconds ?? NO_TIMEOUT, duration);
@@ -127,61 +158,6 @@ namespace Celestus.Storage.Cache
             }
         }
 
-        public override DataType? Get<DataType>(string key)
-            where DataType : default
-        {
-            ObjectDisposedException.ThrowIf(IsDisposed, this);
-
-            _lock.EnterReadLock();
-            var result = Cache.Get<DataType>(key);
-            _lock.ExitReadLock();
-
-            return result;
-        }
-
-        public (bool result, DataType? data) TryGet<DataType>(string key, TimeSpan? timeout = null)
-        {
-            ObjectDisposedException.ThrowIf(IsDisposed, this);
-
-            if (!_lock.TryEnterReadLock(timeout?.Milliseconds ?? DEFAULT_TIMEOUT_IN_MS))
-            {
-                return (false, default);
-            }
-
-            try
-            {
-                return Cache.TryGet<DataType>(key);
-            }
-            finally
-            {
-                _lock.ExitReadLock();
-            }
-        }
-
-        public (bool result, DataType? data) TryGet<DataType>(string key, int timeout)
-        {
-            ObjectDisposedException.ThrowIf(IsDisposed, this);
-
-            if (!_lock.TryEnterReadLock(timeout))
-            {
-                return (false, default);
-            }
-
-            try
-            {
-                return Cache.TryGet<DataType>(key);
-            }
-            finally
-            {
-                _lock.ExitReadLock();
-            }
-        }
-
-        public override bool TryRemove(string[] keys)
-        {
-            return TryRemove(keys, timeout: NO_TIMEOUT);
-        }
-
         public bool TryRemove(string[] keys, TimeSpan? timeout = null)
         {
             return TryRemove(keys, timeout?.Milliseconds ?? DEFAULT_TIMEOUT_IN_MS);
@@ -204,6 +180,54 @@ namespace Celestus.Storage.Cache
             {
                 _lock.ExitWriteLock();
             }
+        }
+
+        #region CacheBase<string>
+
+        internal override CacheCleanerBase<string> Cleaner { get => Cache.Cleaner; }
+
+        internal override Dictionary<string, CacheEntry> Storage { get => Cache.Storage; set => Cache.Storage = value; }
+
+
+        public override void Set<DataType>(string key, DataType value, TimeSpan? duration = null)
+        {
+            ObjectDisposedException.ThrowIf(IsDisposed, this);
+
+            _lock.EnterWriteLock();
+
+            try
+            {
+                Cache.Set(key, value, duration);
+            }
+            finally
+            {
+                _lock.ExitWriteLock();
+            }
+        }
+
+        public override DataType Get<DataType>(string key)
+        {
+            ObjectDisposedException.ThrowIf(IsDisposed, this);
+
+            _lock.EnterReadLock();
+            try
+            {
+                return Cache.Get<DataType>(key);
+            }
+            finally
+            {
+                _lock.ExitReadLock();
+            }
+        }
+
+        public override (bool result, DataType data) TryGet<DataType>(string key)
+        {
+            return TryGet<DataType>(key, DEFAULT_TIMEOUT_IN_MS);
+        }
+
+        public override bool TryRemove(string[] keys)
+        {
+            return TryRemove(keys, timeout: NO_TIMEOUT);
         }
 
         public override bool TrySaveToFile(Uri path)
@@ -265,6 +289,7 @@ namespace Celestus.Storage.Cache
                 _lock.ExitWriteLock();
             }
         }
+        #endregion
 
         #region IDisposable
         public override void Dispose()
@@ -316,6 +341,18 @@ namespace Celestus.Storage.Cache
         public override int GetHashCode()
         {
             return HashCode.Combine(Cache, Key);
+        }
+
+        public override bool TrySet<DataType>(string key, DataType value, TimeSpan? duration = null)
+        {
+            throw new NotImplementedException();
+        }
+        #endregion
+
+        #region ICloneable
+        public override object Clone()
+        {
+            return new ThreadCache(Key, (Cache)Cache.Clone(), Persistent, PersistentStorageLocation?.AbsolutePath ?? string.Empty);
         }
         #endregion
     }

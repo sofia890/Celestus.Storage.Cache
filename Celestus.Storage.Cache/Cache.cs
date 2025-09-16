@@ -5,10 +5,24 @@ using Celestus.Exceptions;
 namespace Celestus.Storage.Cache
 {
     [JsonConverter(typeof(CacheJsonConverter))]
-    public partial class Cache : CacheBase<string>, IDisposable, ICloneable
+    public partial class Cache : CacheBase<string>, IDisposable
     {
-        private bool _disposed = false;
+        public static Cache? TryCreateFromFile(Uri path)
+        {
+            return Serialize.TryCreateFromFile<Cache>(path);
+        }
 
+        public Cache ToCache()
+        {
+            var clone = new Cache(Key)
+            {
+                Storage = Storage.ToDictionary()
+            };
+
+            return clone;
+        }
+
+        #region CacheBase<string>
         internal override Dictionary<string, CacheEntry> Storage { get; set; }
 
         internal override CacheCleanerBase<string> Cleaner { get; }
@@ -93,7 +107,14 @@ namespace Celestus.Storage.Cache
             Set(key, value, GetExpiration(duration), out entry);
         }
 
-        public override DataType? Get<DataType>(string key)
+        public override bool TrySet<DataType>(string key, DataType value, TimeSpan? duration = null)
+        {
+            Set(key, value, duration);
+
+            return true;
+        }
+
+        public override DataType Get<DataType>(string key)
             where DataType : default
         {
             var result = TryGet<DataType>(key);
@@ -103,12 +124,12 @@ namespace Celestus.Storage.Cache
             return result.data;
         }
 
-        public (bool result, DataType? data) TryGet<DataType>(string key)
+        public override (bool result, DataType data) TryGet<DataType>(string key)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 
             bool found = false;
-            DataType? value = default;
+            DataType value = default;
 
             if (Storage.TryGetValue(key, out var entry))
             {
@@ -122,7 +143,7 @@ namespace Celestus.Storage.Cache
                 else if (entry.Data == null)
                 {
                     value = default;
-                    found = value == null;
+                    found = true;
                 }
                 else
                 {
@@ -158,11 +179,6 @@ namespace Celestus.Storage.Cache
             return true;
         }
 
-        public static Cache? TryCreateFromFile(Uri path)
-        {
-            return Serialize.TryCreateFromFile<Cache>(path);
-        }
-
         public override bool TryLoadFromFile(Uri path)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
@@ -180,18 +196,11 @@ namespace Celestus.Storage.Cache
                 return true;
             }
         }
-
-        public Cache ToCache()
-        {
-            var clone = new Cache(Key)
-            {
-                Storage = Storage.ToDictionary()
-            };
-
-            return clone;
-        }
+        #endregion
 
         #region IDisposable
+        private bool _disposed = false;
+
         public override void Dispose()
         {
             Dispose(true);
@@ -264,7 +273,7 @@ namespace Celestus.Storage.Cache
         #endregion
 
         #region ICloneable
-        public object Clone()
+        public override object Clone()
         {
             return ToCache();
         }

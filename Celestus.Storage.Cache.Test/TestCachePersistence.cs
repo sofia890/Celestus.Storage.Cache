@@ -34,6 +34,9 @@ namespace Celestus.Storage.Cache.Test
             //
             cache.Dispose();
 
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+
             //
             // Assert
             //

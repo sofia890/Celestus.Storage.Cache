@@ -26,8 +26,17 @@
         {
             throw new NotImplementedException();
         }
+        public override (bool result, DataType? data) TryGet<DataType>(string key) where DataType : default
+        {
+            throw new NotImplementedException();
+        }
 
         public override void Set<DataType>(string key, DataType value, TimeSpan? duration = null)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override bool TrySet<DataType>(string key, DataType value, TimeSpan? duration = null)
         {
             throw new NotImplementedException();
         }
@@ -47,6 +56,15 @@
         }
 
         public override bool TrySaveToFile(Uri path)
+        {
+            throw new NotImplementedException();
+        }
+        #endregion
+
+
+        #region ICloneable
+
+        public override object Clone()
         {
             throw new NotImplementedException();
         }

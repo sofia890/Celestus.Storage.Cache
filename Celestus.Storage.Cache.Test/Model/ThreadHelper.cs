@@ -55,6 +55,14 @@ namespace Celestus.Storage.Cache.Test.Model
                            timeout);
         }
 
+        public static void DoWhileLocked(ThreadCache cache, Action action, TimeSpan timeout)
+        {
+            DoUntil(() => cache.ThreadLock(),
+                    (cacheLock) => cacheLock.Dispose(),
+                    () => { action(); return false; },
+                    timeout);
+        }
+
         public static bool DoPeriodicallyUntil(
             Func<bool> action,
             int maxIterations,

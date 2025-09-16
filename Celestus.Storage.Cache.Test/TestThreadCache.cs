@@ -1,0 +1,103 @@
+using Celestus.Io;
+using Celestus.Storage.Cache.Test.Model;
+
+namespace Celestus.Storage.Cache.Test;
+
+[TestClass]
+public class TestThreadCache
+{
+
+    [TestMethod]
+    public void VerifyThatTrySetWithZeroTimeoutFailsImmediatelyWhenLocked()
+    {
+        //
+        // Arrange
+        //
+        using var cache = new ThreadCache();
+        cache.TrySet("initial", "value");
+
+        //
+        // Act
+        //
+        bool Act()
+        {
+            return cache.TrySet("key", "value", timeoutInMs: 0);
+        }
+
+        var result = ThreadHelper.DoWhileLocked(cache, Act, CacheConstants.TimingDuration);
+
+        //
+        // Assert
+        //
+        Assert.IsFalse(result);
+    }
+
+    [TestMethod]
+    public void VerifyThatTryGetWithZeroTimeoutFailsImmediatelyWhenLocked()
+    {
+        //
+        // Arrange
+        //
+        using var cache = new ThreadCache();
+        cache.TrySet("key", "value");
+
+        //
+        // Act
+        //
+        (bool, string) Act()
+        {
+            return cache.TryGet<string>("key", timeout: 0);
+        }
+
+        var result = ThreadHelper.DoWhileLocked(cache, Act, CacheConstants.TimingDuration);
+
+        //
+        // Assert
+        //
+        Assert.IsTrue(result is (false, _));
+    }
+
+    [TestMethod]
+    public void VerifyThatTryRemoveWithZeroTimeoutFailsImmediatelyWhenLocked()
+    {
+        //
+        // Arrange
+        //
+        using var cache = new ThreadCache();
+        cache.TrySet("key", "value");
+
+        //
+        // Act & Assert
+        //
+        bool Act()
+        {
+            return cache.TryRemove(["key"], timeout: 0);
+        }
+
+        var result = ThreadHelper.DoWhileLocked(cache, Act, CacheConstants.TimingDuration);
+
+        //
+        // Assert
+        //
+        Assert.IsFalse(result);
+    }
+
+    [TestMethod]
+    public void VerifyThatCacheLockWithTimeoutThrowsTimeoutException()
+    {
+        //
+        // Arrange
+        //
+        using var cache = new ThreadCache();
+
+        //
+        // Act & Assert
+        //
+        void Act()
+        {
+            Assert.ThrowsException<TimeoutException>(() => cache.ThreadLock(timeout: CacheConstants.TimingDuration * 0.5));
+        }
+
+        ThreadHelper.DoWhileLocked(cache, Act, CacheConstants.TimingDuration);
+    }
+}

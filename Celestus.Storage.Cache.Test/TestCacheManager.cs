@@ -14,7 +14,7 @@ namespace Celestus.Storage.Cache.Test
             //
             // Arrange
             //
-            Cache.Factory.SetCleanupInterval(CacheConstants.ShortDuration);
+            CacheManagerHelper.SetCleanupInterval(cacheType, CacheConstants.ShortDuration);
 
             const string CACHE_KEY = nameof(VerifyThatCacheManager);
             const string ITEM_KEY = "a";
@@ -45,7 +45,7 @@ namespace Celestus.Storage.Cache.Test
             Assert.AreNotEqual(hashOriginal, hashNew);
 
             // Cleanup
-            Cache.Factory.SetCleanupInterval(TimeSpan.FromMilliseconds(CacheManagerCleaner<string, string, Cache>.DEFAULT_INTERVAL_IN_MS));
+            CacheManagerHelper.ResetCleanupInterval(cacheType);
         }
     }
 }
