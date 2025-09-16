@@ -146,7 +146,6 @@ namespace Celestus.Storage.Cache.Test
 
             const int N_ITERATION = 100;
             const int N_THREADS = 16;
-            const int THREAD_TEST_TIMEOUT = 10000;
 
             Action ThreadWorkerBuilder(int id)
             {
@@ -155,12 +154,16 @@ namespace Celestus.Storage.Cache.Test
                     startSignal.WaitOne();
 
                     var key = id.ToString();
-                    _ = cache.TrySet(key, id, timeoutInMs: THREAD_TEST_TIMEOUT);
+
+                    Assert.IsTrue(cache.TrySet(key, id, timeout: CacheConstants.TimingDuration));
 
                     for (int i = 1; i <= N_ITERATION; i++)
                     {
-                        var (result, value) = cache.TryGet<int>(key, THREAD_TEST_TIMEOUT);
-                        _ = cache.TrySet(key, value + 1);
+                        var (result, value) = cache.TryGet<int>(key, timeout: CacheConstants.TimingDuration);
+
+                        Assert.IsTrue(result);
+
+                        Assert.IsTrue(cache.TrySet(key, value + 1, timeout: CacheConstants.TimingDuration));
                     }
                 };
             }
@@ -173,7 +176,7 @@ namespace Celestus.Storage.Cache.Test
             // Act
             //
             startSignal.Set();
-            _ = Task.WaitAll(threads, THREAD_TEST_TIMEOUT);
+            _ = Task.WaitAll(threads, CacheConstants.VeryLongDuration);
 
             //
             // Assert
@@ -194,8 +197,7 @@ namespace Celestus.Storage.Cache.Test
             using var cache = new ThreadCache();
 
             const string KEY = "hammer";
-            const int THREAD_TEST_TIMEOUT = 10000;
-            _ = cache.TrySet(KEY, 0, timeoutInMs: THREAD_TEST_TIMEOUT);
+            Assert.IsTrue(cache.TrySet(KEY, 0, timeout: CacheConstants.TimingDuration));
 
             ManualResetEvent startSignal = new(false);
 
@@ -210,8 +212,11 @@ namespace Celestus.Storage.Cache.Test
 
                     for (int i = 1; i <= N_ITERATION; i++)
                     {
-                        var (_, value) = cache.TryGet<int>(KEY, THREAD_TEST_TIMEOUT);
-                        _ = cache.TrySet(KEY, value + 1);
+                        var (result, value) = cache.TryGet<int>(KEY, timeout: CacheConstants.TimingDuration);
+
+                        Assert.IsTrue(result);
+
+                        Assert.IsTrue(cache.TrySet(KEY, value + 1, timeout: CacheConstants.TimingDuration));
                     }
                 };
             }
@@ -224,7 +229,7 @@ namespace Celestus.Storage.Cache.Test
             // Act
             //
             startSignal.Set();
-            _ = Task.WaitAll(threads, THREAD_TEST_TIMEOUT);
+            _ = Task.WaitAll(threads, CacheConstants.VeryLongDuration);
 
             //
             // Assert

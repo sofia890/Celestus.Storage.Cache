@@ -60,7 +60,7 @@ namespace Celestus.Storage.Cache
             }
         }
 
-        public CacheType GetOrCreateShared(CacheKeyType key, bool persistent = false, string persistentStorageLocation = "")
+        public CacheType GetOrCreateShared(CacheKeyType key, bool persistent = false, string persistentStorageLocation = "", TimeSpan? timeout = null)
         {
             ObjectDisposedException.ThrowIf(_isDisposed, this);
             
@@ -76,7 +76,7 @@ namespace Celestus.Storage.Cache
             {
                 CacheType cacheToTrack = (CacheType)Activator.CreateInstance(typeof(CacheType), [key, persistent, persistentStorageLocation])!;
 
-                if (_lock.TryEnterWriteLock(_lockTimeout))
+                if (_lock.TryEnterWriteLock(timeout ?? _lockTimeout))
                 {
                     try
                     {

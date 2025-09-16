@@ -78,15 +78,11 @@ namespace Celestus.Storage.Cache
 
         public override void Set<DataType>(string key, DataType value, TimeSpan? duration = null)
         {
-            ObjectDisposedException.ThrowIf(IsDisposed, this);
-
             Set(key, value, GetExpiration(duration));
         }
 
         public void Set<DataType>(string key, DataType value, long expiration)
         {
-            ObjectDisposedException.ThrowIf(IsDisposed, this);
-
             Set(key, value, expiration, out var _);
         }
 
@@ -102,8 +98,6 @@ namespace Celestus.Storage.Cache
 
         public void Set<DataType>(string key, DataType value, out CacheEntry entry, TimeSpan? duration = null)
         {
-            ObjectDisposedException.ThrowIf(IsDisposed, this);
-
             Set(key, value, GetExpiration(duration), out entry);
         }
 

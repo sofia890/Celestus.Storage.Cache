@@ -46,7 +46,7 @@ public class TestThreadCache
         //
         (bool, string) Act()
         {
-            return cache.TryGet<string>("key", timeout: 0);
+            return cache.TryGet<string>("key", timeout: CacheConstants.VeryShortDuration);
         }
 
         var result = ThreadHelper.DoWhileLocked(cache, Act, CacheConstants.TimingDuration);
@@ -71,7 +71,7 @@ public class TestThreadCache
         //
         bool Act()
         {
-            return cache.TryRemove(["key"], timeout: 0);
+            return cache.TryRemove(["key"], timeout: CacheConstants.VeryShortDuration);
         }
 
         var result = ThreadHelper.DoWhileLocked(cache, Act, CacheConstants.TimingDuration);

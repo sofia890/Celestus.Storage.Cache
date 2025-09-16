@@ -1,12 +1,16 @@
 using Celestus.Io;
 using Celestus.Storage.Cache.Test.Model;
+using Newtonsoft.Json.Linq;
 
 namespace Celestus.Storage.Cache.Test
 {
     [TestClass]
-    [DoNotParallelize]
     public class CacheManagerHelperBaseTimeout
     {
+        string Key { get => "test-key"; }
+        string Item { get => "test-item"; }
+        string Value { get => "test-value"; }
+
         [TestMethod]
         public void VerifyThatTryLoadThrowsLoadTimeoutExceptionWhenReadLockCannotBeAcquired()
         {
@@ -20,7 +24,7 @@ namespace Celestus.Storage.Cache.Test
             //
             Assert.ThrowsException<LoadTimeoutException>(
                 () => ((IDoWhileLocked)manager).DoWhileWriteLocked(
-                    () => manager.TryLoad("test-key", out _)
+                    () => manager.TryLoad(Key, out _)
                 )
             );
         }
@@ -40,7 +44,7 @@ namespace Celestus.Storage.Cache.Test
                 () => ((IDoWhileLocked)manager).DoWhileReadLocked(
                     () =>
                     {
-                        _ = manager.GetOrCreateShared("test-key");
+                        _ = manager.GetOrCreateShared(Key, timeout: CacheConstants.VeryShortDuration);
                         return true;
                     }
                 )
@@ -55,11 +59,13 @@ namespace Celestus.Storage.Cache.Test
             //
             var manager = new CacheManagerHelper(CacheConstants.ShortDuration);
 
+            var key = nameof(VerifyThatGetOrCreateSharedThrowsSetTimeoutExceptionWhenWriteLockCannotBeAcquired);
+
             // Create a valid test file
             using var tempFile = new TempFile();
-            using (var cache = new Cache("test-key"))
+            using (var cache = new Cache(Key))
             {
-                cache.Set("test-item", "test-value");
+                cache.Set(Item, Value);
                 _ = cache.TrySaveToFile(tempFile.Uri);
             }
 
@@ -70,7 +76,7 @@ namespace Celestus.Storage.Cache.Test
                 () => ((IDoWhileLocked)manager).DoWhileReadLocked(
                     () =>
                     {
-                        _ = manager.UpdateOrLoadSharedFromFile(tempFile.Uri);
+                        _ = manager.UpdateOrLoadSharedFromFile(tempFile.Uri, timeout: CacheConstants.VeryShortDuration);
                         return true;
                     }
                 )
@@ -92,7 +98,7 @@ namespace Celestus.Storage.Cache.Test
                 () => ((IDoWhileLocked)manager).DoWhileReadLocked(
                     () =>
                     {
-                        manager.CallCacheExpired("test-key");
+                        manager.CallCacheExpired(Key);
                         return true;
                     }
                 )
@@ -114,7 +120,7 @@ namespace Celestus.Storage.Cache.Test
                 () => ((IDoWhileLocked)manager).DoWhileWriteLocked(
                     () =>
                     {
-                        _ = manager.TryLoad("test-key", out _);
+                        _ = manager.TryLoad(Key, out _);
                         return true;
                     }
                 )
@@ -136,7 +142,7 @@ namespace Celestus.Storage.Cache.Test
                 () => ((IDoWhileLocked)manager).DoWhileReadLocked(
                     () =>
                     {
-                        _ = manager.GetOrCreateShared("test-key");
+                        _ = manager.GetOrCreateShared(Key, timeout: CacheConstants.VeryShortDuration);
                         return true;
                     }
                 )
@@ -153,9 +159,9 @@ namespace Celestus.Storage.Cache.Test
 
             // Create a valid test file
             using var tempFile = new TempFile();
-            using var cache = new ThreadCache("test-key");
+            using var cache = new ThreadCache(Key);
 
-            _ = cache.TrySet("test-item", "test-value");
+            _ = cache.TrySet(Item, Value);
             _ = cache.TrySaveToFile(tempFile.Uri);
 
             //
@@ -165,7 +171,7 @@ namespace Celestus.Storage.Cache.Test
                 () => ((IDoWhileLocked)manager).DoWhileReadLocked(
                     () =>
                     {
-                        _ = manager.UpdateOrLoadSharedFromFile(tempFile.Uri);
+                        _ = manager.UpdateOrLoadSharedFromFile(tempFile.Uri, timeout: CacheConstants.VeryShortDuration);
                         return true;
                     }
                 )
@@ -187,7 +193,7 @@ namespace Celestus.Storage.Cache.Test
                 () => ((IDoWhileLocked)manager).DoWhileReadLocked(
                     () =>
                     {
-                        manager.CallCacheExpired("test-key");
+                        manager.CallCacheExpired(Key);
                         return true;
                     }
                 )

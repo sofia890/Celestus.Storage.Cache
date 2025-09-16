@@ -182,14 +182,18 @@ namespace Celestus.Storage.Cache.Generator
                 {{hacCodeInputParameters}}
                 {{indentation}}        var uniqueKeyBase = {{uniqueKeyBase}};
                 {{indentation}}        var uniqueKey = $"{uniqueKeyBase}-{hashCode}";
+                {{indentation}}        var timeout = TimeSpan.FromMilliseconds({{timeoutInMilliseconds}});
                 {{indentation}}        
-                {{indentation}}        if ({{cacheStore}}.TryGet<{{tupleDeclaration}}>(uniqueKey, timeout: {{timeoutInMilliseconds}}) is not (result: true, var value))
+                {{indentation}}        if ({{cacheStore}}.TryGet<{{tupleDeclaration}}>(uniqueKey, timeout: timeout) is not (result: true, var value))
                 {{indentation}}        {
                 {{indentation}}            {{methodCall}}
                 {{indentation}}            value = {{cacheElement}};
                 {{indentation}}            
                 {{indentation}}            // Avoid throwing an exception if TrySet(...) fails. Just try next time the value is fetched.
-                {{indentation}}            _ = {{cacheStore}}.TrySet(uniqueKey, value, {{timeoutInMilliseconds}}, duration: TimeSpan.FromMilliseconds({{durationInMs}}));
+                {{indentation}}            _ = {{cacheStore}}.TrySet(uniqueKey,
+                {{indentation}}                                      value,
+                {{indentation}}                                      duration: TimeSpan.FromMilliseconds({{durationInMs}}),
+                {{indentation}}                                      timeout: TimeSpan.FromMilliseconds({{timeoutInMilliseconds}}));
                 {{indentation}}        }
                 {{indentation}}        else
                 {{indentation}}        {

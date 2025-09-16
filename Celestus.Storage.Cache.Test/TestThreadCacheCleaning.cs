@@ -68,15 +68,9 @@ public class TestThreadCacheCleaning
         var interval = CacheConstants.TimingDuration;
         using var cache = new ThreadCache(interval);
 
-        static byte[] CreateElement()
-        {
-            const int ELEMENT_SIZE = 10;
-            return new byte[ELEMENT_SIZE];
-        }
-
         var keys = new SerialKeys();
         var firstKey = keys.Next();
-        _ = cache.TrySet(firstKey, CreateElement(), TimeSpan.FromDays(1));
+        _ = cache.TrySet(firstKey, ElementHelper.CreateSmallArray(), TimeSpan.FromDays(1));
 
         using var tempFile1 = new TempFile();
         _ = cache.TrySaveToFile(tempFile1.Uri);
@@ -84,19 +78,24 @@ public class TestThreadCacheCleaning
         //
         // Act
         //
-        const int N_ITERATIONS = 1000;
+        const int NROF_KEYS = 1000;
 
-        for (int i = 0; i < N_ITERATIONS; i++)
+        for (int i = 0; i < NROF_KEYS; i++)
         {
-            _ = cache.TrySet(keys.Next(), CreateElement(), CacheConstants.ShortDuration);
+            _ = cache.TrySet(keys.Next(), ElementHelper.CreateSmallArray(), CacheConstants.ShortDuration);
         }
 
-        ThreadHelper.SpinWait(interval);
+        // Wait for the cache to be cleaned.
+        bool LastKeyNoLongerInCache()
+        {
+            var result = cache.TryGet<byte[]>(keys.Current(), timeout: CacheConstants.TimingIterationInterval);
 
-        ThreadHelper.DoPeriodicallyUntil(() => cache.TryGet<byte[]>(firstKey, CacheConstants.ShortDuration) is (false, _),
-                                         CacheConstants.TimingIterations,
-                                         CacheConstants.TimingIterationInterval,
-                                         CacheConstants.VeryLongDuration);
+            return result is (false, null);
+        }
+        var cleaned = ThreadHelper.DoPeriodicallyUntil(LastKeyNoLongerInCache,
+                                                       CacheConstants.TimingIterations,
+                                                       CacheConstants.TimingIterationInterval,
+                                                       CacheConstants.VeryLongDuration);
 
         using var tempFile2 = new TempFile();
         _ = cache.TrySaveToFile(tempFile2.Uri);
@@ -104,6 +103,8 @@ public class TestThreadCacheCleaning
         //
         // Assert
         //
+        Assert.IsTrue(cleaned);
+
         var file_1 = tempFile1.ToFileInfo();
         var file_2 = tempFile2.ToFileInfo();
 

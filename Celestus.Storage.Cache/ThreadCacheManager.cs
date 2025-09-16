@@ -21,7 +21,7 @@ namespace Celestus.Storage.Cache
                 // available.
                 using var _ = from.ThreadLock();
 
-                return to.TrySetCache(from.Cache.ToCache(), timeout ?? TimeSpan.FromMilliseconds(DEFAULT_TIMEOUT_IN_MS));
+                return to.TrySetCache(from.Cache.ToCache(), timeout ?? DefaultTimeout);
             }
             #endregion
         }

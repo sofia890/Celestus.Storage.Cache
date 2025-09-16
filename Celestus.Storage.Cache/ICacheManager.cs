@@ -6,7 +6,7 @@ namespace Celestus.Storage.Cache
     {
         public bool TryLoad(CacheKeyType key, [NotNullWhen(true)] out CacheType? cache);
 
-        public CacheType GetOrCreateShared(CacheKeyType key, bool persistent = false, string persistentStorageLocation = "");
+        public CacheType GetOrCreateShared(CacheKeyType key, bool persistent = false, string persistentStorageLocation = "", TimeSpan? timeout = null);
 
         public CacheType? UpdateOrLoadSharedFromFile(Uri path, TimeSpan? timeout = null);
 

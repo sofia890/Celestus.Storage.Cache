@@ -1,5 +1,6 @@
 ﻿using Celestus.Serialization;
 using System.Text.Json.Serialization;
+using System.Threading;
 
 namespace Celestus.Storage.Cache
 {
@@ -7,7 +8,7 @@ namespace Celestus.Storage.Cache
     public partial class ThreadCache : CacheBase<string>, IDisposable
     {
         const int CLEANER_INTERVAL_IN_MS = 5000;
-        public const int DEFAULT_TIMEOUT_IN_MS = 5000;
+        public static TimeSpan DefaultTimeout { get => new(5000); }
 
         private bool _disposed = false;
 
@@ -60,11 +61,16 @@ namespace Celestus.Storage.Cache
         {
         }
 
+        private TimeSpan ValueOrDefault(TimeSpan? timeout = null)
+        {
+            return timeout ?? DefaultTimeout;
+        }
+
         public CacheLock ThreadLock(TimeSpan? timeout = null)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 
-            return new CacheLock(_lock, timeout ?? TimeSpan.FromMilliseconds(DEFAULT_TIMEOUT_IN_MS));
+            return new CacheLock(_lock, ValueOrDefault(timeout));
         }
 
         internal bool TrySetCache(Cache newCache, TimeSpan timeout)
@@ -92,7 +98,7 @@ namespace Celestus.Storage.Cache
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 
-            if (!_lock.TryEnterReadLock(timeout ?? TimeSpan.FromMilliseconds(DEFAULT_TIMEOUT_IN_MS)))
+            if (!_lock.TryEnterReadLock(ValueOrDefault(timeout)))
             {
 #pragma warning disable CS8619 // Nullability of reference types in value doesn't match target type.
                 return (false, default);
@@ -109,21 +115,11 @@ namespace Celestus.Storage.Cache
             }
         }
 
-        public (bool result, DataType data) TryGet<DataType>(string key, int timeout)
-        {
-            return TryGet<DataType>(key, TimeSpan.FromMilliseconds(timeout));
-        }
-
         public bool TrySet<DataType>(string key, DataType value, TimeSpan? duration = null, TimeSpan? timeout = null)
-        {
-            return TrySet(key, value, timeout ?? TimeSpan.FromMilliseconds(NO_TIMEOUT), duration);
-        }
-
-        public bool TrySet<DataType>(string key, DataType value, int timeoutInMs, TimeSpan? duration = null)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 
-            if (!_lock.TryEnterWriteLock(timeoutInMs))
+            if (!_lock.TryEnterWriteLock(ValueOrDefault(timeout)))
             {
                 return false;
             }
@@ -142,14 +138,9 @@ namespace Celestus.Storage.Cache
 
         public bool TryRemove(string[] keys, TimeSpan? timeout = null)
         {
-            return TryRemove(keys, timeout ?? TimeSpan.FromMilliseconds(DEFAULT_TIMEOUT_IN_MS));
-        }
-
-        public bool TryRemove(string[] keys, int timeout)
-        {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 
-            if (!_lock.TryEnterWriteLock(timeout))
+            if (!_lock.TryEnterWriteLock(ValueOrDefault(timeout)))
             {
                 return false;
             }
@@ -204,19 +195,19 @@ namespace Celestus.Storage.Cache
 
         public override (bool result, DataType data) TryGet<DataType>(string key)
         {
-            return TryGet<DataType>(key, DEFAULT_TIMEOUT_IN_MS);
+            return TryGet<DataType>(key, DefaultTimeout);
         }
 
         public override bool TryRemove(string[] keys)
         {
-            return TryRemove(keys, timeout: NO_TIMEOUT);
+            return TryRemove(keys, timeout: null);
         }
 
         public override bool TrySaveToFile(Uri path)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 
-            if (!_lock.TryEnterReadLock(DEFAULT_TIMEOUT_IN_MS))
+            if (!_lock.TryEnterReadLock(DefaultTimeout))
             {
                 return false;
             }
@@ -242,7 +233,7 @@ namespace Celestus.Storage.Cache
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 
-            if (!_lock.TryEnterWriteLock(DEFAULT_TIMEOUT_IN_MS))
+            if (!_lock.TryEnterWriteLock(DefaultTimeout))
             {
                 return false;
             }
