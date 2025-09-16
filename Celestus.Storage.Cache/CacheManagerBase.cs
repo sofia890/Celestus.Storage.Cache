@@ -15,7 +15,7 @@ namespace Celestus.Storage.Cache
         where CacheKeyType : class
         where CacheType : CacheBase<CacheKeyType>
     {
-        private int _lockTimeoutInMs = 5000;
+        private TimeSpan _lockTimeout = TimeSpan.FromMilliseconds(5000);
 
         protected readonly ReaderWriterLockSlim _lock = new();
         readonly protected Dictionary<CacheKeyType, WeakReference<CacheType>> _caches = [];
@@ -34,7 +34,7 @@ namespace Celestus.Storage.Cache
 
             cache = default;
 
-            if (_lock.TryEnterReadLock(_lockTimeoutInMs))
+            if (_lock.TryEnterReadLock(_lockTimeout))
             {
                 try
                 {
@@ -76,7 +76,7 @@ namespace Celestus.Storage.Cache
             {
                 CacheType cacheToTrack = (CacheType)Activator.CreateInstance(typeof(CacheType), [key, persistent, persistentStorageLocation])!;
 
-                if (_lock.TryEnterWriteLock(_lockTimeoutInMs))
+                if (_lock.TryEnterWriteLock(_lockTimeout))
                 {
                     try
                     {
@@ -102,8 +102,6 @@ namespace Celestus.Storage.Cache
         {
             ObjectDisposedException.ThrowIf(_isDisposed, this);
 
-            int timeoutInMs = timeout?.Milliseconds ?? _lockTimeoutInMs;
-
             if (TryCreateFromFile(path) is not CacheType loadedCache)
             {
                 return null;
@@ -123,7 +121,7 @@ namespace Celestus.Storage.Cache
             {
                 WeakReference<CacheType> cache = new(loadedCache);
 
-                if (_lock.TryEnterWriteLock(timeoutInMs))
+                if (_lock.TryEnterWriteLock(timeout ?? _lockTimeout))
                 {
                     try
                     {
@@ -151,7 +149,7 @@ namespace Celestus.Storage.Cache
         {
             ObjectDisposedException.ThrowIf(_isDisposed, this);
 
-            Condition.ThrowIf<CleanupTimeoutException>(!_lock.TryEnterWriteLock(_lockTimeoutInMs),
+            Condition.ThrowIf<CleanupTimeoutException>(!_lock.TryEnterWriteLock(_lockTimeout),
                                                        "Could not lock resource for writing.");
 
             try
@@ -171,7 +169,7 @@ namespace Celestus.Storage.Cache
 
         public void SetLockTimeoutInterval(TimeSpan interval)
         {
-            _lockTimeoutInMs = interval.Milliseconds;
+            _lockTimeout = interval;
         }
 
         public void Remove(CacheKeyType key)

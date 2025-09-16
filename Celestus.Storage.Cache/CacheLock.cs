@@ -8,11 +8,11 @@ namespace Celestus.Storage.Cache
         private bool _disposed = false;
         private readonly ReaderWriterLockSlim _lock;
 
-        public CacheLock(ReaderWriterLockSlim cacheLock, int timeoutInMs = ThreadCache.NO_TIMEOUT)
+        public CacheLock(ReaderWriterLockSlim cacheLock, TimeSpan timeout)
         {
             _lock = cacheLock;
 
-            Condition.ThrowIf<TimeoutException>(!_lock.TryEnterWriteLock(timeoutInMs),
+            Condition.ThrowIf<TimeoutException>(!_lock.TryEnterWriteLock(timeout),
                                                 $"Timed out while waiting to acquire a write lock on {nameof(ThreadCache)}.");
         }
 

@@ -129,7 +129,7 @@ namespace Celestus.Storage.Cache
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 
             bool found = false;
-            DataType value = default;
+            DataType? value = default;
 
             if (Storage.TryGetValue(key, out var entry))
             {
@@ -153,7 +153,9 @@ namespace Celestus.Storage.Cache
                 Cleaner.EntryAccessed(ref entry, key);
             }
 
+#pragma warning disable CS8619 // Nullability of reference types in value doesn't match target type.
             return (found, value);
+#pragma warning restore CS8619 // Nullability of reference types in value doesn't match target type.
         }
 
         public override bool TryRemove(string[] keys)

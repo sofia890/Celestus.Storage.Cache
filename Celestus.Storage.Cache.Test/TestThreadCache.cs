@@ -21,7 +21,7 @@ public class TestThreadCache
         //
         bool Act()
         {
-            return cache.TrySet("key", "value", timeoutInMs: 0);
+            return cache.TrySet("key", "value", CacheConstants.ZeroDuration);
         }
 
         var result = ThreadHelper.DoWhileLocked(cache, Act, CacheConstants.TimingDuration);

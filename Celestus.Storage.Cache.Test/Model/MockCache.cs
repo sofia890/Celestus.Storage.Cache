@@ -22,7 +22,7 @@
             EntryRemoved.Dispose();
         }
 
-        public override DataType? Get<DataType>(string key) where DataType : default
+        public override DataType Get<DataType>(string key) where DataType : default
         {
             throw new NotImplementedException();
         }

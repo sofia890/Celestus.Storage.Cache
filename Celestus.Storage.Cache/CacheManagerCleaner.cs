@@ -15,7 +15,7 @@
         readonly Queue<FactoryEntry<CacheKeyType, CacheType>> _elements = [];
         WeakReference<CacheManagerBase<CacheKeyType, CacheType>>? _cacheManager;
 
-        int cleanupIntervalInMilliseconds = TimeSpan.FromMilliseconds(DEFAULT_INTERVAL_IN_MS).Milliseconds;
+        TimeSpan _cleanupInterval = TimeSpan.FromMilliseconds(DEFAULT_INTERVAL_IN_MS);
         private bool _isDisposed;
         private bool _abort = false;
         readonly Task _cleanerLoop;
@@ -67,7 +67,7 @@
 
                 try
                 {
-                    await Task.Delay(cleanupIntervalInMilliseconds, cleanerLoopCancellationTokenSource.Token);
+                    await Task.Delay(_cleanupInterval, cleanerLoopCancellationTokenSource.Token);
                 }
                 catch (OperationCanceledException)
                 {
@@ -88,7 +88,7 @@
 
         public void SetCleanupInterval(TimeSpan interval)
         {
-            cleanupIntervalInMilliseconds = interval.Milliseconds;
+            _cleanupInterval = interval;
         }
 
         protected virtual void Dispose(bool disposing)
