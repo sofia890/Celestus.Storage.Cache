@@ -8,7 +8,7 @@ namespace Celestus.Storage.Cache
     public partial class ThreadCache : CacheBase<string>, IDisposable
     {
         const int CLEANER_INTERVAL_IN_MS = 5000;
-        public static TimeSpan DefaultTimeout { get => new(5000); }
+        public static TimeSpan DefaultTimeout { get; } = TimeSpan.FromMilliseconds(5000);
 
         private bool _disposed = false;
 
@@ -198,6 +198,11 @@ namespace Celestus.Storage.Cache
             return TryGet<DataType>(key, DefaultTimeout);
         }
 
+        public override bool TrySet<DataType>(string key, DataType value, TimeSpan? duration = null)
+        {
+            return TrySet(key, value, duration: duration, timeout: null); 
+        }
+
         public override bool TryRemove(string[] keys)
         {
             return TryRemove(keys, timeout: null);
@@ -314,11 +319,6 @@ namespace Celestus.Storage.Cache
         public override int GetHashCode()
         {
             return HashCode.Combine(Cache, Key);
-        }
-
-        public override bool TrySet<DataType>(string key, DataType value, TimeSpan? duration = null)
-        {
-            throw new NotImplementedException();
         }
         #endregion
 

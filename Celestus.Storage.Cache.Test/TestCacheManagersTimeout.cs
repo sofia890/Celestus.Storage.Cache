@@ -7,9 +7,9 @@ namespace Celestus.Storage.Cache.Test
     [TestClass]
     public class CacheManagerHelperBaseTimeout
     {
-        string Key { get => "test-key"; }
-        string Item { get => "test-item"; }
-        string Value { get => "test-value"; }
+        string Key { get; } = "test-key";
+        string Item { get; } = "test-item";
+        string Value { get; } = "test-value";
 
         [TestMethod]
         public void VerifyThatTryLoadThrowsLoadTimeoutExceptionWhenReadLockCannotBeAcquired()
@@ -58,8 +58,6 @@ namespace Celestus.Storage.Cache.Test
             // Arrange
             //
             var manager = new CacheManagerHelper(CacheConstants.ShortDuration);
-
-            var key = nameof(VerifyThatGetOrCreateSharedThrowsSetTimeoutExceptionWhenWriteLockCannotBeAcquired);
 
             // Create a valid test file
             using var tempFile = new TempFile();

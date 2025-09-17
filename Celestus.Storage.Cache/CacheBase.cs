@@ -9,7 +9,7 @@ namespace Celestus.Storage.Cache
     {
         public static void ThrowIf(bool condition, string message)
         {
-            Condition.ThrowIf<InvalidOperationException>(condition, message);
+            Condition.ThrowIf<CacheIoException>(condition, message);
         }
     }
 
