@@ -4,6 +4,24 @@
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    
+    <!-- NuGet Package Properties -->
+    <PackageId>Celestus.Serialization</PackageId>
+    <Version>1.0.1</Version>
+    <Authors>Sofia</Authors>
+    <Company>Celestus</Company>
+    <Product>Celestus Serialization</Product>
+    <Description>Serialization utilities for Celestus framework.</Description>
+    <Copyright>Copyright © 2024 Celestus</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/sofia890/Celestus.Storage.Cache</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/sofia890/Celestus.Storage.Cache</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>serialization;json;celestus</PackageTags>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <PackageOutputPath>../nupkg</PackageOutputPath>
   </PropertyGroup>
 
 </Project>

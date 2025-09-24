@@ -5,6 +5,25 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <EnforceCodeStyleInBuild>True</EnforceCodeStyleInBuild>
+    
+    <!-- NuGet Package Properties -->
+    <PackageId>Celestus.Storage.Cache</PackageId>
+    <Version>1.0.1</Version>
+    <Authors>Sofia</Authors>
+    <Company>Celestus</Company>
+    <Product>Celestus Storage Cache</Product>
+    <Description>A thread-safe caching library for .NET applications with automatic cleanup, persistence support, and timeout handling.</Description>
+    <Copyright>Copyright © 2024 Celestus</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/sofia890/Celestus.Storage.Cache</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/sofia890/Celestus.Storage.Cache</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>cache;caching;thread-safe;storage;performance;cleanup;timeout</PackageTags>
+    <PackageReleaseNotes>Initial release with thread-safe caching, automatic cleanup, and persistence support.</PackageReleaseNotes>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <PackageOutputPath>../nupkg</PackageOutputPath>
   </PropertyGroup>
 
   <ItemGroup>
