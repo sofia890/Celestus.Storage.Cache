@@ -121,7 +121,7 @@ public class TestCacheCleaners
     [DataRow(typeof(ThreadCacheCleaner<string>))]
     public void VerifyThatMissingIntervalCausesCrash(Type cleanerTypeToTest)
     {
-        using var cleaner = CacheCleanerHelper.GetCleaner(cleanerTypeToTest, CacheConstants.ShortDuration, out var context);
+        using var cleaner = CacheCleanerHelper.GetCleaner(cleanerTypeToTest, CacheConstants.ShortDuration, out _);
 
         string json = "{\"ExtraParameter\":\"500\"}";
         Assert.ThrowsException<MissingValueJsonException>(() => CleaningHelper.ReadSettings(cleaner, json));

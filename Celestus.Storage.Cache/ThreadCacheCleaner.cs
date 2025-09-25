@@ -64,6 +64,11 @@ namespace Celestus.Storage.Cache
             }
         }
 
+        public override object Clone()
+        {
+            return new ThreadCacheCleaner<KeyType>(interval);
+        }
+
         ~ThreadCacheCleaner()
         {
             Dispose(false);

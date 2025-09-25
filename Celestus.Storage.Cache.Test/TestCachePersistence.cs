@@ -19,7 +19,7 @@ namespace Celestus.Storage.Cache.Test
             var oneDay = TimeSpan.FromDays(1);
 
             const string CACHE_KEY = nameof(VerifyThatPersistentCacheSavesOnDispose);
-            var cache = CacheHelper.Create(cacheTypeToTest, CACHE_KEY, persistent: true, tempFile.Uri.AbsolutePath);
+            var cache = CacheHelper.Create(cacheTypeToTest, CACHE_KEY, persistenceEnabled: true, tempFile.Uri.AbsolutePath);
 
             const string KEY_A = "A";
             const int VALUE_A = 123;
@@ -40,7 +40,7 @@ namespace Celestus.Storage.Cache.Test
             //
             // Assert
             //
-            var loaded = CacheHelper.Create(cacheTypeToTest, CACHE_KEY, persistent: true, tempFile.Uri.AbsolutePath);
+            var loaded = CacheHelper.Create(cacheTypeToTest, CACHE_KEY, persistenceEnabled: true, tempFile.Uri.AbsolutePath);
             Assert.AreEqual(VALUE_A, loaded.Get<int>(KEY_A));
             Assert.AreEqual(VALUE_B, loaded.Get<string>(KEY_B));
 
@@ -53,19 +53,19 @@ namespace Celestus.Storage.Cache.Test
         [TestMethod]
         [DataRow(typeof(Cache))]
         [DataRow(typeof(ThreadCache))]
-        public void VerifyThatPersistentCacheMismatchThrowsException(Type cacheTypeToTest)
+        public void VerifyThatpersistenceEnabledCacheMismatchThrowsException(Type cacheTypeToTest)
         {
             //
             // Arrange
             //
             using var tempFile = new TempFile();
-            const string CACHE_KEY = nameof(VerifyThatPersistentCacheSavesOnDispose);
-            var cacheA = CacheHelper.GetOrCreateShared(cacheTypeToTest, CACHE_KEY, persistent: true, tempFile.Uri.AbsolutePath);
+            const string CACHE_KEY = nameof(VerifyThatpersistenceEnabledCacheMismatchThrowsException);
+            var cacheA = CacheHelper.GetOrCreateShared(cacheTypeToTest, CACHE_KEY, persistenceEnabled: true, tempFile.Uri.AbsolutePath);
 
             //
             // Act & Assert
             //
-            Assert.ThrowsException<PersistenceMismatchException>(() => CacheHelper.GetOrCreateShared(cacheTypeToTest, CACHE_KEY));
+            Assert.ThrowsException<PersistenceMismatchException>(() => CacheHelper.GetOrCreateShared(cacheTypeToTest, CACHE_KEY, persistenceEnabled: false));
 
             // Need to dispose to trigger persistence logic before the tempo file is removed.
             // Test runner has limited access to file system. Once file is deleted said runner

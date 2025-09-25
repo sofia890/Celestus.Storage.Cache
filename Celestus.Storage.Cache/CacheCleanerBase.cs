@@ -2,7 +2,7 @@
 
 namespace Celestus.Storage.Cache
 {
-    public abstract class CacheCleanerBase<KeyType> : IDisposable
+    public abstract class CacheCleanerBase<KeyType> : IDisposable, ICloneable
         where KeyType : notnull
     {
         private bool _disposed = false;
@@ -40,6 +40,10 @@ namespace Celestus.Storage.Cache
         }
 
         public bool IsDisposed => _disposed;
+        #endregion
+
+        #region ICloneable
+        public abstract object Clone();
         #endregion
     }
 }

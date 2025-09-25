@@ -109,5 +109,10 @@ namespace Celestus.Storage.Cache.Test.Model
 
             base.Dispose(disposing);
         }
+
+        public override object Clone()
+        {
+            throw new NotImplementedException();
+        }
     }
 }

@@ -83,7 +83,7 @@ public class TestThreadCache
     }
 
     [TestMethod]
-    public void VerifyThatCacheLockWithTimeoutThrowsTimeoutException()
+    public void VerifyThatCacheLockReturnsFalseWhenNoLockTimesOut()
     {
         //
         // Arrange
@@ -95,7 +95,7 @@ public class TestThreadCache
         //
         void Act()
         {
-            Assert.ThrowsException<TimeoutException>(() => cache.ThreadLock(timeout: CacheConstants.TimingDuration * 0.5));
+            Assert.IsFalse(cache.TryGetThreadWriteLock(out _, timeout: CacheConstants.VeryShortDuration));
         }
 
         ThreadHelper.DoWhileLocked(cache, Act, CacheConstants.TimingDuration);

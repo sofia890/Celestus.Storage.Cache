@@ -233,7 +233,7 @@ namespace Celestus.Storage.Cache.Generator
             return durationInMs;
         }
 
-        private static string ShouldBePersistent(Dictionary<string, (string value, NameColonSyntax syntax)> cacheAttributes)
+        private static string ShouldBepersistenceEnabled(Dictionary<string, (string value, NameColonSyntax syntax)> cacheAttributes)
         {
             if (!cacheAttributes.TryGetValue("enableFilePersistence", out var enablePersistence))
             {
@@ -360,7 +360,7 @@ namespace Celestus.Storage.Cache.Generator
                 cacheKey = key.value;
             }
 
-            var persistent = ShouldBePersistent(cacheAttributes);
+            var persistenceEnabled = ShouldBepersistenceEnabled(cacheAttributes);
 
             var indentation = GetIndentation(namespaceContext.depth);
 
@@ -373,13 +373,13 @@ namespace Celestus.Storage.Cache.Generator
 
             if (ClassHelper.HasStaticMethods(classDeclaration))
             {
-                _ = builder.AppendLine($"{indentation}    readonly static private ThreadCache _staticThreadCache = ThreadCache.Factory.GetOrCreateShared({cacheKey}, {persistent});");
+                _ = builder.AppendLine($"{indentation}    readonly static private ThreadCache _staticThreadCache = ThreadCache.Factory.GetOrCreateShared({cacheKey}, {persistenceEnabled});");
                 _ = builder.AppendLine($"{indentation}    public static ThreadCache StaticThreadCache => _staticThreadCache;");
             }
 
             if (ClassHelper.HasNonStaticMethods(classDeclaration))
             {
-                _ = builder.AppendLine($"{indentation}    readonly private ThreadCache _threadCache = ThreadCache.Factory.GetOrCreateShared({cacheKey}, {persistent});");
+                _ = builder.AppendLine($"{indentation}    readonly private ThreadCache _threadCache = ThreadCache.Factory.GetOrCreateShared({cacheKey}, {persistenceEnabled});");
                 _ = builder.AppendLine($"{indentation}    public ThreadCache ThreadCache => _threadCache;");
             }
 

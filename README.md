@@ -67,8 +67,8 @@ var userCache = ThreadCache.Factory.GetOrCreateShared("user-cache"); // Same ins
 ### Persistence Support
 
 ```csharp
-// Create a persistent cache
-using var cache = new ThreadCache("my-cache", persistent: true, persistentStorageLocation: "./cache");
+// Create a persistenceEnabled cache
+using var cache = new ThreadCache("my-cache", persistenceEnabled: true, persistenceStorageLocation: "./cache");
 
 // Cache automatically saves to disk when instance is disposed or finalized and loads on startup
 cache.Set("important-data", "This will survive application restarts");
@@ -153,10 +153,10 @@ var cache2 = new ThreadCache("user-sessions");
 // With custom cleaner interval
 var cache3 = new ThreadCache(cleaningInterval: TimeSpan.FromMinutes(10));
 
-// Persistent cache
-var cache4 = new ThreadCache("persistent-cache", 
-    persistent: true, 
-    persistentStorageLocation: "./data/cache");
+// persistenceEnabled cache
+var cache4 = new ThreadCache("persistenceEnabled-cache", 
+    persistenceEnabled: true, 
+    persistenceStorageLocation: "./data/cache");
 
 // With custom cleaner
 var cache5 = new ThreadCache("custom-cache", new MyCacheCleaner());

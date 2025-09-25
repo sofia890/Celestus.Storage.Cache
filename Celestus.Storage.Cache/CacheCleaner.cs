@@ -129,5 +129,13 @@ namespace Celestus.Storage.Cache
             writer.WriteNumberValue(_cleanupIntervalInTicks);
             writer.WriteEndObject();
         }
+
+        public override object Clone()
+        {
+            var newCleaner = new CacheCleaner<KeyType>(TimeSpan.FromTicks(_cleanupIntervalInTicks));
+            newCleaner.RegisterCache(_cacheReference!);
+
+            return newCleaner;
+        }
     }
 }

@@ -17,6 +17,8 @@ namespace Celestus.Storage.Cache
                 parameters: [reader.TokenType, JsonTokenType.StartObject]);
 
             string? key = null;
+            bool persistenceEnabled = false;
+            string? persistenceStorageLocation = null;
             Dictionary<string, CacheEntry>? storage = null;
             CacheCleanerBase<string>? cleaner = null;
             bool cleanerConfigured = false;
@@ -33,7 +35,21 @@ namespace Celestus.Storage.Cache
                         switch (reader.GetString())
                         {
                             case nameof(Cache.Key):
-                                key = GetKey(ref reader);
+                                _ = reader.Read();
+
+                                key = reader.GetString();
+                                break;
+
+                            case nameof(ThreadCache.PersistenceEnabled):
+                                _ = reader.Read();
+
+                                persistenceEnabled = reader.GetBoolean();
+                                break;
+
+                            case nameof(ThreadCache.PersistenceStoragePath):
+                                _ = reader.Read();
+
+                                persistenceStorageLocation = reader.GetString();
                                 break;
 
                             case nameof(Storage):
@@ -55,13 +71,12 @@ namespace Celestus.Storage.Cache
         End:
             ValidateConfiguration(key, storage, cleaner, cleanerConfigured);
 
-            return new Cache(key, storage, cleaner);
-        }
-
-        private static string? GetKey(ref Utf8JsonReader reader)
-        {
-            _ = reader.Read();
-            return reader.GetString();
+            return new Cache(key,
+                             storage,
+                             cleaner,
+                             persistenceEnabled: persistenceEnabled,
+                             persistenceStorageLocation: persistenceStorageLocation ?? "",
+                             persistenceLoadWhenCreated: false);
         }
 
         private static Dictionary<string, CacheEntry>? GetStorage(ref Utf8JsonReader reader, JsonSerializerOptions options)
@@ -154,6 +169,14 @@ namespace Celestus.Storage.Cache
             writer.WriteStartObject();
 
             writer.WriteString(nameof(Cache.Key), value.Key);
+
+            writer.WriteBoolean(nameof(ThreadCache.PersistenceEnabled), value.PersistenceEnabled);
+
+            if (value.PersistenceStoragePath != null)
+            {
+                writer.WriteString(nameof(ThreadCache.PersistenceStoragePath),
+                                   value.PersistenceStoragePath.OriginalString);
+            }
 
             writer.WritePropertyName(nameof(Storage));
             JsonSerializer.Serialize(writer, value.Storage, options);

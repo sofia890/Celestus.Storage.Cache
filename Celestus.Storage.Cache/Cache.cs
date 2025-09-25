@@ -1,12 +1,37 @@
-﻿using Celestus.Serialization;
+﻿using Celestus.Exceptions;
+using Celestus.Io;
+using Celestus.Serialization;
+using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 using System.Text.Json.Serialization;
-using Celestus.Exceptions;
 
 namespace Celestus.Storage.Cache
 {
     [JsonConverter(typeof(CacheJsonConverter))]
     public partial class Cache : CacheBase<string>, IDisposable
     {
+        bool _persistenceEnabledHandled;
+
+        public Cache(
+            string key,
+            Dictionary<string, CacheEntry> storage,
+            CacheCleanerBase<string> cleaner,
+            bool persistenceEnabled = false,
+            string persistenceStorageLocation = "",
+            bool persistenceLoadWhenCreated = true) : base(key)
+        {
+            HandlePersistenceEnabledInitialization(persistenceEnabled, persistenceStorageLocation, persistenceLoadWhenCreated);
+
+            // Not persistenceEnabled or no persistenceEnabled data loaded.
+            // Only use provided storage if persistent data was loaded.
+            if (!PersistenceEnabled || Storage == null)
+            {
+                Storage = storage;
+            }
+
+            Cleaner = cleaner;
+        }
+
         public static Cache? TryCreateFromFile(Uri path)
         {
             return Serialize.TryCreateFromFile<Cache>(path);
@@ -16,37 +41,111 @@ namespace Celestus.Storage.Cache
         {
             var clone = new Cache(Key)
             {
-                Storage = Storage.ToDictionary()
+                Storage = Storage.ToDictionary(),
+                Cleaner = (CacheCleanerBase<string>)Cleaner.Clone()
             };
 
             return clone;
         }
 
+        public void HandlePersistenceEnabledInitialization(bool storeToFile, string? path, bool loadFromFile)
+        {
+            if (storeToFile && loadFromFile)
+            {
+                if (storeToFile && path?.Length > 0)
+                {
+                    PersistenceStoragePath = new(path);
+                }
+                else if (storeToFile)
+                {
+                    PersistenceStoragePath = GetDefaultpersistenceEnabledPath(Key);
+                }
+                else
+                {
+                    PersistenceStoragePath = null;
+                }
+
+                if (PersistenceStoragePath != null)
+                {
+                    var file = new FileInfo(PersistenceStoragePath.AbsolutePath);
+
+                    if (file.Exists && file.Length > 0)
+                    {
+                        CacheLoadException.ThrowIf(!TryLoadFromFile(PersistenceStoragePath), $"Could not load cache for key '{Key}'.");
+                    }
+                }
+            }
+        }
+
+        public void HandlePersistenceEnabledFinalization()
+        {
+            if (PersistenceEnabled && !_persistenceEnabledHandled)
+            {
+                if (!File.Exists(PersistenceStoragePath.AbsolutePath))
+                {
+                    _ = Directory.CreateDirectory(PersistenceStoragePath.AbsolutePath);
+                }
+
+                CacheSaveException.ThrowIf(!TrySaveToFile(PersistenceStoragePath),
+                                           $"Could not save cache for key '{Key}'.");
+
+                _persistenceEnabledHandled = true;
+            }
+        }
+
+        private static Uri GetDefaultpersistenceEnabledPath(string key)
+        {
+            string commonAppDataPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
+            var appPath = System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName;
+
+            var assemblyName = Assembly.GetExecutingAssembly().GetName().Name;
+
+            Uri filePath;
+
+            if (appPath == null)
+            {
+                filePath = new($"{Directory.GetCurrentDirectory()}/{assemblyName}/{key}.json");
+            }
+            else
+            {
+                var file = new FileInfo(appPath);
+
+                var appName = file.Name;
+
+                filePath = new($"{commonAppDataPath}/{appName}/{assemblyName}/{key}.json");
+
+                if (!CanWrite.Test(filePath))
+                {
+                    filePath = new Uri($"{file.DirectoryName}/{assemblyName}/{key}.json");
+                }
+            }
+
+            NopersistenceEnabledPathException.ThrowIf(!CanWrite.Test(filePath), "Could not find any writeable path for application.");
+
+            return filePath;
+        }
+
         #region CacheBase<string>
         internal override Dictionary<string, CacheEntry> Storage { get; set; }
 
-        internal override CacheCleanerBase<string> Cleaner { get; }
+        [MemberNotNullWhen(true, nameof(PersistenceStoragePath))]
+        public override bool PersistenceEnabled { get => PersistenceStoragePath != null; }
 
-        public Cache(
-            string key,
-            Dictionary<string, CacheEntry> storage,
-            CacheCleanerBase<string> cleaner,
-            bool persistent = false,
-            string persistentStorageLocation = "") : base(key, persistent, persistentStorageLocation)
+        public override Uri? PersistenceStoragePath { get; set; }
+
+        private CacheCleanerBase<string>? _cleaner;
+        internal override CacheCleanerBase<string> Cleaner
         {
-            // Not persistent or no persistent data loaded.
-            if (!persistent || Storage == null)
+            get => _cleaner!;
+            set
             {
-                Storage = storage;
+                _cleaner = value;
+                _cleaner.RegisterCache(new(this));
             }
-
-            Cleaner = cleaner;
-
-            Cleaner.RegisterCache(new(this));
         }
 
-        public Cache(string key, bool persistent = false, string persistentStorageLocation = "") :
-            this(key, [], new CacheCleaner<string>(), persistent: persistent, persistentStorageLocation: persistentStorageLocation)
+        public Cache(string key, bool persistenceEnabled = false, string persistenceStorageLocation = "") :
+            this(key, [], new CacheCleaner<string>(), persistenceEnabled: persistenceEnabled, persistenceStorageLocation: persistenceStorageLocation)
         {
         }
 
@@ -54,13 +153,13 @@ namespace Celestus.Storage.Cache
             this(string.Empty,
                 [],
                 new CacheCleaner<string>(),
-                persistent: false,
-                persistentStorageLocation: "")
+                persistenceEnabled: false,
+                persistenceStorageLocation: "")
         {
         }
 
-        public Cache(CacheCleanerBase<string> cleaner, bool persistent = false, string persistentStorageLocation = "") :
-            this(string.Empty, [], cleaner, persistent: persistent, persistentStorageLocation: persistentStorageLocation)
+        public Cache(CacheCleanerBase<string> cleaner, bool persistenceEnabled = false, string persistenceStorageLocation = "") :
+            this(string.Empty, [], cleaner, persistenceEnabled: persistenceEnabled, persistenceStorageLocation: persistenceStorageLocation)
         {
         }
 
@@ -147,9 +246,7 @@ namespace Celestus.Storage.Cache
                 Cleaner.EntryAccessed(ref entry, key);
             }
 
-#pragma warning disable CS8619 // Nullability of reference types in value doesn't match target type.
-            return (found, value);
-#pragma warning restore CS8619 // Nullability of reference types in value doesn't match target type.
+            return (found, value!);
         }
 
         public override bool TryRemove(string[] keys)
@@ -164,6 +261,13 @@ namespace Celestus.Storage.Cache
             }
 
             return anyRemoved;
+        }
+
+        public override bool TryRemove(string key)
+        {
+            ObjectDisposedException.ThrowIf(IsDisposed, this);
+
+            return Storage.Remove(key);
         }
 
         public override bool TrySaveToFile(Uri path)
@@ -212,7 +316,7 @@ namespace Celestus.Storage.Cache
         {
             if (!_disposed)
             {
-                HandlePersistentFinalization();
+                HandlePersistenceEnabledFinalization();
 
                 if (disposing)
                 {

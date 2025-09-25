@@ -1,19 +1,45 @@
-﻿using Celestus.Exceptions;
-using System.Text.Json;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 
 namespace Celestus.Storage.Cache
 {
     public class CacheLock : IDisposable
     {
         private bool _disposed = false;
-        private readonly ReaderWriterLockSlim _lock;
+        private bool _wasLockedFromStart = false;
+        private Action _unlock;
 
-        public CacheLock(ReaderWriterLockSlim cacheLock, TimeSpan timeout)
+        private CacheLock(bool wasReadLockedFromStart, Action unlock)
         {
-            _lock = cacheLock;
+            _wasLockedFromStart = wasReadLockedFromStart;
+            _unlock = unlock;
+        }
 
-            Condition.ThrowIf<TimeoutException>(!_lock.TryEnterWriteLock(timeout),
-                                                $"Timed out while waiting to acquire a write lock on {nameof(ThreadCache)}.");
+        public static bool TryReadLock(ReaderWriterLockSlim slimLock, TimeSpan timeout, [MaybeNullWhen(false)] out CacheLock cacheLock)
+        {
+            return TryLock(slimLock.IsReadLockHeld, slimLock.TryEnterReadLock, slimLock.ExitReadLock, timeout, out cacheLock);
+        }
+
+        public static bool TryWriteLock(ReaderWriterLockSlim slimLock, TimeSpan timeout, [MaybeNullWhen(false)] out CacheLock cacheLock)
+        {
+            return TryLock(slimLock.IsReadLockHeld, slimLock.TryEnterWriteLock, slimLock.ExitWriteLock, timeout, out cacheLock);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool TryLock(bool isAlreadyLocked, Func<TimeSpan, bool> tryEnterLock, Action exitLock, TimeSpan timeout, [MaybeNullWhen(false)] out CacheLock cacheLock)
+        {
+            if (isAlreadyLocked || tryEnterLock(timeout))
+            {
+                cacheLock = new CacheLock(isAlreadyLocked, exitLock);
+
+                return true;
+            }
+            else
+            {
+                cacheLock = null;
+
+                return false;
+            }
         }
 
         #region IDisposable
@@ -29,9 +55,9 @@ namespace Celestus.Storage.Cache
             {
                 if (disposing)
                 {
-                    if (_lock.IsWriteLockHeld)
+                    if (!_wasLockedFromStart)
                     {
-                        _lock.ExitWriteLock();
+                        _unlock();
                     }
                 }
 

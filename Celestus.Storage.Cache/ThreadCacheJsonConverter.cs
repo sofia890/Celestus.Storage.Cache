@@ -54,8 +54,10 @@ namespace Celestus.Storage.Cache
             {
                 throw new MissingValueJsonException($"Invalid JSON for {nameof(ThreadCache)}.");
             }
-
-            return new ThreadCache(key, cache);
+            else
+            {
+                return new ThreadCache(key, cache);
+            }
         }
 
         public override void Write(Utf8JsonWriter writer, ThreadCache value, JsonSerializerOptions options)
@@ -63,8 +65,16 @@ namespace Celestus.Storage.Cache
             writer.WriteStartObject();
 
             writer.WriteString(nameof(ThreadCache.Key), value.Key);
-            writer.WritePropertyName(nameof(ThreadCache.Cache));
 
+            writer.WriteBoolean(nameof(ThreadCache.PersistenceEnabled), value.PersistenceEnabled);
+
+            if (value.PersistenceStoragePath != null)
+            {
+                writer.WriteString(nameof(ThreadCache.PersistenceStoragePath),
+                                   value.PersistenceStoragePath.OriginalString);
+            }
+
+            writer.WritePropertyName(nameof(ThreadCache.Cache));
             JsonSerializer.Serialize(writer, value.Cache, options);
 
             writer.WriteEndObject();

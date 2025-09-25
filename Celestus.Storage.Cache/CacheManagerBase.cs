@@ -60,21 +60,21 @@ namespace Celestus.Storage.Cache
             }
         }
 
-        public CacheType GetOrCreateShared(CacheKeyType key, bool persistent = false, string persistentStorageLocation = "", TimeSpan? timeout = null)
+        public CacheType GetOrCreateShared(CacheKeyType key, bool persistenceEnabled = false, string persistenceStorageLocation = "", TimeSpan? timeout = null)
         {
             ObjectDisposedException.ThrowIf(_isDisposed, this);
             
             if (TryLoad(key, out var cache))
             {
                 Condition.ThrowIf<PersistenceMismatchException>(
-                    persistent != cache.Persistent,
+                    persistenceEnabled != cache.PersistenceEnabled,
                     $"Inconsistent persistence configuration for key '{key}'.");
 
                 return cache;
             }
             else
             {
-                CacheType cacheToTrack = (CacheType)Activator.CreateInstance(typeof(CacheType), [key, persistent, persistentStorageLocation])!;
+                CacheType cacheToTrack = (CacheType)Activator.CreateInstance(typeof(CacheType), [key, persistenceEnabled, persistenceStorageLocation])!;
 
                 if (_lock.TryEnterWriteLock(timeout ?? _lockTimeout))
                 {

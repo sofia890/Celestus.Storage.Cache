@@ -19,9 +19,17 @@ namespace Celestus.Storage.Cache
             {
                 // Should really be a read lock and not a write lock but we have write lock easily
                 // available.
-                using var _ = from.ThreadLock();
-
-                return to.TrySetCache(from.Cache.ToCache(), timeout ?? DefaultTimeout);
+                if (from.TryGetThreadWriteLock(out var cacheLock))
+                {
+                    using (cacheLock)
+                    {
+                        return to.TrySetCache(from.Cache.ToCache(), timeout ?? DefaultTimeout);
+                    }
+                }
+                else
+                {
+                    return false;
+                }
             }
             #endregion
         }
