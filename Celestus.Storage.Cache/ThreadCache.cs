@@ -296,9 +296,11 @@ namespace Celestus.Storage.Cache
 
                 var loadedData = Serialize.TryCreateFromFile<ThreadCache>(path);
 
-                if (loadedData != null && Key == loadedData.Key &&
+                if (loadedData != null &&
+                    Key == loadedData.Key &&
+                    PersistenceEnabled &&
                     PersistenceEnabled == loadedData.PersistenceEnabled &&
-                    PersistenceStoragePath == loadedData.PersistenceStoragePath)
+                    PersistenceStoragePath.AbsolutePath == loadedData.PersistenceStoragePath.AbsolutePath)
                 {
                     Cache.Dispose();
 
