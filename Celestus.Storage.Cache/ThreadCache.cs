@@ -286,20 +286,16 @@ namespace Celestus.Storage.Cache
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 
-
             bool TryLoad()
             {
                 bool result = false;
 
                 var loadedData = Serialize.TryCreateFromFile<ThreadCache>(path);
 
-                if (loadedData != null && Key == loadedData.Key)
+                if (loadedData != null && Key == loadedData.Key &&
+                    PersistenceEnabled == loadedData.PersistenceEnabled &&
+                    PersistenceStoragePath == loadedData.PersistenceStoragePath)
                 {
-                    Condition.ThrowIf<PersistenceMismatchException>(
-                        PersistenceEnabled != loadedData.PersistenceEnabled ||
-                        (PersistenceEnabled && PersistenceStoragePath != loadedData.PersistenceStoragePath),
-                        "The persistenceEnabled settings of the loaded cache do not match the current cache.");
-
                     Cache.Dispose();
 
                     Cache = loadedData.Cache;
