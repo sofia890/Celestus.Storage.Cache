@@ -128,8 +128,9 @@ namespace Celestus.Storage.Cache
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 
-            return DoWhileWriteLocked(() => Cache.Set(key, value, out _, duration),
-                            GetTimeout(timeout));
+            return DoWhileWriteLocked(() => Cache.TrySet(key, value, duration),
+                                      out var result,
+                                      GetTimeout(timeout)) && result;
         }
 
         public bool TryRemove(string[] keys, TimeSpan? timeout = null)
