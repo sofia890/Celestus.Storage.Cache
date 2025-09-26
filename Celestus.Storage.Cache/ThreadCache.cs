@@ -19,9 +19,12 @@ namespace Celestus.Storage.Cache
             get => _cache!;
             private set
             {
+                if (_cache != value)
+                {
                 _cache = value;
                 _cache.Cleaner.RegisterCache(new(this));
             }
+        }
         }
 
         readonly ReaderWriterLockSlim _lock = new();
