@@ -267,7 +267,7 @@ namespace Celestus.Storage.Cache
 
         public override bool TryRemove(string key)
         {
-            return TryRemove(key);
+            return TryRemove(key, timeout: null);
         }
 
         public override bool TrySaveToFile(Uri path)
