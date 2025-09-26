@@ -1,6 +1,7 @@
 ﻿using Celestus.Exceptions;
 using Celestus.Serialization;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
 
 namespace Celestus.Storage.Cache
@@ -21,10 +22,10 @@ namespace Celestus.Storage.Cache
             {
                 if (_cache != value)
                 {
-                _cache = value;
-                _cache.Cleaner.RegisterCache(new(this));
+                    _cache = value;
+                    _cache.Cleaner.RegisterCache(new(this));
+                }
             }
-        }
         }
 
         readonly ReaderWriterLockSlim _lock = new();
@@ -77,19 +78,20 @@ namespace Celestus.Storage.Cache
         {
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private TimeSpan GetTimeout(TimeSpan? timeout = null)
         {
             return timeout ?? DefaultTimeout;
         }
 
-        public bool TryGetThreadWriteLock([MaybeNullWhen(false)] out CacheLock cacheLock, TimeSpan? timeout = null)
+        public bool TryGetWriteLock([MaybeNullWhen(false)] out CacheLock cacheLock, TimeSpan? timeout = null)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 
             return CacheLock.TryWriteLock(_lock, GetTimeout(timeout), out cacheLock);
         }
 
-        public bool TryGetThreadReadLock([MaybeNullWhen(false)] out CacheLock cacheLock, TimeSpan? timeout = null)
+        public bool TryGetReadLock([MaybeNullWhen(false)] out CacheLock cacheLock, TimeSpan? timeout = null)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 
@@ -149,7 +151,7 @@ namespace Celestus.Storage.Cache
 
         private bool DoWhileReadLocked<ReturnType>(Func<ReturnType> act, out ReturnType result, TimeSpan? timeout)
         {
-            if (TryGetThreadReadLock(out var cacheLock, GetTimeout(timeout)))
+            if (TryGetReadLock(out var cacheLock, GetTimeout(timeout)))
             {
                 using (cacheLock)
                 {
@@ -168,7 +170,7 @@ namespace Celestus.Storage.Cache
 
         private bool DoWhileReadLocked(Action act, TimeSpan? timeout)
         {
-            if (TryGetThreadReadLock(out var cacheLock, GetTimeout(timeout)))
+            if (TryGetReadLock(out var cacheLock, GetTimeout(timeout)))
             {
                 using (cacheLock)
                 {
@@ -185,7 +187,7 @@ namespace Celestus.Storage.Cache
 
         private bool DoWhileWriteLocked<ReturnType>(Func<ReturnType> act, out ReturnType result, TimeSpan? timeout)
         {
-            if (TryGetThreadWriteLock(out var cacheLock, GetTimeout(timeout)))
+            if (TryGetWriteLock(out var cacheLock, GetTimeout(timeout)))
             {
                 using (cacheLock)
                 {
@@ -204,7 +206,7 @@ namespace Celestus.Storage.Cache
 
         private bool DoWhileWriteLocked(Action act, TimeSpan? timeout)
         {
-            if (TryGetThreadWriteLock(out var cacheLock, GetTimeout(timeout)))
+            if (TryGetWriteLock(out var cacheLock, GetTimeout(timeout)))
             {
                 using (cacheLock)
                 {
@@ -342,12 +344,12 @@ namespace Celestus.Storage.Cache
                 _ = DoWhileWriteLocked(
                     () =>
                     {
+                        Factory.Remove(Key);
+
                         Cache.HandlePersistenceEnabledFinalization();
 
                         if (disposing)
                         {
-                            Factory.Remove(Key);
-
                             Cache.Dispose();
                         }
 

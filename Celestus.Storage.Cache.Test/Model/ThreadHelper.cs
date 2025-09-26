@@ -51,7 +51,7 @@ namespace Celestus.Storage.Cache.Test.Model
         {
             return DoUntil(() =>
                            {
-                               _ = cache.TryGetThreadWriteLock(out var cacheLock);
+                               _ = cache.TryGetWriteLock(out var cacheLock);
                                return cacheLock; 
                            },
                            (cacheLock) => cacheLock?.Dispose(),
@@ -63,7 +63,7 @@ namespace Celestus.Storage.Cache.Test.Model
         {
             DoUntil(() =>
                     {
-                        _ = cache.TryGetThreadWriteLock(out var cacheLock);
+                        _ = cache.TryGetWriteLock(out var cacheLock);
                         return cacheLock;
                     },
                     (cacheLock) => cacheLock?.Dispose(),

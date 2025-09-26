@@ -19,7 +19,7 @@ namespace Celestus.Storage.Cache
             {
                 // Should really be a read lock and not a write lock but we have write lock easily
                 // available.
-                if (from.TryGetThreadWriteLock(out var cacheLock))
+                if (from.TryGetWriteLock(out var cacheLock))
                 {
                     using (cacheLock)
                     {

@@ -95,7 +95,7 @@ public class TestThreadCache
         //
         void Act()
         {
-            Assert.IsFalse(cache.TryGetThreadWriteLock(out _, timeout: CacheConstants.VeryShortDuration));
+            Assert.IsFalse(cache.TryGetWriteLock(out _, timeout: CacheConstants.VeryShortDuration));
         }
 
         ThreadHelper.DoWhileLocked(cache, Act, CacheConstants.TimingDuration);

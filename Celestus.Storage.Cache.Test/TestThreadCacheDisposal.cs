@@ -32,7 +32,7 @@ public class TestThreadCacheDisposal
         //
         // Act & Assert
         //
-        Assert.ThrowsException<ObjectDisposedException>(() => cache.TryGetThreadWriteLock(out _));
+        Assert.ThrowsException<ObjectDisposedException>(() => cache.TryGetWriteLock(out _));
         Assert.ThrowsException<ObjectDisposedException>(() => cache.TrySaveToFile(new Uri("file://test")));
         Assert.ThrowsException<ObjectDisposedException>(() => cache.TryLoadFromFile(new Uri("file:///temp")));
         Assert.ThrowsException<ObjectDisposedException>(() => cache.TrySet("new-key", "new-value"));
