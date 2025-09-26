@@ -13,7 +13,16 @@ namespace Celestus.Storage.Cache
 
         private bool _disposed = false;
 
-        internal Cache Cache { get; private set; }
+        private Cache? _cache;
+        internal Cache Cache
+        {
+            get => _cache!;
+            private set
+            {
+                _cache = value;
+                _cache.Cleaner.RegisterCache(new(this));
+            }
+        }
 
         readonly ReaderWriterLockSlim _lock = new();
 
@@ -29,8 +38,6 @@ namespace Celestus.Storage.Cache
             {
                 Cache = cache;
             }
-
-            Cache.Cleaner.RegisterCache(new(this));
         }
 
         public ThreadCache(string key, CacheCleanerBase<string> cleaner, bool persistenceEnabled = false, string persistenceStorageLocation = "") :
