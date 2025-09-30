@@ -63,19 +63,17 @@ namespace Celestus.Storage.Cache.Test
             //
             // Assert
             //
-            var (originalResult, originalData) = originalCache.TryGet<string>(SHARED_KEY);
-            var (clonedResult, clonedData) = clonedCache.TryGet<string>(SHARED_KEY);
-
-            Assert.IsTrue(originalResult);
-            Assert.IsTrue(clonedResult);
+            Assert.IsTrue(originalCache.TryGet<string>(SHARED_KEY, out var originalData));
             Assert.AreEqual(SHARED_CLONE_VALUE, originalData);
+
+            Assert.IsTrue(clonedCache.TryGet<string>(SHARED_KEY, out var clonedData));
             Assert.AreEqual(SHARED_ORIGINAL_VALUE, clonedData);
 
-            Assert.IsTrue(originalCache.TryGet<string>(ORIGINAL_ONLY_KEY).result);
-            Assert.IsFalse(clonedCache.TryGet<string>(ORIGINAL_ONLY_KEY).result);
+            Assert.IsTrue(originalCache.TryGet<string>(ORIGINAL_ONLY_KEY, out _));
+            Assert.IsFalse(clonedCache.TryGet<string>(ORIGINAL_ONLY_KEY, out _));
 
-            Assert.IsFalse(originalCache.TryGet<string>(CLONE_ONLY_KEY).result);
-            Assert.IsTrue(clonedCache.TryGet<string>(CLONE_ONLY_KEY).result);
+            Assert.IsFalse(originalCache.TryGet<string>(CLONE_ONLY_KEY, out _));
+            Assert.IsTrue(clonedCache.TryGet<string>(CLONE_ONLY_KEY, out _));
         }
 
         [TestMethod]
@@ -136,14 +134,14 @@ namespace Celestus.Storage.Cache.Test
             // Assert
             //
             // Original should be unchanged
-            Assert.IsTrue(originalCache.TryGet<int>(KEY_1).result);
-            Assert.IsTrue(originalCache.TryGet<int>(KEY_2).result);
-            Assert.IsFalse(originalCache.TryGet<int>(KEY_3).result);
+            Assert.IsTrue(originalCache.TryGet<int>(KEY_1, out _));
+            Assert.IsTrue(originalCache.TryGet<int>(KEY_2, out _));
+            Assert.IsFalse(originalCache.TryGet<int>(KEY_3, out _));
 
             // Clone should have changes
-            Assert.IsFalse(clonedCache.TryGet<int>(KEY_1).result);
-            Assert.IsTrue(clonedCache.TryGet<int>(KEY_2).result);
-            Assert.IsTrue(clonedCache.TryGet<int>(KEY_3).result);
+            Assert.IsFalse(clonedCache.TryGet<int>(KEY_1, out _));
+            Assert.IsTrue(clonedCache.TryGet<int>(KEY_2, out _));
+            Assert.IsTrue(clonedCache.TryGet<int>(KEY_3, out _));
         }
 
         [TestMethod]

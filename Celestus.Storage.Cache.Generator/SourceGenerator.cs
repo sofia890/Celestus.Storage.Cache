@@ -183,7 +183,7 @@ namespace Celestus.Storage.Cache.Generator
                 {{indentation}}        var uniqueKey = $"{uniqueKeyBase}-{hashCode}";
                 {{indentation}}        var timeout = TimeSpan.FromMilliseconds({{timeoutInMilliseconds}});
                 {{indentation}}        
-                {{indentation}}        if ({{cacheStore}}.TryGet<{{tupleDeclaration}}>(uniqueKey, timeout: timeout) is not (result: true, var value))
+                {{indentation}}        if (!{{cacheStore}}.TryGet<{{tupleDeclaration}}>(uniqueKey, out var value, timeout: timeout))
                 {{indentation}}        {
                 {{indentation}}            {{methodCall}}
                 {{indentation}}            value = {{cacheElement}};

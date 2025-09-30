@@ -32,7 +32,6 @@ namespace Celestus.Storage.Cache.Test
             // Arrange
             //
             var path = new Uri(Path.GetTempFileName());
-
             File.WriteAllText(path.AbsolutePath, "");
 
             //
@@ -70,7 +69,8 @@ namespace Celestus.Storage.Cache.Test
             //
             // Assert
             //
-            Assert.AreEqual((true, ELEMENT_VALUE), otherCache.TryGet<string>(ELEMENT_KEY));
+            Assert.IsTrue(otherCache.TryGet<string>(ELEMENT_KEY, out var value));
+            Assert.AreEqual(ELEMENT_VALUE, value);
         }
 
         [TestMethod]
@@ -98,7 +98,8 @@ namespace Celestus.Storage.Cache.Test
             // Assert
             //
             Assert.IsNotNull(otherCache);
-            Assert.AreEqual((true, ELEMENT_VALUE), otherCache.TryGet<string>(ELEMENT_KEY));
+            Assert.IsTrue(otherCache.TryGet<string>(ELEMENT_KEY, out var value));
+            Assert.AreEqual(ELEMENT_VALUE, value);
         }
 
         [TestMethod]
@@ -134,8 +135,11 @@ namespace Celestus.Storage.Cache.Test
             //
             Assert.IsNotNull(otherCache);
             Assert.AreEqual(cache, otherCache);
-            Assert.AreEqual((true, VALUE_1), cache.TryGet<int>(KEY_1));
-            Assert.AreEqual((false, 0), cache.TryGet<double>(KEY_2));
+            Assert.IsTrue(cache.TryGet<int>(KEY_1, out var value1));
+            Assert.AreEqual(VALUE_1, value1);
+
+            Assert.IsFalse(cache.TryGet<double>(KEY_2, out var value2));
+            Assert.AreEqual(VALUE_2, value2);
         }
 
         [TestMethod]

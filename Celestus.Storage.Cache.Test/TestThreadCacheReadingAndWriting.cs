@@ -1,4 +1,5 @@
 ﻿using Celestus.Storage.Cache.Test.Model;
+using Newtonsoft.Json.Linq;
 
 namespace Celestus.Storage.Cache.Test
 {
@@ -23,7 +24,7 @@ namespace Celestus.Storage.Cache.Test
             //
             ThreadHelper.SpinWait(DURATION_IN_MS * 2);
 
-            var (result, _) = cache.TryGet<int>(KEY);
+            var result = cache.TryGet<int>(KEY, out _);
 
             //
             // Assert
@@ -48,15 +49,15 @@ namespace Celestus.Storage.Cache.Test
             //
             // Act
             //
-            var (resultPointA, _) = cache.TryGet<int>(KEY);
+            var resultPointA = cache.TryGet<int>(KEY, out _);
 
             ThreadHelper.SpinWait(interval / 2);
 
-            var (resultPointB, _) = cache.TryGet<int>(KEY);
+            var resultPointB = cache.TryGet<int>(KEY, out _);
 
             ThreadHelper.SpinWait(interval);
 
-            var (resultPointC, _) = cache.TryGet<int>(KEY);
+            var resultPointC = cache.TryGet<int>(KEY, out _);
 
             //
             // Assert
@@ -84,7 +85,8 @@ namespace Celestus.Storage.Cache.Test
             //
             // Assert
             //
-            Assert.AreEqual((true, VALUE), cache.TryGet<int>(KEY));
+            Assert.IsTrue(cache.TryGet<int>(KEY, out var value));
+            Assert.AreEqual(VALUE, value);
         }
 
         [TestMethod]
@@ -105,7 +107,8 @@ namespace Celestus.Storage.Cache.Test
             //
             // Assert
             //
-            Assert.AreEqual((true, VALUE), cache.TryGet<string?>(KEY));
+            Assert.IsTrue(cache.TryGet<string?>(KEY, out var value));
+            Assert.AreEqual(VALUE, value);
         }
 
         [TestMethod]
@@ -131,7 +134,8 @@ namespace Celestus.Storage.Cache.Test
             //
             // Assert
             //
-            Assert.AreEqual((true, VALUE + 4), cache.TryGet<int>(KEY));
+            Assert.IsTrue(cache.TryGet<int>(KEY, out var value));
+            Assert.AreEqual(VALUE + 4, value);
         }
 
         [TestMethod]
@@ -159,9 +163,7 @@ namespace Celestus.Storage.Cache.Test
 
                     for (int i = 1; i <= N_ITERATION; i++)
                     {
-                        var (result, value) = cache.TryGet<int>(key, timeout: CacheConstants.TimingDuration);
-
-                        Assert.IsTrue(result);
+                        Assert.IsTrue(cache.TryGet<int>(key, out var value, timeout: CacheConstants.TimingDuration));
 
                         Assert.IsTrue(cache.TrySet(key, value + 1, timeout: CacheConstants.TimingDuration));
                     }
@@ -184,7 +186,9 @@ namespace Celestus.Storage.Cache.Test
             for (int i = 0; i < N_THREADS; i++)
             {
                 var key = i.ToString();
-                Assert.AreEqual(N_ITERATION + i, cache.TryGet<int>(key).data);
+
+                Assert.IsTrue(cache.TryGet<int>(key, out var finalValue));
+                Assert.AreEqual(N_ITERATION + i, finalValue);
             }
         }
 
@@ -212,9 +216,7 @@ namespace Celestus.Storage.Cache.Test
 
                     for (int i = 1; i <= N_ITERATION; i++)
                     {
-                        var (result, value) = cache.TryGet<int>(KEY, timeout: CacheConstants.TimingDuration);
-
-                        Assert.IsTrue(result);
+                        Assert.IsTrue(cache.TryGet<int>(KEY, out var value, timeout: CacheConstants.TimingDuration));
 
                         Assert.IsTrue(cache.TrySet(KEY, value + 1, timeout: CacheConstants.TimingDuration));
                     }
@@ -234,8 +236,7 @@ namespace Celestus.Storage.Cache.Test
             //
             // Assert
             //
-            var (result, data) = cache.TryGet<int>(KEY);
-            Assert.IsTrue(result);
+            Assert.IsTrue(cache.TryGet<int>(KEY, out var data));
             Assert.IsTrue(data > 0);
         }
     }

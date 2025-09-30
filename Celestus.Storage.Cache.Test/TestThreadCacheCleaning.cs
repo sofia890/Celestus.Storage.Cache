@@ -23,7 +23,7 @@ public class TestThreadCacheCleaning
         const bool VALUE_1 = true;
         _ = cache.TrySet(KEY_1, VALUE_1);
 
-        _ = cache.TryGet<bool>(KEY_1);
+        _ = cache.TryGet<bool>(KEY_1, out _);
 
         //
         // Assert
@@ -85,12 +85,10 @@ public class TestThreadCacheCleaning
             _ = cache.TrySet(keys.Next(), ElementHelper.CreateSmallArray(), CacheConstants.ShortDuration);
         }
 
-        // Wait for the cache to be cleaned.
         bool LastKeyNoLongerInCache()
         {
-            var result = cache.TryGet<byte[]>(keys.Current(), timeout: CacheConstants.TimingIterationInterval);
-
-            return result is (false, null);
+            var success = cache.TryGet<byte[]>(keys.Current(), out var value, timeout: CacheConstants.TimingIterationInterval);
+            return !success && value == null;
         }
         var cleaned = ThreadHelper.DoPeriodicallyUntil(LastKeyNoLongerInCache,
                                                        CacheConstants.TimingIterations,

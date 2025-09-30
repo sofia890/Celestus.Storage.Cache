@@ -1,4 +1,6 @@
-﻿namespace Celestus.Storage.Cache.Test.Model
+﻿using System.Diagnostics.CodeAnalysis;
+
+namespace Celestus.Storage.Cache.Test.Model
 {
     internal class MockCache(string key = "") :
         CacheBase<string>(key)
@@ -36,8 +38,10 @@
         {
             throw new NotImplementedException();
         }
-        public override (bool result, DataType? data) TryGet<DataType>(string key) where DataType : default
+        public override bool TryGet<DataType>(string key, [MaybeNullWhen(false)] out DataType data) where DataType : default
         {
+            data = default;
+
             throw new NotImplementedException();
         }
 

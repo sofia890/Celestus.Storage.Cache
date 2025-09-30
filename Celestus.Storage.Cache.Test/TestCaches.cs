@@ -1,5 +1,6 @@
 using Celestus.Io;
 using Celestus.Storage.Cache.Test.Model;
+using Newtonsoft.Json.Linq;
 
 namespace Celestus.Storage.Cache.Test;
 
@@ -48,10 +49,17 @@ public class TestCaches
         Assert.IsNotNull(otherCache);
         Assert.AreEqual(cache, otherCache);
 
-        Assert.AreEqual((true, VALUE_1), otherCache.TryGet<int>(KEY_1));
-        Assert.AreEqual((true, VALUE_2), otherCache.TryGet<double>(KEY_2));
-        Assert.AreEqual((true, VALUE_3), otherCache.TryGet<DateTime>(KEY_3));
-        Assert.AreEqual((true, VALUE_4), otherCache.TryGet<ExampleRecord>(KEY_4));
+        Assert.IsTrue(otherCache.TryGet<int>(KEY_1, out var value1));
+        Assert.AreEqual(VALUE_1, value1);
+
+        Assert.IsTrue(otherCache.TryGet<double>(KEY_2, out var value2));
+        Assert.AreEqual(VALUE_2, value2);
+
+        Assert.IsTrue(otherCache.TryGet<DateTime>(KEY_3, out var value3));
+        Assert.AreEqual(VALUE_3, value3);
+
+        Assert.IsTrue(otherCache.TryGet<ExampleRecord>(KEY_4, out var value4));
+        Assert.AreEqual(VALUE_4, value4);
     }
 
     [TestMethod]
@@ -85,8 +93,10 @@ public class TestCaches
         //
         // Assert
         //
-        Assert.AreEqual((true, VALUE_1), cache.TryGet<int>(KEY_1));
-        Assert.AreEqual((false, 0), cache.TryGet<double>(KEY_2));
+        Assert.IsTrue(cache.TryGet<int>(KEY_1, out var restored));
+        Assert.AreEqual(VALUE_1, restored);
+
+        Assert.IsFalse(cache.TryGet<double>(KEY_2, out _));
     }
 
     [TestMethod]
@@ -129,16 +139,16 @@ public class TestCaches
         //
         // Act
         //
-        var asString = cache.TryGet<string>(KEY_1);
-        var asDouble = cache.TryGet<double>(KEY_1);
-        var asDateTime = cache.TryGet<DateTime>(KEY_1);
+        var stringAttempt = cache.TryGet<string>(KEY_1, out _);
+        var doubleAttempt = cache.TryGet<double>(KEY_1, out _);
+        var dateTimeAttempt = cache.TryGet<DateTime>(KEY_1, out _);
 
         //
         // Assert
         //
-        Assert.AreEqual((false, default), asString);
-        Assert.AreEqual((false, default), asDouble);
-        Assert.AreEqual((false, default), asDateTime);
+        Assert.IsFalse(stringAttempt);
+        Assert.IsFalse(doubleAttempt);
+        Assert.IsFalse(dateTimeAttempt);
     }
 
     [TestMethod]
@@ -194,17 +204,13 @@ public class TestCaches
         //
         // Assert
         //
-        var (intResult, intData) = cache.TryGet<int?>("nullable-int");
-        var (stringResult, stringData) = cache.TryGet<string>("nullable-string");
-        var (objectResult, objectData) = cache.TryGet<object>("nullable-object");
-
-        Assert.IsTrue(intResult);
+        Assert.IsTrue(cache.TryGet<int?>("nullable-int", out var intData));
         Assert.IsNull(intData);
 
-        Assert.IsTrue(stringResult);
+        Assert.IsTrue(cache.TryGet<string>("nullable-string", out var stringData));
         Assert.IsNull(stringData);
 
-        Assert.IsTrue(objectResult);
+        Assert.IsTrue(cache.TryGet<object>("nullable-object", out var objectData));
         Assert.IsNull(objectData);
     }
 
@@ -221,36 +227,99 @@ public class TestCaches
         //
         // Act
         //
-        cache.Set("bool", true);
-        cache.Set("byte", (byte)255);
-        cache.Set("char", 'A');
-        cache.Set("decimal", 123.456m);
-        cache.Set("double", 123.456d);
-        cache.Set("float", 123.456f);
-        cache.Set("int", 123);
-        cache.Set("long", 123L);
-        cache.Set("sbyte", (sbyte)-123);
-        cache.Set("short", (short)123);
-        cache.Set("uint", (uint)123);
-        cache.Set("ulong", (ulong)123);
-        cache.Set("ushort", (ushort)123);
+        const string KEY_BOOL = "bool";
+        const bool VALUE_BOOL = true;
+        cache.Set(KEY_BOOL, VALUE_BOOL);
+
+        const string KEY_BYTE = "byte";
+        const byte VALUE_BYTE = (byte)255;
+        cache.Set(KEY_BYTE, VALUE_BYTE);
+
+        const string KEY_CHAR = "char";
+        const char VALUE_CHAR = 'A';
+        cache.Set(KEY_CHAR, VALUE_CHAR);
+
+        const string KEY_DECIMAL = "decimal";
+        const decimal VALUE_DECIMAL = 123.456m;
+        cache.Set(KEY_DECIMAL, VALUE_DECIMAL);
+
+        const string KEY_DOUBLE = "double";
+        const double VALUE_DOUBLE = 123.456d;
+        cache.Set(KEY_DOUBLE, VALUE_DOUBLE);
+
+        const string KEY_FLOAT = "float";
+        const float VALUE_FLOAT = 123.456f;
+        cache.Set(KEY_FLOAT, VALUE_FLOAT);
+
+        const string KEY_INT = "int";
+        const int VALUE_INT = 123;
+        cache.Set(KEY_INT, VALUE_INT);
+
+        const string KEY_LONG = "long";
+        const long VALUE_LONG = 123L;
+        cache.Set(KEY_LONG, VALUE_LONG);
+
+        const string KEY_SBYTE = "sbyte";
+        const sbyte VALUE_SBYTE = (sbyte)-123;
+        cache.Set(KEY_SBYTE, VALUE_SBYTE);
+
+        const string KEY_SHORT = "short";
+        const short VALUE_SHORT = (short)123;
+        cache.Set(KEY_SHORT, VALUE_SHORT);
+
+        const string KEY_UINT = "uint";
+        const uint VALUE_UINT = (uint)123;
+        cache.Set(KEY_UINT, VALUE_UINT);
+
+        const string KEY_ULONG = "ulong";
+        const ulong VALUE_ULONG = (ulong)123;
+        cache.Set(KEY_ULONG, VALUE_ULONG);
+
+        const string KEY_USHORT = "ushort";
+        const ushort VALUE_USHORT = (ushort)123;
+        cache.Set(KEY_USHORT, VALUE_USHORT);
 
         //
         // Assert
         //
-        Assert.AreEqual((true, true), cache.TryGet<bool>("bool"));
-        Assert.AreEqual((true, (byte)255), cache.TryGet<byte>("byte"));
-        Assert.AreEqual((true, 'A'), cache.TryGet<char>("char"));
-        Assert.AreEqual((true, 123.456m), cache.TryGet<decimal>("decimal"));
-        Assert.AreEqual((true, 123.456d), cache.TryGet<double>("double"));
-        Assert.AreEqual((true, 123.456f), cache.TryGet<float>("float"));
-        Assert.AreEqual((true, 123), cache.TryGet<int>("int"));
-        Assert.AreEqual((true, 123L), cache.TryGet<long>("long"));
-        Assert.AreEqual((true, (sbyte)-123), cache.TryGet<sbyte>("sbyte"));
-        Assert.AreEqual((true, (short)123), cache.TryGet<short>("short"));
-        Assert.AreEqual((true, (uint)123), cache.TryGet<uint>("uint"));
-        Assert.AreEqual((true, (ulong)123), cache.TryGet<ulong>("ulong"));
-        Assert.AreEqual((true, (ushort)123), cache.TryGet<ushort>("ushort"));
+        Assert.IsTrue(cache.TryGet<bool>(KEY_BOOL, out var valueBool));
+        Assert.AreEqual(VALUE_BOOL, valueBool);
+
+        Assert.IsTrue(cache.TryGet<byte>(KEY_BYTE, out var valueByte));
+        Assert.AreEqual(VALUE_BYTE, valueByte);
+
+        Assert.IsTrue(cache.TryGet<char>(KEY_CHAR, out var valueChar));
+        Assert.AreEqual(VALUE_CHAR, valueChar);
+
+        Assert.IsTrue(cache.TryGet<decimal>(KEY_DECIMAL, out var valueDecimal));
+        Assert.AreEqual(VALUE_DECIMAL, valueDecimal);
+
+        Assert.IsTrue(cache.TryGet<double>(KEY_DOUBLE, out var valueDouble));
+        Assert.AreEqual(VALUE_DOUBLE, valueDouble);
+
+        Assert.IsTrue(cache.TryGet<float>(KEY_FLOAT, out var valueFloat));
+        Assert.AreEqual(VALUE_FLOAT, valueFloat);
+
+        Assert.IsTrue(cache.TryGet<int>(KEY_INT, out var valueInt));
+        Assert.AreEqual(VALUE_INT, valueInt);
+
+        Assert.IsTrue(cache.TryGet<long>(KEY_LONG, out var valueLong));
+        Assert.AreEqual(VALUE_LONG, valueLong);
+
+        Assert.IsTrue(cache.TryGet<sbyte>(KEY_SBYTE, out var valueSByte));
+        Assert.AreEqual(VALUE_SBYTE, valueSByte);
+
+        Assert.IsTrue(cache.TryGet<short>(KEY_SHORT, out var valueShort));
+        Assert.AreEqual(VALUE_SHORT, valueShort);
+
+        Assert.IsTrue(cache.TryGet<uint>(KEY_UINT, out var valueUInt));
+        Assert.AreEqual(VALUE_UINT, valueUInt);
+
+        Assert.IsTrue(cache.TryGet<ulong>(KEY_ULONG, out var valueULong));
+        Assert.AreEqual(VALUE_ULONG, valueULong);
+
+        Assert.IsTrue(cache.TryGet<ushort>(KEY_USHORT, out var valueUShort));
+        Assert.AreEqual(VALUE_USHORT, valueUShort);
     }
 
     [TestMethod]
@@ -277,13 +346,9 @@ public class TestCaches
         //
         // Assert
         //
-        var (listResult, listData) = cache.TryGet<List<string>>("list");
-        var (dictResult, dictData) = cache.TryGet<Dictionary<string, int>>("dict");
-        var (tupleResult, tupleData) = cache.TryGet<(int, string, bool)>("tuple");
-
-        Assert.IsTrue(listResult);
-        Assert.IsTrue(dictResult);
-        Assert.IsTrue(tupleResult);
+        Assert.IsTrue(cache.TryGet<List<string>>("list", out var listData));
+        Assert.IsTrue(cache.TryGet<Dictionary<string, int>>("dict", out var dictData));
+        Assert.IsTrue(cache.TryGet<(int, string, bool)>("tuple", out var tupleData));
 
         CollectionAssert.AreEqual(list, listData);
         CollectionAssert.AreEqual(dict, dictData);
@@ -308,8 +373,7 @@ public class TestCaches
         //
         // Assert
         //
-        var (result, data) = cache.TryGet<DayOfWeek>("enum");
-        Assert.IsTrue(result);
+        Assert.IsTrue(cache.TryGet<DayOfWeek>("enum", out var data));
         Assert.AreEqual(DayOfWeek.Monday, data);
     }
 }

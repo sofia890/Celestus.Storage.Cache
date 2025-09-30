@@ -111,17 +111,28 @@ namespace Celestus.Storage.Cache
                 timeout);
         }
 
-        public (bool result, DataType data) TryGet<DataType>(string key, TimeSpan? timeout = null)
+        public bool TryGet<DataType>(string key, [MaybeNullWhen(false)] out DataType data, TimeSpan? timeout = null)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 
-            if (DoWhileReadLocked(() => Cache.TryGet<DataType>(key), out var result, timeout))
+            (bool success, DataType value) TryGetLocal()
             {
-                return result;
+                var innerResult = Cache.TryGet<DataType>(key, out var innerData);
+
+                return (innerResult, innerData!); 
+            }
+
+            if (DoWhileReadLocked(() => TryGetLocal(), out var result, timeout) && result.success)
+            {
+                data = result.value;
+
+                return true;
             }
             else
             {
-                return (false, default!);
+                data = default;
+
+                return false;
             }
         }
 
@@ -255,9 +266,9 @@ namespace Celestus.Storage.Cache
             return result;
         }
 
-        public override (bool result, DataType data) TryGet<DataType>(string key)
+        public override bool TryGet<DataType>(string key, [MaybeNullWhen(false)] out DataType data)
         {
-            return TryGet<DataType>(key, DefaultTimeout);
+            return TryGet(key, out data, DefaultTimeout);
         }
 
         public override bool TrySet<DataType>(string key, DataType value, TimeSpan? duration = null)

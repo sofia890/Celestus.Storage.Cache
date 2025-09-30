@@ -22,7 +22,7 @@ public class TestCacheCleaning
         const bool VALUE_1 = true;
         cache.Set(KEY_1, VALUE_1);
 
-        _ = cache.TryGet<bool>(KEY_1);
+        _ = cache.TryGet<bool>(KEY_1, out _);
 
         //
         // Assert
@@ -94,7 +94,7 @@ public class TestCacheCleaning
         ThreadHelper.SpinWait(CacheConstants.TimingDuration);
 
         // Triggers cleanup
-        var result = cache.TryGet<byte[]>(firstKey);
+        var result = cache.TryGet<byte[]>(firstKey, out var firstValue);
 
         using var tempFileB = new TempFile();
         _ = cache.TrySaveToFile(tempFileB.Uri);
@@ -109,16 +109,14 @@ public class TestCacheCleaning
         var fileB = tempFileB.ToFileInfo();
 
         Assert.IsTrue(removeLast);
-        Assert.IsTrue(result is (true, _));
+        Assert.IsTrue(result);
+        Assert.IsNotNull(firstValue);
         Assert.AreEqual(fileA.Length, fileB.Length);
     }
 
     [TestMethod]
     public void VerifyThatMissingIntervalCausesCrash()
     {
-        //
-        // Arrange
-        //
         string json = "{\"ExtraParameter\":\"500\"}";
         Assert.ThrowsException<MissingValueJsonException>(() => CleaningHelper.ReadSettings<CacheCleaner<string>>(json));
     }

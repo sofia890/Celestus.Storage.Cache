@@ -36,7 +36,7 @@ namespace Celestus.Storage.Cache
 
         public abstract DataType Get<DataType>(string key);
 
-        public abstract (bool result, DataType? data) TryGet<DataType>(string key);
+        public abstract bool TryGet<DataType>(string key, [MaybeNullWhen(false)] out DataType data);
 
         public abstract void Set<DataType>(string key, DataType value, TimeSpan? duration = null);
 

@@ -1,5 +1,6 @@
 ﻿using Celestus.Io;
 using Celestus.Storage.Cache.Test.Model;
+using Newtonsoft.Json.Linq;
 
 namespace Celestus.Storage.Cache.Test
 {
@@ -51,10 +52,17 @@ namespace Celestus.Storage.Cache.Test
             Assert.AreEqual(originalCache, loadedCache);
             Assert.AreEqual(originalCache.GetHashCode(), loadedCache.GetHashCode());
 
-            Assert.AreEqual((true, VALUE_1), loadedCache.TryGet<int>(KEY_1));
-            Assert.AreEqual((true, VALUE_2), loadedCache.TryGet<double>(KEY_2));
-            Assert.AreEqual((true, VALUE_3), loadedCache.TryGet<DateTime>(KEY_3));
-            Assert.AreEqual((true, VALUE_4), loadedCache.TryGet<ExampleRecord>(KEY_4));
+            Assert.IsTrue(loadedCache.TryGet<int>(KEY_1, out var value1));
+            Assert.AreEqual(VALUE_1, value1);
+
+            Assert.IsTrue(loadedCache.TryGet<double>(KEY_2, out var value2));
+            Assert.AreEqual(VALUE_2, value2);
+
+            Assert.IsTrue(loadedCache.TryGet<DateTime>(KEY_3, out var value3));
+            Assert.AreEqual(VALUE_3, value3);
+
+            Assert.IsTrue(loadedCache.TryGet<ExampleRecord>(KEY_4, out var value4));
+            Assert.AreEqual(VALUE_4, value4);
         }
 
         [TestMethod]
@@ -115,8 +123,11 @@ namespace Celestus.Storage.Cache.Test
             // Assert
             //
             Assert.IsTrue(loaded);
-            Assert.AreEqual((true, VALUE_1), cache.TryGet<int>(KEY_1));
-            Assert.AreEqual((false, 0), cache.TryGet<double>(KEY_2));
+
+            Assert.IsTrue(cache.TryGet<int>(KEY_1, out var value));
+            Assert.AreEqual(VALUE_1, value);
+
+            Assert.IsFalse(cache.TryGet<double>(KEY_2, out _));
 
             // Cleanup
             File.Delete(path.AbsolutePath);

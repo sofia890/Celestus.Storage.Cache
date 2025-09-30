@@ -43,9 +43,10 @@ public class TestThreadCache
         //
         // Act
         //
-        (bool, string) Act()
+        (bool, string?) Act()
         {
-            return cache.TryGet<string>("key", timeout: CacheConstants.VeryShortDuration);
+            var success = cache.TryGet<string>("key", out var value, timeout: CacheConstants.VeryShortDuration);
+            return (success, value);
         }
 
         var result = ThreadHelper.DoWhileLocked(cache, Act, CacheConstants.TimingDuration);

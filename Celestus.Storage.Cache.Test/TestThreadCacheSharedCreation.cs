@@ -1,4 +1,5 @@
 ﻿using Celestus.Io;
+using Newtonsoft.Json.Linq;
 
 namespace Celestus.Storage.Cache.Test
 {
@@ -41,13 +42,15 @@ namespace Celestus.Storage.Cache.Test
             // Act
             //
             _ = otherCache.TrySet(KEY, VALUE + 1);
-            var otherResult = otherCache.TryGet<int>(KEY);
+            _ = otherCache.TryGet<int>(KEY, out var otherValue);
 
             //
             // Assert
             //
-            Assert.AreEqual((true, VALUE), cache.TryGet<int>(KEY));
-            Assert.AreEqual((true, VALUE + 1), otherResult);
+            Assert.IsTrue(cache.TryGet<int>(KEY, out var value1));
+            Assert.AreEqual(VALUE, value1);
+
+            Assert.AreEqual(VALUE + 1, otherValue);
         }
 
         [TestMethod]
@@ -96,7 +99,9 @@ namespace Celestus.Storage.Cache.Test
             //
             // Assert
             //
-            Assert.AreEqual((true, ELEMENT_VALUE), otherCache.TryGet<string>(ELEMENT_KEY));
+            Assert.IsTrue(otherCache.TryGet<string>(ELEMENT_KEY, out var element));
+            Assert.AreEqual(ELEMENT_VALUE, element);
+
             Assert.AreSame(cache, otherCache);
         }
 
@@ -125,7 +130,9 @@ namespace Celestus.Storage.Cache.Test
             // Assert
             //
             Assert.IsNotNull(otherCache);
-            Assert.AreEqual((true, ELEMENT_VALUE), otherCache.TryGet<string>(ELEMENT_KEY));
+
+            Assert.IsTrue(otherCache.TryGet<string>(ELEMENT_KEY, out var element));
+            Assert.AreEqual(ELEMENT_VALUE, element);
         }
 
         [TestMethod]
@@ -160,8 +167,10 @@ namespace Celestus.Storage.Cache.Test
             Assert.IsNotNull(otherCache);
             Assert.AreEqual(cache, otherCache);
 
-            Assert.AreEqual(cache.TryGet<int>(KEY_1), (true, VALUE_1));
-            Assert.AreEqual(cache.TryGet<double>(KEY_2), (false, 0));
+            Assert.IsTrue(cache.TryGet<int>(KEY_1, out var updated));
+            Assert.AreEqual(VALUE_1, updated);
+
+            Assert.IsFalse(cache.TryGet<double>(KEY_2, out _));
         }
 
         [TestMethod]

@@ -210,19 +210,19 @@ namespace Celestus.Storage.Cache
         public override DataType Get<DataType>(string key)
             where DataType : default
         {
-            var result = TryGet<DataType>(key);
+            var result = TryGet<DataType>(key, out var value);
 
-            Condition.ThrowIf<InvalidOperationException>(!result.result);
+            Condition.ThrowIf<InvalidOperationException>(!result);
 
-            return result.data;
+            return value!;
         }
 
-        public override (bool result, DataType data) TryGet<DataType>(string key)
+        public override bool TryGet<DataType>(string key, [MaybeNullWhen(false)] out DataType value)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 
             bool found = false;
-            DataType? value = default;
+            value = default;
 
             if (Storage.TryGetValue(key, out var entry))
             {
@@ -246,7 +246,7 @@ namespace Celestus.Storage.Cache
                 Cleaner.EntryAccessed(ref entry, key);
             }
 
-            return (found, value!);
+            return found;
         }
 
         public override bool TryRemove(string[] keys)

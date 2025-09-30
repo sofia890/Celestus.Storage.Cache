@@ -48,14 +48,14 @@ namespace Celestus.Storage.Cache.Test
             //
             var getResult = ThreadHelper.DoWhileLocked(
                 cache,
-                () => cache.TryGet<int>(KEY, timeout: CacheConstants.VeryShortDuration),
+                () => cache.TryGet<int>(KEY, out var _, timeout: CacheConstants.VeryShortDuration),
                 CacheConstants.TimingDuration
             );
 
             //
             // Assert
             //
-            Assert.AreEqual((false, default), getResult);
+            Assert.IsFalse(getResult);
         }
 
         [TestMethod]
