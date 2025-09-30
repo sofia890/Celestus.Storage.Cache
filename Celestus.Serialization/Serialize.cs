@@ -8,7 +8,7 @@ namespace Celestus.Serialization
         {
             var filePath = path.AbsolutePath;
             var directory = Path.GetDirectoryName(filePath);
-            
+
             if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
             {
                 Directory.CreateDirectory(directory);

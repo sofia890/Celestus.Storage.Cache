@@ -4,7 +4,7 @@ namespace Celestus.Exceptions
 {
     public static class Condition
     {
-        public static void ThrowIf<ExceptionType>([DoesNotReturnIf(true)]  bool condition, string message = "", object[]? parameters = null)
+        public static void ThrowIf<ExceptionType>([DoesNotReturnIf(true)] bool condition, string message = "", object[]? parameters = null)
             where ExceptionType : Exception
         {
             if (condition)

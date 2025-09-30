@@ -1,5 +1,4 @@
-﻿using Celestus.Exceptions;
-using Celestus.Serialization;
+﻿using Celestus.Serialization;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;

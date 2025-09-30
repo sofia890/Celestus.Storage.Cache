@@ -1,6 +1,5 @@
 using Celestus.Io;
 using Celestus.Storage.Cache.Test.Model;
-using Newtonsoft.Json.Linq;
 
 namespace Celestus.Storage.Cache.Test
 {

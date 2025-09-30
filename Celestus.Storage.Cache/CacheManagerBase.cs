@@ -63,7 +63,7 @@ namespace Celestus.Storage.Cache
         public CacheType GetOrCreateShared(CacheKeyType key, bool persistenceEnabled = false, string persistenceStorageLocation = "", TimeSpan? timeout = null)
         {
             ObjectDisposedException.ThrowIf(_isDisposed, this);
-            
+
             if (TryLoad(key, out var cache))
             {
                 Condition.ThrowIf<PersistenceMismatchException>(

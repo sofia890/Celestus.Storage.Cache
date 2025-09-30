@@ -6,7 +6,7 @@
 
         public Uri Uri { get; init; } = new Uri(Path.GetTempFileName());
 
-         public FileInfo ToFileInfo()
+        public FileInfo ToFileInfo()
         {
             return new FileInfo(Uri.AbsolutePath);
         }

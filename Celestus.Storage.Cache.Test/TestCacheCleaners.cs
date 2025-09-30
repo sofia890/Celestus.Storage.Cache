@@ -50,13 +50,13 @@ public class TestCacheCleaners
         long nowInTicks = DateTime.UtcNow.Ticks;
 
         const string KEY_1 = "Key1";
-        CleanerHelper.AddEntryToCache( KEY_1, DateTime.UtcNow.AddDays(1), cache, out var entry_1);
+        CleanerHelper.AddEntryToCache(KEY_1, DateTime.UtcNow.AddDays(1), cache, out var entry_1);
 
         // First cleanup attempt happens here.
         cleaner.EntryAccessed(ref entry_1, KEY_1);
 
         const string KEY_2 = "Key2";
-        CleanerHelper.AddEntryToCache( KEY_2, DateTime.UtcNow, cache, out var entry_2);
+        CleanerHelper.AddEntryToCache(KEY_2, DateTime.UtcNow, cache, out var entry_2);
 
         var interval = CacheConstants.TimingDuration;
         cleaner.SetCleaningInterval(interval);

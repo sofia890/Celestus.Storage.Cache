@@ -52,7 +52,7 @@ namespace Celestus.Storage.Cache.Test.Model
             return DoUntil(() =>
                            {
                                _ = cache.TryGetWriteLock(out var cacheLock);
-                               return cacheLock; 
+                               return cacheLock;
                            },
                            (cacheLock) => cacheLock?.Dispose(),
                            action,
