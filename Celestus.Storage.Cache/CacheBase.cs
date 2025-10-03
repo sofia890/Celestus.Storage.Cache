@@ -35,13 +35,13 @@ namespace Celestus.Storage.Cache
             Id = id;
         }
 
-        public abstract DataType Get<DataType>(string key);
+        public abstract DataType Get<DataType>(CacheKeyType key);
 
-        public abstract bool TryGet<DataType>(string key, [MaybeNullWhen(false)] out DataType data);
+        public abstract bool TryGet<DataType>(CacheKeyType key, [MaybeNullWhen(false)] out DataType data);
 
-        public abstract void Set<DataType>(string key, DataType value, TimeSpan? duration = null);
+        public abstract void Set<DataType>(CacheKeyType key, DataType value, TimeSpan? duration = null);
 
-        public abstract bool TrySet<DataType>(string key, DataType value, TimeSpan? duration = null);
+        public abstract bool TrySet<DataType>(CacheKeyType key, DataType value, TimeSpan? duration = null);
 
         public abstract bool TryRemove(CacheKeyType key);
 
