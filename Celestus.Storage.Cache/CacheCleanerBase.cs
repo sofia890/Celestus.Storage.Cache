@@ -2,9 +2,9 @@
 
 namespace Celestus.Storage.Cache
 {
-    public abstract class CacheCleanerBase<IdType, KeyType> : IDisposable, ICloneable
-        where IdType : notnull
-        where KeyType : notnull
+    public abstract class CacheCleanerBase<CacheIdType, CacheKeyType> : IDisposable, ICloneable
+        where CacheIdType : notnull
+        where CacheKeyType : notnull
     {
         private bool _disposed = false;
 
@@ -13,11 +13,11 @@ namespace Celestus.Storage.Cache
 
         }
 
-        public abstract void EntryAccessed(ref CacheEntry entry, KeyType key);
+        public abstract void EntryAccessed(ref CacheEntry entry, CacheKeyType key);
 
-        public abstract void EntryAccessed(ref CacheEntry entry, KeyType key, long timeInTicks);
+        public abstract void EntryAccessed(ref CacheEntry entry, CacheKeyType key, long timeInTicks);
 
-        public abstract void RegisterCache(WeakReference<CacheBase<IdType, KeyType>> cache);
+        public abstract void RegisterCache(WeakReference<CacheBase<CacheIdType, CacheKeyType>> cache);
 
         public abstract void ReadSettings(ref Utf8JsonReader reader, JsonSerializerOptions options);
 

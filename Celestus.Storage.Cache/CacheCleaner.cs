@@ -3,15 +3,15 @@ using System.Text.Json;
 
 namespace Celestus.Storage.Cache
 {
-    public class CacheCleaner<IdType, KeyType>(TimeSpan interval) : CacheCleanerBase<IdType, KeyType>()
-        where IdType : notnull
-        where KeyType : notnull
+    public class CacheCleaner<CacheIdType, CacheKeyType>(TimeSpan interval) : CacheCleanerBase<CacheIdType, CacheKeyType>()
+        where CacheIdType : notnull
+        where CacheKeyType : notnull
     {
         const int DEFAULT_INTERVAL = 5000;
 
         long _cleanupIntervalInTicks = interval.Ticks;
         long _nextCleanupOpportunityInTicks;
-        WeakReference<CacheBase<IdType, KeyType>>? _cacheReference;
+        WeakReference<CacheBase<CacheIdType, CacheKeyType>>? _cacheReference;
 
         public CacheCleaner() : this(interval: TimeSpan.FromMilliseconds(DEFAULT_INTERVAL))
         {
@@ -32,7 +32,7 @@ namespace Celestus.Storage.Cache
             }
             else
             {
-                List<(KeyType key, CacheEntry entry)> expiredKeys = [];
+                List<(CacheKeyType key, CacheEntry entry)> expiredKeys = [];
 
                 foreach (var (key, entry) in cache.Storage)
                 {
@@ -56,17 +56,17 @@ namespace Celestus.Storage.Cache
             return entry.Expiration <= currentTimeInTicks;
         }
 
-        public override void EntryAccessed(ref CacheEntry entry, KeyType key)
+        public override void EntryAccessed(ref CacheEntry entry, CacheKeyType key)
         {
             EntryAccessed(ref entry, key, DateTime.UtcNow.Ticks);
         }
 
-        public override void EntryAccessed(ref CacheEntry entry, KeyType key, long timeInMilliseconds)
+        public override void EntryAccessed(ref CacheEntry entry, CacheKeyType key, long timeInMilliseconds)
         {
             Prune(timeInMilliseconds);
         }
 
-        public override void RegisterCache(WeakReference<CacheBase<IdType, KeyType>> cache)
+        public override void RegisterCache(WeakReference<CacheBase<CacheIdType, CacheKeyType>> cache)
         {
             _cacheReference = cache;
         }
@@ -132,7 +132,7 @@ namespace Celestus.Storage.Cache
 
         public override object Clone()
         {
-            var newCleaner = new CacheCleaner<IdType, KeyType>(TimeSpan.FromTicks(_cleanupIntervalInTicks));
+            var newCleaner = new CacheCleaner<CacheIdType, CacheKeyType>(TimeSpan.FromTicks(_cleanupIntervalInTicks));
             newCleaner.RegisterCache(_cacheReference!);
 
             return newCleaner;

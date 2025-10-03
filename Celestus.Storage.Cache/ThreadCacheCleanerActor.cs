@@ -4,16 +4,16 @@ using System.Threading.Channels;
 
 namespace Celestus.Storage.Cache
 {
-    internal class ThreadCacheCleanerActor<IdType, KeyType> : IDisposable
-        where IdType : notnull
-        where KeyType : notnull
+    internal class ThreadCacheCleanerActor<CacheIdType, CacheKeyType> : IDisposable
+        where CacheIdType : notnull
+        where CacheKeyType : notnull
     {
         public const int DEFAULT_TIMEOUT_IN_MS = 5000;
         public const int STOP_TIMEOUT = 30000;
 
         long _cleanupIntervalInTicks;
         long _nextCleanupOpportunityInTicks;
-        WeakReference<CacheBase<IdType, KeyType>>? _cacheReference = null;
+        WeakReference<CacheBase<CacheIdType, CacheKeyType>>? _cacheReference = null;
         private bool _disposed = false;
         private readonly Task _signalHandlerTask;
 
@@ -64,7 +64,7 @@ namespace Celestus.Storage.Cache
                         case CleanerProtocol.Stop:
                             return;
 
-                        case CleanerProtocol.RegisterCacheInd when rawSignal is RegisterCacheInd<IdType, KeyType> payload:
+                        case CleanerProtocol.RegisterCacheInd when rawSignal is RegisterCacheInd<CacheIdType, CacheKeyType> payload:
                             _cacheReference = payload.Cache;
                             break;
 
@@ -95,7 +95,7 @@ namespace Celestus.Storage.Cache
             }
             else
             {
-                List<KeyType> expiredKeys = [];
+                List<CacheKeyType> expiredKeys = [];
 
                 var reader = CleanerPort.Reader;
 
@@ -106,7 +106,7 @@ namespace Celestus.Storage.Cache
                         return;
                     }
 
-                    if (CacheCleaner<IdType, KeyType>.ExpiredCriteria(entry.Value, timeInTicks))
+                    if (CacheCleaner<CacheIdType, CacheKeyType>.ExpiredCriteria(entry.Value, timeInTicks))
                     {
                         expiredKeys.Add(entry.Key);
                     }

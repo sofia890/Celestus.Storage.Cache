@@ -8,16 +8,16 @@
             where CacheKeyType : class
             where CacheType : CacheBase<CacheIdType, CacheKeyType>;
 
-    public class CacheManagerCleaner<IdType, CacheKeyType, CacheType> : IDisposable
-        where IdType : class
+    public class CacheManagerCleaner<CacheIdType, CacheKeyType, CacheType> : IDisposable
+        where CacheIdType : class
         where CacheKeyType : class
-        where CacheType : CacheBase<IdType, CacheKeyType>
+        where CacheType : CacheBase<CacheIdType, CacheKeyType>
     {
         public const int DEFAULT_INTERVAL_IN_MS = 10000;
         public const int STOP_TIMEOUT = 30000;
 
-        readonly Queue<FactoryEntry<IdType, CacheKeyType, CacheType>> _elements = [];
-        WeakReference<CacheManagerBase<IdType, CacheKeyType, CacheType>>? _cacheManager;
+        readonly Queue<FactoryEntry<CacheIdType, CacheKeyType, CacheType>> _elements = [];
+        WeakReference<CacheManagerBase<CacheIdType, CacheKeyType, CacheType>>? _cacheManager;
 
         TimeSpan _cleanupInterval = TimeSpan.FromMilliseconds(DEFAULT_INTERVAL_IN_MS);
         private bool _isDisposed;
@@ -34,7 +34,7 @@
         {
             while (!_abort)
             {
-                var remainingElements = new List<FactoryEntry<IdType, CacheKeyType, CacheType>>();
+                var remainingElements = new List<FactoryEntry<CacheIdType, CacheKeyType, CacheType>>();
 
                 while (_elements.TryDequeue(out var entry) && !_abort)
                 {
@@ -85,7 +85,7 @@
             _elements.Enqueue(new(new(cache), cache.Cleaner, cache.Id));
         }
 
-        public void RegisterManager(WeakReference<CacheManagerBase<IdType, CacheKeyType, CacheType>> manager)
+        public void RegisterManager(WeakReference<CacheManagerBase<CacheIdType, CacheKeyType, CacheType>> manager)
         {
             _cacheManager = manager;
         }

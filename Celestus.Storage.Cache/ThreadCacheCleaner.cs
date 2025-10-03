@@ -2,35 +2,35 @@
 
 namespace Celestus.Storage.Cache
 {
-    public class ThreadCacheCleaner<IdType, KeyType>(TimeSpan interval) : CacheCleanerBase<IdType, KeyType>
-        where IdType : notnull
-        where KeyType : notnull
+    public class ThreadCacheCleaner<CacheIdType, CacheKeyType>(TimeSpan interval) : CacheCleanerBase<CacheIdType, CacheKeyType>
+        where CacheIdType : notnull
+        where CacheKeyType : notnull
     {
         const int DEFAULT_INTERVAL_IN_MS = 60000;
-        readonly ThreadCacheCleanerActor<IdType, KeyType> _server = new(interval);
+        readonly ThreadCacheCleanerActor<CacheIdType, CacheKeyType> _server = new(interval);
 
         public ThreadCacheCleaner() : this(interval: TimeSpan.FromMilliseconds(DEFAULT_INTERVAL_IN_MS))
         {
 
         }
 
-        public override void EntryAccessed(ref CacheEntry entry, KeyType key)
+        public override void EntryAccessed(ref CacheEntry entry, CacheKeyType key)
         {
             // For performance cleanup only happens according to a periodic timer.
             ObjectDisposedException.ThrowIf(IsDisposed, this);
         }
 
-        public override void EntryAccessed(ref CacheEntry entry, KeyType key, long timeInTicks)
+        public override void EntryAccessed(ref CacheEntry entry, CacheKeyType key, long timeInTicks)
         {
             // For performance cleanup only happens according to a periodic timer.
             ObjectDisposedException.ThrowIf(IsDisposed, this);
         }
 
-        public override void RegisterCache(WeakReference<CacheBase<IdType, KeyType>> cache)
+        public override void RegisterCache(WeakReference<CacheBase<CacheIdType, CacheKeyType>> cache)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 
-            _ = _server.CleanerPort.Writer.TryWrite(new RegisterCacheInd<IdType, KeyType>(cache));
+            _ = _server.CleanerPort.Writer.TryWrite(new RegisterCacheInd<CacheIdType, CacheKeyType>(cache));
         }
 
         public override void ReadSettings(ref Utf8JsonReader reader, JsonSerializerOptions options)
@@ -67,7 +67,7 @@ namespace Celestus.Storage.Cache
 
         public override object Clone()
         {
-            return new ThreadCacheCleaner<IdType, KeyType>(interval);
+            return new ThreadCacheCleaner<CacheIdType, CacheKeyType>(interval);
         }
 
         ~ThreadCacheCleaner()
