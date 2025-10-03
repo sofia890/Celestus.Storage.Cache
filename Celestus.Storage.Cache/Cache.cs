@@ -118,7 +118,7 @@ namespace Celestus.Storage.Cache
                 }
             }
 
-            NopersistenceEnabledPathException.ThrowIf(!CanWrite.Test(filePath), "Could not find any writeable path for application.");
+            NoPersistenceEnabledPathException.ThrowIf(!CanWrite.Test(filePath), "Could not find any writeable path for application.");
 
             return filePath;
         }
