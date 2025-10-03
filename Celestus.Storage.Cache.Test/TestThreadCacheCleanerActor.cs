@@ -11,7 +11,7 @@ namespace Celestus.Storage.Cache.Test
             //
             // Arrange
             //
-            var actor = new ThreadCacheCleanerActor<string>(CacheConstants.ShortDuration);
+            var actor = new ThreadCacheCleanerActor<string, string>(CacheConstants.ShortDuration);
 
             //
             // Act

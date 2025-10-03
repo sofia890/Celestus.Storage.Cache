@@ -12,7 +12,7 @@ public class TestThreadCacheCleaner
         //
         // Arrange
         //
-        var cleanerType = typeof(ThreadCacheCleaner<string>);
+        var cleanerType = typeof(ThreadCacheCleaner<string, string>);
         var interval = CacheConstants.TimingDuration;
         using var cleaner = CacheCleanerHelper.GetCleaner(cleanerType, interval, out var cache);
 

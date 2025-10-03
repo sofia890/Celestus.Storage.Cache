@@ -6,7 +6,7 @@ using System.Text.Json.Serialization;
 namespace Celestus.Storage.Cache
 {
     [JsonConverter(typeof(ThreadCacheJsonConverter))]
-    public partial class ThreadCache : CacheBase<string>, IDisposable
+    public partial class ThreadCache : CacheBase<string, string>, IDisposable
     {
         const int CLEANER_INTERVAL_IN_MS = 5000;
         public static TimeSpan DefaultTimeout { get; } = TimeSpan.FromMilliseconds(5000);
@@ -29,10 +29,10 @@ namespace Celestus.Storage.Cache
 
         readonly ReaderWriterLockSlim _lock = new();
 
-        public ThreadCache(string key,
+        public ThreadCache(string id,
                            Cache cache,
                            bool persistenceEnabled = false,
-                           string persistenceStorageLocation = "") : base(key)
+                           string persistenceStorageLocation = "") : base(id)
         {
             // Not persistenceEnabled or no persistenceEnabled data loaded.
             // Base class constructor calls TryLoadFromFile(...) when persistence is enabled.
@@ -43,25 +43,25 @@ namespace Celestus.Storage.Cache
             }
         }
 
-        public ThreadCache(string key, CacheCleanerBase<string> cleaner, bool persistenceEnabled = false, string persistenceStorageLocation = "") :
-            this(key, new Cache(cleaner,
+        public ThreadCache(string id, CacheCleanerBase<string, string> cleaner, bool persistenceEnabled = false, string persistenceStorageLocation = "") :
+            this(id, new Cache(cleaner,
                                 persistenceEnabled: persistenceEnabled,
                                 persistenceStorageLocation: persistenceStorageLocation))
         {
         }
 
-        public ThreadCache(CacheCleanerBase<string> cleaner) :
+        public ThreadCache(CacheCleanerBase<string, string> cleaner) :
             this(string.Empty, cleaner)
         {
         }
 
-        public ThreadCache(string key) : this(key, new Cache())
+        public ThreadCache(string id) : this(id, new Cache())
         {
         }
 
-        public ThreadCache(string key, TimeSpan? cleaningInterval, bool persistenceEnabled = false, string persistenceStorageLocation = "") :
-            this(key,
-                cleaner: new ThreadCacheCleaner<string>(cleaningInterval ?? TimeSpan.FromMilliseconds(CLEANER_INTERVAL_IN_MS)),
+        public ThreadCache(string id, TimeSpan? cleaningInterval, bool persistenceEnabled = false, string persistenceStorageLocation = "") :
+            this(id,
+                cleaner: new ThreadCacheCleaner<string, string>(cleaningInterval ?? TimeSpan.FromMilliseconds(CLEANER_INTERVAL_IN_MS)),
                 persistenceEnabled: persistenceEnabled,
                 persistenceStorageLocation: persistenceStorageLocation)
         {
@@ -72,8 +72,8 @@ namespace Celestus.Storage.Cache
         {
         }
 
-        public ThreadCache(string key, bool persistenceEnabled, string persistenceStorageLocation = "") :
-            this(key, TimeSpan.FromMilliseconds(CLEANER_INTERVAL_IN_MS), persistenceEnabled: persistenceEnabled, persistenceStorageLocation: persistenceStorageLocation)
+        public ThreadCache(string id, bool persistenceEnabled, string persistenceStorageLocation = "") :
+            this(id, TimeSpan.FromMilliseconds(CLEANER_INTERVAL_IN_MS), persistenceEnabled: persistenceEnabled, persistenceStorageLocation: persistenceStorageLocation)
         {
         }
 
@@ -231,7 +231,7 @@ namespace Celestus.Storage.Cache
             }
         }
 
-        #region CacheBase<string>
+        #region CacheBase<string, string>
 
         [MemberNotNullWhen(true, nameof(PersistenceStoragePath))]
         public override bool PersistenceEnabled { get => Cache?.PersistenceEnabled ?? false; }
@@ -241,7 +241,7 @@ namespace Celestus.Storage.Cache
             set => Cache.PersistenceStoragePath = value;
         }
 
-        internal override CacheCleanerBase<string> Cleaner
+        internal override CacheCleanerBase<string, string> Cleaner
         {
             get => Cache.Cleaner;
             set => Cache.Cleaner = value;
@@ -309,10 +309,10 @@ namespace Celestus.Storage.Cache
                 var loadedData = Serialize.TryCreateFromFile<ThreadCache>(path);
 
                 if (loadedData != null &&
-                    Key == loadedData.Key &&
-                    PersistenceEnabled &&
-                    PersistenceEnabled == loadedData.PersistenceEnabled &&
-                    PersistenceStoragePath.AbsolutePath == loadedData.PersistenceStoragePath.AbsolutePath)
+                    Id == loadedData.Id &&
+                    (!PersistenceEnabled ||
+                    (PersistenceEnabled == loadedData.PersistenceEnabled &&
+                     PersistenceStoragePath.AbsolutePath == loadedData.PersistenceStoragePath.AbsolutePath)))
                 {
                     Cache.Dispose();
 
@@ -354,7 +354,7 @@ namespace Celestus.Storage.Cache
                 _ = DoWhileWriteLocked(
                     () =>
                     {
-                        Factory.Remove(Key);
+                        Factory.Remove(Id);
 
                         Cache.HandlePersistenceEnabledFinalization();
 
@@ -382,7 +382,7 @@ namespace Celestus.Storage.Cache
         {
             return other != null &&
                    Cache.Equals(other.Cache) &&
-                   Key.Equals(other.Key);
+                   Id.Equals(other.Id);
         }
 
         public override bool Equals(object? obj)
@@ -392,14 +392,14 @@ namespace Celestus.Storage.Cache
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(Cache.GetHashCode(), Key);
+            return HashCode.Combine(Cache.GetHashCode(), Id);
         }
         #endregion
 
         #region ICloneable
         public override object Clone()
         {
-            return new ThreadCache(Key, (Cache)Cache.Clone(), PersistenceEnabled, PersistenceStoragePath?.AbsolutePath ?? string.Empty);
+            return new ThreadCache(Id, (Cache)Cache.Clone(), PersistenceEnabled, PersistenceStoragePath?.AbsolutePath ?? string.Empty);
         }
         #endregion
     }

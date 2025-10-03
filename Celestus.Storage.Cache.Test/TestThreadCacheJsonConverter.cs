@@ -17,15 +17,15 @@ namespace Celestus.Storage.Cache.Test
         [TestMethod]
         public void VerifyThatUnexpectedPropertyNameIsIgnored()
         {
-            var json = """
+            var json = $$"""
                 {
                     "UnknownProperty":"value",
-                    "Key":"key",
+                    "Id":"a id",
                     "Cache":{
-                        "Key":"key",
+                        "Id":"a id",
                         "Storage": {},
                         "Cleaner":{
-                            "Type":"Celestus.Storage.Cache.CacheCleaner`1[[System.String, System.Private.CoreLib]], Celestus.Storage.Cache",
+                            "Type":"{{typeof(CacheCleaner<string, string>).UnderlyingSystemType.FullName}}",
                             "Content":{
                                 "_cleanupIntervalInTicks": 0
                             }
@@ -41,7 +41,7 @@ namespace Celestus.Storage.Cache.Test
         {
             var json = """
                 {
-                    "Key":"key"
+                    "Id":"a id"
                 }
                 """;
             Assert.ThrowsException<MissingValueJsonException>(() => SerializationHelper.Deserialize<ThreadCacheJsonConverter, ThreadCache>(json));

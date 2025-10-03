@@ -1,19 +1,23 @@
 ﻿namespace Celestus.Storage.Cache
 {
-    public record FactoryEntry<CacheKeyType, CacheType>(WeakReference<CacheType> CacheReference, CacheCleanerBase<CacheKeyType> Cleaner, CacheKeyType Key)
-        where CacheKeyType : class
-        where CacheType : CacheBase<CacheKeyType>;
+    public record FactoryEntry<CacheIdType, CacheKeyType, CacheType>(
+        WeakReference<CacheType> CacheReference,
+        CacheCleanerBase<CacheIdType, CacheKeyType> Cleaner,
+        CacheIdType Key)
+            where CacheIdType : class
+            where CacheKeyType : class
+            where CacheType : CacheBase<CacheIdType, CacheKeyType>;
 
-    public class CacheManagerCleaner<ManagerKeyType, CacheKeyType, CacheType> : IDisposable
-        where ManagerKeyType : class
+    public class CacheManagerCleaner<IdType, CacheKeyType, CacheType> : IDisposable
+        where IdType : class
         where CacheKeyType : class
-        where CacheType : CacheBase<CacheKeyType>
+        where CacheType : CacheBase<IdType, CacheKeyType>
     {
         public const int DEFAULT_INTERVAL_IN_MS = 10000;
         public const int STOP_TIMEOUT = 30000;
 
-        readonly Queue<FactoryEntry<CacheKeyType, CacheType>> _elements = [];
-        WeakReference<CacheManagerBase<CacheKeyType, CacheType>>? _cacheManager;
+        readonly Queue<FactoryEntry<IdType, CacheKeyType, CacheType>> _elements = [];
+        WeakReference<CacheManagerBase<IdType, CacheKeyType, CacheType>>? _cacheManager;
 
         TimeSpan _cleanupInterval = TimeSpan.FromMilliseconds(DEFAULT_INTERVAL_IN_MS);
         private bool _isDisposed;
@@ -30,7 +34,7 @@
         {
             while (!_abort)
             {
-                var remainingElements = new List<FactoryEntry<CacheKeyType, CacheType>>();
+                var remainingElements = new List<FactoryEntry<IdType, CacheKeyType, CacheType>>();
 
                 while (_elements.TryDequeue(out var entry) && !_abort)
                 {
@@ -42,7 +46,7 @@
                     {
                         if (_cacheManager?.TryGetTarget(out var manager) ?? false)
                         {
-                            manager.CacheExpired(cache.Key);
+                            manager.CacheExpired(cache.Id);
                         }
                         else
                         {
@@ -78,10 +82,10 @@
 
         public void MonitorElement(CacheType cache)
         {
-            _elements.Enqueue(new(new(cache), cache.Cleaner, cache.Key));
+            _elements.Enqueue(new(new(cache), cache.Cleaner, cache.Id));
         }
 
-        public void RegisterManager(WeakReference<CacheManagerBase<CacheKeyType, CacheType>> manager)
+        public void RegisterManager(WeakReference<CacheManagerBase<IdType, CacheKeyType, CacheType>> manager)
         {
             _cacheManager = manager;
         }

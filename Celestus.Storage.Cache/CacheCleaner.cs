@@ -1,17 +1,17 @@
-﻿
-using Celestus.Exceptions;
+﻿using Celestus.Exceptions;
 using System.Text.Json;
 
 namespace Celestus.Storage.Cache
 {
-    public class CacheCleaner<KeyType>(TimeSpan interval) : CacheCleanerBase<KeyType>()
+    public class CacheCleaner<IdType, KeyType>(TimeSpan interval) : CacheCleanerBase<IdType, KeyType>()
+        where IdType : notnull
         where KeyType : notnull
     {
         const int DEFAULT_INTERVAL = 5000;
 
         long _cleanupIntervalInTicks = interval.Ticks;
         long _nextCleanupOpportunityInTicks;
-        WeakReference<CacheBase<KeyType>>? _cacheReference;
+        WeakReference<CacheBase<IdType, KeyType>>? _cacheReference;
 
         public CacheCleaner() : this(interval: TimeSpan.FromMilliseconds(DEFAULT_INTERVAL))
         {
@@ -66,7 +66,7 @@ namespace Celestus.Storage.Cache
             Prune(timeInMilliseconds);
         }
 
-        public override void RegisterCache(WeakReference<CacheBase<KeyType>> cache)
+        public override void RegisterCache(WeakReference<CacheBase<IdType, KeyType>> cache)
         {
             _cacheReference = cache;
         }
@@ -132,7 +132,7 @@ namespace Celestus.Storage.Cache
 
         public override object Clone()
         {
-            var newCleaner = new CacheCleaner<KeyType>(TimeSpan.FromTicks(_cleanupIntervalInTicks));
+            var newCleaner = new CacheCleaner<IdType, KeyType>(TimeSpan.FromTicks(_cleanupIntervalInTicks));
             newCleaner.RegisterCache(_cacheReference!);
 
             return newCleaner;

@@ -1,11 +1,10 @@
-﻿
-namespace Celestus.Storage.Cache
+﻿namespace Celestus.Storage.Cache
 {
     public partial class ThreadCache
     {
         public static ThreadCacheManager Factory { get; } = new();
 
-        public class ThreadCacheManager : CacheManagerBase<string, ThreadCache>
+        public class ThreadCacheManager : CacheManagerBase<string, string, ThreadCache>
         {
 
             #region CacheManagerBase

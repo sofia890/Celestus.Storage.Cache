@@ -16,11 +16,11 @@ namespace Celestus.Storage.Cache
                 reader.TokenType != JsonTokenType.StartObject,
                 parameters: [reader.TokenType, JsonTokenType.StartObject]);
 
-            string? key = null;
+            string? id = null;
             bool persistenceEnabled = false;
             string? persistenceStorageLocation = null;
             Dictionary<string, CacheEntry>? storage = null;
-            CacheCleanerBase<string>? cleaner = null;
+            CacheCleanerBase<string, string>? cleaner = null;
             bool cleanerConfigured = false;
 
             while (reader.Read())
@@ -34,10 +34,10 @@ namespace Celestus.Storage.Cache
                     case JsonTokenType.PropertyName:
                         switch (reader.GetString())
                         {
-                            case nameof(Cache.Key):
+                            case nameof(Cache.Id):
                                 _ = reader.Read();
 
-                                key = reader.GetString();
+                                id = reader.GetString();
                                 break;
 
                             case nameof(ThreadCache.PersistenceEnabled):
@@ -69,9 +69,9 @@ namespace Celestus.Storage.Cache
             }
 
         End:
-            ValidateConfiguration(key, storage, cleaner, cleanerConfigured);
+            ValidateConfiguration(id, storage, cleaner, cleanerConfigured);
 
-            return new Cache(key,
+            return new Cache(id,
                              storage,
                              cleaner,
                              persistenceEnabled: persistenceEnabled,
@@ -85,9 +85,9 @@ namespace Celestus.Storage.Cache
             return JsonSerializer.Deserialize<Dictionary<string, CacheEntry>>(ref reader, options);
         }
 
-        private static (CacheCleanerBase<string>? cleaner, bool cleanerConfigured) GetCleaner(ref Utf8JsonReader reader, JsonSerializerOptions options)
+        private static (CacheCleanerBase<string, string>? cleaner, bool cleanerConfigured) GetCleaner(ref Utf8JsonReader reader, JsonSerializerOptions options)
         {
-            CacheCleanerBase<string>? cleaner = null;
+            CacheCleanerBase<string, string>? cleaner = null;
             bool cleanerConfigured = false;
 
             while (reader.Read())
@@ -132,7 +132,7 @@ namespace Celestus.Storage.Cache
             return (cleaner, cleanerConfigured);
         }
 
-        private static CacheCleanerBase<string>? CreateCleaner(ref Utf8JsonReader reader, JsonSerializerOptions options)
+        private static CacheCleanerBase<string, string>? CreateCleaner(ref Utf8JsonReader reader, JsonSerializerOptions options)
         {
             if (JsonSerializer.Deserialize<string>(ref reader, options) is not string typeString)
             {
@@ -142,9 +142,9 @@ namespace Celestus.Storage.Cache
             {
                 throw new NotObjectTypeJsonException(TYPE_PROPERTY_NAME, typeString);
             }
-            else if (Activator.CreateInstance(cleanerType) is not CacheCleanerBase<string> createdCleaner)
+            else if (Activator.CreateInstance(cleanerType) is not CacheCleanerBase<string, string> createdCleaner)
             {
-                throw new MissingInheritanceJsonException(TYPE_PROPERTY_NAME, cleanerType, typeof(CacheCleanerBase<string>));
+                throw new MissingInheritanceJsonException(TYPE_PROPERTY_NAME, cleanerType, typeof(CacheCleanerBase<string, string>));
             }
             else
             {
@@ -153,12 +153,12 @@ namespace Celestus.Storage.Cache
         }
 
         private static void ValidateConfiguration(
-            [NotNull] string? key,
+            [NotNull] string? id,
             [NotNull] Dictionary<string, CacheEntry>? storage,
-            [NotNull] CacheCleanerBase<string>? cleaner,
+            [NotNull] CacheCleanerBase<string, string>? cleaner,
             bool cleanerConfigured)
         {
-            Condition.ThrowIf<MissingValueJsonException>(key == null, nameof(Cache.Key));
+            Condition.ThrowIf<MissingValueJsonException>(id == null, nameof(Cache.Id));
             Condition.ThrowIf<MissingValueJsonException>(storage == null, nameof(Cache.Storage));
             Condition.ThrowIf<MissingValueJsonException>(cleaner == null, nameof(Cache.Cleaner));
             Condition.ThrowIf<MissingValueJsonException>(!cleanerConfigured, CONTENT_PROPERTY_NAME);
@@ -168,7 +168,7 @@ namespace Celestus.Storage.Cache
         {
             writer.WriteStartObject();
 
-            writer.WriteString(nameof(Cache.Key), value.Key);
+            writer.WriteString(nameof(Cache.Id), value.Id);
 
             writer.WriteBoolean(nameof(ThreadCache.PersistenceEnabled), value.PersistenceEnabled);
 

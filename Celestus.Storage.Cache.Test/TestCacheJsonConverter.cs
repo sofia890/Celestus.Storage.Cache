@@ -17,13 +17,13 @@ namespace Celestus.Storage.Cache.Test
         [TestMethod]
         public void VerifyThatUnexpectedPropertyNameAreSkipped()
         {
-            string json = """
+            string json = $$"""
                 {
                     "InvalidProperty":"value",
-                    "Key":"key",
+                    "Id":"a id",
                     "Storage":{},
                     "Cleaner":{
-                        "Type":"Celestus.Storage.Cache.CacheCleaner`1[[System.String, System.Private.CoreLib]], Celestus.Storage.Cache",
+                        "Type":"{{typeof(CacheCleaner<string, string>).UnderlyingSystemType.FullName}}",
                         "Content":{
                             "_cleanupIntervalInTicks": 0
                         }
@@ -38,7 +38,7 @@ namespace Celestus.Storage.Cache.Test
         {
             string json = """
                 {
-                    "Key":"key"
+                    "Id":"a id"
                 }
                 """;
             Assert.ThrowsException<MissingValueJsonException>(() => SerializationHelper.Deserialize<CacheJsonConverter, Cache>(json));
@@ -110,10 +110,10 @@ namespace Celestus.Storage.Cache.Test
         [TestMethod]
         public void VerifyThatFailureToCreateCleanerCausesCrash()
         {
-            string json = """
+            string json = $$"""
                 {
                     "Cleaner":{
-                        "Type":"System.Object, System.Private.CoreLib",
+                        "Type":"{{typeof(object).UnderlyingSystemType.FullName}}",
                         "Content":{}
                     }
                 }
@@ -124,10 +124,10 @@ namespace Celestus.Storage.Cache.Test
         [TestMethod]
         public void VerifyThatIncompleteConfigurationForCleanerCausesCrash()
         {
-            string json = """
+            string json = $$"""
                 {
                     "Cleaner":{
-                        "Type":"Celestus.Storage.Cache.CacheCleaner`1[[System.String, System.Private.CoreLib]], Celestus.Storage.Cache",
+                        "Type":"{{typeof(CacheCleaner<string, string>).UnderlyingSystemType.FullName}}",
                         "Content":{}
                     }
                 }
@@ -138,13 +138,13 @@ namespace Celestus.Storage.Cache.Test
         [TestMethod]
         public void VerifyThatExtraCleanerParameterIsIgnored()
         {
-            string json = """
+            string json = $$"""
                 {
-                    "Key":"key",
+                    "Id":"a id",
                     "Storage":{},
                     "Cleaner":{
                         "Extra":1,
-                        "Type":"Celestus.Storage.Cache.CacheCleaner`1[[System.String, System.Private.CoreLib]], Celestus.Storage.Cache",
+                        "Type":"{{typeof(CacheCleaner<string, string>).UnderlyingSystemType.FullName}}",
                         "Content":{
                             "_cleanupIntervalInTicks": 0
                         }
@@ -157,10 +157,10 @@ namespace Celestus.Storage.Cache.Test
         [TestMethod]
         public void VerifyThatMissingConfigurationForCleanerCausesCrash()
         {
-            string json = """
+            string json = $$"""
                 {
                     "Cleaner":{
-                        "Type":"Celestus.Storage.Cache.CacheCleaner`1[[System.String, System.Private.CoreLib]], Celestus.Storage.Cache"
+                        "Type":"{{typeof(CacheCleaner<string, string>).UnderlyingSystemType.FullName}}"
                     }
                 }
                 """;

@@ -1,4 +1,5 @@
 ﻿using Celestus.Exceptions;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Celestus.Storage.Cache
@@ -11,15 +12,16 @@ namespace Celestus.Storage.Cache
     public class UpdateFromFileTimeoutException(string Message) : CacheTimeoutException(Message);
     public class PersistenceMismatchException(string Message) : Exception(Message);
 
-    public abstract class CacheManagerBase<CacheKeyType, CacheType> : IDisposable, ICacheManager<CacheKeyType, CacheType>
+    public abstract class CacheManagerBase<CacheIdType, CacheKeyType, CacheType> : IDisposable, ICacheManager<CacheIdType, CacheType>
+        where CacheIdType : class
         where CacheKeyType : class
-        where CacheType : CacheBase<CacheKeyType>
+        where CacheType : CacheBase<CacheIdType, CacheKeyType>
     {
         private TimeSpan _lockTimeout = TimeSpan.FromMilliseconds(5000);
 
         protected readonly ReaderWriterLockSlim _lock = new();
-        readonly protected Dictionary<CacheKeyType, WeakReference<CacheType>> _caches = [];
-        readonly protected CacheManagerCleaner<CacheKeyType, CacheKeyType, CacheType> _factoryCleaner;
+        readonly protected Dictionary<CacheIdType, WeakReference<CacheType>> _caches = [];
+        readonly protected CacheManagerCleaner<CacheIdType, CacheKeyType, CacheType> _factoryCleaner;
         private bool _isDisposed;
 
         public CacheManagerBase()
@@ -28,7 +30,7 @@ namespace Celestus.Storage.Cache
             _factoryCleaner.RegisterManager(new(this));
         }
 
-        public bool TryLoad(CacheKeyType key, [NotNullWhen(true)] out CacheType? cache)
+        public bool TryLoad(CacheIdType id, [NotNullWhen(true)] out CacheType? cache)
         {
             ObjectDisposedException.ThrowIf(_isDisposed, this);
 
@@ -40,7 +42,7 @@ namespace Celestus.Storage.Cache
                 {
                     bool result = false;
 
-                    if (_caches.TryGetValue(key, out var cacheReference) &&
+                    if (_caches.TryGetValue(id, out var cacheReference) &&
                         cacheReference.TryGetTarget(out cache))
                     {
                         result = !cache.IsDisposed;
@@ -60,27 +62,27 @@ namespace Celestus.Storage.Cache
             }
         }
 
-        public CacheType GetOrCreateShared(CacheKeyType key, bool persistenceEnabled = false, string persistenceStorageLocation = "", TimeSpan? timeout = null)
+        public CacheType GetOrCreateShared(CacheIdType id, bool persistenceEnabled = false, string persistenceStorageLocation = "", TimeSpan? timeout = null)
         {
             ObjectDisposedException.ThrowIf(_isDisposed, this);
 
-            if (TryLoad(key, out var cache))
+            if (TryLoad(id, out var cache))
             {
                 Condition.ThrowIf<PersistenceMismatchException>(
                     persistenceEnabled != cache.PersistenceEnabled,
-                    $"Inconsistent persistence configuration for key '{key}'.");
+                    $"Inconsistent persistence configuration for ID '{id}'.");
 
                 return cache;
             }
             else
             {
-                CacheType cacheToTrack = (CacheType)Activator.CreateInstance(typeof(CacheType), [key, persistenceEnabled, persistenceStorageLocation])!;
+                CacheType cacheToTrack = (CacheType)Activator.CreateInstance(typeof(CacheType), [id, persistenceEnabled, persistenceStorageLocation])!;
 
                 if (_lock.TryEnterWriteLock(timeout ?? _lockTimeout))
                 {
                     try
                     {
-                        _caches[key] = new(cacheToTrack);
+                        _caches[id] = new(cacheToTrack);
 
                         _factoryCleaner.MonitorElement(cacheToTrack);
                     }
@@ -106,7 +108,7 @@ namespace Celestus.Storage.Cache
             {
                 return null;
             }
-            else if (TryLoad(loadedCache.Key, out var cacheToUpdate) && cacheToUpdate != null)
+            else if (TryLoad(loadedCache.Id, out var cacheToUpdate) && cacheToUpdate != null)
             {
                 using (loadedCache)
                 {
@@ -125,7 +127,7 @@ namespace Celestus.Storage.Cache
                 {
                     try
                     {
-                        _caches[loadedCache.Key] = cache;
+                        _caches[loadedCache.Id] = cache;
 
                         _factoryCleaner.MonitorElement(loadedCache);
                     }
@@ -145,7 +147,7 @@ namespace Celestus.Storage.Cache
             }
         }
 
-        internal void CacheExpired(CacheKeyType key)
+        internal void CacheExpired(CacheIdType id)
         {
             ObjectDisposedException.ThrowIf(_isDisposed, this);
 
@@ -154,7 +156,7 @@ namespace Celestus.Storage.Cache
 
             try
             {
-                _caches.Remove(key, out _);
+                _caches.Remove(id, out _);
             }
             finally
             {
@@ -172,11 +174,11 @@ namespace Celestus.Storage.Cache
             _lockTimeout = interval;
         }
 
-        public void Remove(CacheKeyType key)
+        public void Remove(CacheIdType id)
         {
             lock (this)
             {
-                _caches.Remove(key);
+                _caches.Remove(id);
             }
         }
 

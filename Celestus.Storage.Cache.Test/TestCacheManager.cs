@@ -21,7 +21,7 @@ namespace Celestus.Storage.Cache.Test
 
             object Prepare(out long hash)
             {
-                CacheBase<string> originalCache = CacheHelper.GetOrCreateShared(cacheType, CACHE_KEY);
+                CacheBase<string, string> originalCache = CacheHelper.GetOrCreateShared(cacheType, CACHE_KEY);
                 originalCache.Set(ITEM_KEY, 15);
 
                 hash = originalCache.GetHashCode();
@@ -39,7 +39,7 @@ namespace Celestus.Storage.Cache.Test
             //
             // Assert
             //
-            CacheBase<string> cacheNew = CacheHelper.GetOrCreateShared(cacheType, CACHE_KEY);
+            CacheBase<string, string> cacheNew = CacheHelper.GetOrCreateShared(cacheType, CACHE_KEY);
             var hashNew = cacheNew.GetHashCode();
 
             Assert.AreNotEqual(hashOriginal, hashNew);

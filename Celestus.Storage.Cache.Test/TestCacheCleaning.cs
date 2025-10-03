@@ -65,7 +65,7 @@ public class TestCacheCleaning
         GC.Collect();
         GC.WaitForPendingFinalizers();
 
-        using var cache = new Cache(new CacheCleaner<string>(interval: CacheConstants.ShortDuration));
+        using var cache = new Cache(new CacheCleaner<string, string>(interval: CacheConstants.ShortDuration));
 
         static byte[] CreateElement()
         {
@@ -118,13 +118,13 @@ public class TestCacheCleaning
     public void VerifyThatMissingIntervalCausesCrash()
     {
         string json = "{\"ExtraParameter\":\"500\"}";
-        Assert.ThrowsException<MissingValueJsonException>(() => CleaningHelper.ReadSettings<CacheCleaner<string>>(json));
+        Assert.ThrowsException<MissingValueJsonException>(() => CleaningHelper.ReadSettings<CacheCleaner<string, string>>(json));
     }
 
     [TestMethod]
     public void VerifyThatUnknownParametersAreIgnored()
     {
         string json = "{\"ExtraParameter\":\"500\",\"_cleanupIntervalInTicks\":500}";
-        CleaningHelper.ReadSettings<CacheCleaner<string>>(json);
+        CleaningHelper.ReadSettings<CacheCleaner<string, string>>(json);
     }
 }

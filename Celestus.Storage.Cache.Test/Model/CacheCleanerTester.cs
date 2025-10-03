@@ -2,7 +2,7 @@
 
 namespace Celestus.Storage.Cache.Test.Model
 {
-    internal class CacheCleanerTester : CacheCleanerBase<string>
+    internal class CacheCleanerTester : CacheCleanerBase<string, string>
     {
         const string TEST_PROPERTY_NAME = "Test";
 
@@ -18,7 +18,7 @@ namespace Celestus.Storage.Cache.Test.Model
 
         public Guid Guid { get; set; } = Guid.NewGuid();
 
-        WeakReference<CacheBase<string>>? _cacheReference;
+        WeakReference<CacheBase<string, string>>? _cacheReference;
 
         public CacheCleanerTester() : base()
         {
@@ -48,7 +48,7 @@ namespace Celestus.Storage.Cache.Test.Model
             AccessedKeys.Add(key);
         }
 
-        public override void RegisterCache(WeakReference<CacheBase<string>> cache)
+        public override void RegisterCache(WeakReference<CacheBase<string, string>> cache)
         {
             if (IsDisposed)
             {

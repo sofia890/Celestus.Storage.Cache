@@ -8,6 +8,7 @@ namespace Celestus.Storage.Cache.Test.Model
         {
             SpinWait(TimeSpan.FromMilliseconds(durationInMs));
         }
+
         public static void SpinWait(TimeSpan duration)
         {
             var stopwatch = Stopwatch.StartNew();

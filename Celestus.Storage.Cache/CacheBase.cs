@@ -15,13 +15,14 @@ namespace Celestus.Storage.Cache
     public class CacheSaveException(string message) : CacheIoException(message);
     public class NopersistenceEnabledPathException(string message) : CacheIoException(message);
 
-    public abstract class CacheBase<KeyType> : IDisposable, ICloneable
+    public abstract class CacheBase<CacheIdType, KeyType> : IDisposable, ICloneable
+        where CacheIdType : notnull
         where KeyType : notnull
     {
         public const int NO_TIMEOUT = -1;
 
-        public KeyType Key { get; init; }
-        internal abstract CacheCleanerBase<KeyType> Cleaner { get; set; }
+        public CacheIdType Id { get; init; }
+        internal abstract CacheCleanerBase<CacheIdType, KeyType> Cleaner { get; set; }
         public abstract bool IsDisposed { get; }
         internal abstract Dictionary<KeyType, CacheEntry> Storage { get; set; }
 
@@ -29,9 +30,9 @@ namespace Celestus.Storage.Cache
         public virtual bool PersistenceEnabled { get => PersistenceStoragePath != null; }
         public abstract Uri? PersistenceStoragePath { get; set; }
 
-        public CacheBase(KeyType key)
+        public CacheBase(CacheIdType id)
         {
-            Key = key;
+            Id = id;
         }
 
         public abstract DataType Get<DataType>(string key);

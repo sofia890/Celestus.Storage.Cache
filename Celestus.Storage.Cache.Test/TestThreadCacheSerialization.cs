@@ -48,7 +48,7 @@ namespace Celestus.Storage.Cache.Test
             Assert.IsTrue(loaded);
             Assert.IsNotNull(loadedCache);
 
-            Assert.AreEqual(cacheKey, loadedCache.Key);
+            Assert.AreEqual(cacheKey, loadedCache.Id);
             Assert.AreEqual(originalCache, loadedCache);
             Assert.AreEqual(originalCache.GetHashCode(), loadedCache.GetHashCode());
 

@@ -10,7 +10,8 @@
 
     internal record Signal(CleanerProtocol SignalId);
 
-    internal record RegisterCacheInd<KeyType>(WeakReference<CacheBase<KeyType>> Cache) : Signal(CleanerProtocol.RegisterCacheInd)
+    internal record RegisterCacheInd<IdType, KeyType>(WeakReference<CacheBase<IdType, KeyType>> Cache) : Signal(CleanerProtocol.RegisterCacheInd)
+        where IdType : notnull
         where KeyType : notnull;
 
     internal record ResetInd(long CleanupIntervalInTicks) : Signal(CleanerProtocol.ResetInd);

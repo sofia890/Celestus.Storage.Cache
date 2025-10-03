@@ -4,7 +4,8 @@ using System.Threading.Channels;
 
 namespace Celestus.Storage.Cache
 {
-    internal class ThreadCacheCleanerActor<KeyType> : IDisposable
+    internal class ThreadCacheCleanerActor<IdType, KeyType> : IDisposable
+        where IdType : notnull
         where KeyType : notnull
     {
         public const int DEFAULT_TIMEOUT_IN_MS = 5000;
@@ -12,7 +13,7 @@ namespace Celestus.Storage.Cache
 
         long _cleanupIntervalInTicks;
         long _nextCleanupOpportunityInTicks;
-        WeakReference<CacheBase<KeyType>>? _cacheReference = null;
+        WeakReference<CacheBase<IdType, KeyType>>? _cacheReference = null;
         private bool _disposed = false;
         private readonly Task _signalHandlerTask;
 
@@ -63,7 +64,7 @@ namespace Celestus.Storage.Cache
                         case CleanerProtocol.Stop:
                             return;
 
-                        case CleanerProtocol.RegisterCacheInd when rawSignal is RegisterCacheInd<KeyType> payload:
+                        case CleanerProtocol.RegisterCacheInd when rawSignal is RegisterCacheInd<IdType, KeyType> payload:
                             _cacheReference = payload.Cache;
                             break;
 
@@ -105,7 +106,7 @@ namespace Celestus.Storage.Cache
                         return;
                     }
 
-                    if (CacheCleaner<KeyType>.ExpiredCriteria(entry.Value, timeInTicks))
+                    if (CacheCleaner<IdType, KeyType>.ExpiredCriteria(entry.Value, timeInTicks))
                     {
                         expiredKeys.Add(entry.Key);
                     }

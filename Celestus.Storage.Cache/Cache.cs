@@ -8,22 +8,20 @@ using System.Text.Json.Serialization;
 namespace Celestus.Storage.Cache
 {
     [JsonConverter(typeof(CacheJsonConverter))]
-    public partial class Cache : CacheBase<string>, IDisposable
+    public partial class Cache : CacheBase<string, string>, IDisposable
     {
         bool _persistenceEnabledHandled;
 
         public Cache(
-            string key,
+            string id,
             Dictionary<string, CacheEntry> storage,
-            CacheCleanerBase<string> cleaner,
+            CacheCleanerBase<string, string> cleaner,
             bool persistenceEnabled = false,
             string persistenceStorageLocation = "",
-            bool persistenceLoadWhenCreated = true) : base(key)
+            bool persistenceLoadWhenCreated = true) : base(id)
         {
             HandlePersistenceEnabledInitialization(persistenceEnabled, persistenceStorageLocation, persistenceLoadWhenCreated);
 
-            // Not persistenceEnabled or no persistenceEnabled data loaded.
-            // Only use provided storage if persistent data was loaded.
             if (!PersistenceEnabled || Storage == null)
             {
                 Storage = storage;
@@ -39,10 +37,10 @@ namespace Celestus.Storage.Cache
 
         public Cache ToCache()
         {
-            var clone = new Cache(Key)
+            var clone = new Cache(Id)
             {
                 Storage = Storage.ToDictionary(),
-                Cleaner = (CacheCleanerBase<string>)Cleaner.Clone()
+                Cleaner = (CacheCleanerBase<string, string>)Cleaner.Clone()
             };
 
             return clone;
@@ -58,7 +56,7 @@ namespace Celestus.Storage.Cache
                 }
                 else if (storeToFile)
                 {
-                    PersistenceStoragePath = GetDefaultpersistenceEnabledPath(Key);
+                    PersistenceStoragePath = GetDefaultpersistenceEnabledPath(Id);
                 }
                 else
                 {
@@ -71,7 +69,7 @@ namespace Celestus.Storage.Cache
 
                     if (file.Exists && file.Length > 0)
                     {
-                        CacheLoadException.ThrowIf(!TryLoadFromFile(PersistenceStoragePath), $"Could not load cache for key '{Key}'.");
+                        CacheLoadException.ThrowIf(!TryLoadFromFile(PersistenceStoragePath), $"Could not load cache for key '{Id}'.");
                     }
                 }
             }
@@ -87,7 +85,7 @@ namespace Celestus.Storage.Cache
                 }
 
                 CacheSaveException.ThrowIf(!TrySaveToFile(PersistenceStoragePath),
-                                           $"Could not save cache for key '{Key}'.");
+                                           $"Could not save cache for key '{Id}'.");
 
                 _persistenceEnabledHandled = true;
             }
@@ -125,7 +123,7 @@ namespace Celestus.Storage.Cache
             return filePath;
         }
 
-        #region CacheBase<string>
+        #region CacheBase<string, string>
         internal override Dictionary<string, CacheEntry> Storage { get; set; }
 
         [MemberNotNullWhen(true, nameof(PersistenceStoragePath))]
@@ -133,8 +131,8 @@ namespace Celestus.Storage.Cache
 
         public override Uri? PersistenceStoragePath { get; set; }
 
-        private CacheCleanerBase<string>? _cleaner;
-        internal override CacheCleanerBase<string> Cleaner
+        private CacheCleanerBase<string, string>? _cleaner;
+        internal override CacheCleanerBase<string, string> Cleaner
         {
             get => _cleaner!;
             set
@@ -144,21 +142,21 @@ namespace Celestus.Storage.Cache
             }
         }
 
-        public Cache(string key, bool persistenceEnabled = false, string persistenceStorageLocation = "") :
-            this(key, [], new CacheCleaner<string>(), persistenceEnabled: persistenceEnabled, persistenceStorageLocation: persistenceStorageLocation)
+        public Cache(string id, bool persistenceEnabled = false, string persistenceStorageLocation = "") :
+            this(id, [], new CacheCleaner<string, string>(), persistenceEnabled: persistenceEnabled, persistenceStorageLocation: persistenceStorageLocation)
         {
         }
 
         public Cache() :
             this(string.Empty,
                 [],
-                new CacheCleaner<string>(),
+                new CacheCleaner<string, string>(),
                 persistenceEnabled: false,
                 persistenceStorageLocation: "")
         {
         }
 
-        public Cache(CacheCleanerBase<string> cleaner, bool persistenceEnabled = false, string persistenceStorageLocation = "") :
+        public Cache(CacheCleanerBase<string, string> cleaner, bool persistenceEnabled = false, string persistenceStorageLocation = "") :
             this(string.Empty, [], cleaner, persistenceEnabled: persistenceEnabled, persistenceStorageLocation: persistenceStorageLocation)
         {
         }
@@ -339,7 +337,6 @@ namespace Celestus.Storage.Cache
                 return false;
             }
 
-            // Compare each key-value pair efficiently
             foreach (var kvp in Storage)
             {
                 if (!other.Storage.TryGetValue(kvp.Key, out var otherValue) ||
@@ -361,7 +358,6 @@ namespace Celestus.Storage.Cache
         {
             var hash = new HashCode();
 
-            // Sort keys to ensure consistent hash code regardless of insertion order
             foreach (var kvp in Storage.OrderBy(x => x.Key))
             {
                 hash.Add(kvp.Key);

@@ -4,7 +4,7 @@
     {
         public static CacheManager Factory { get; } = new();
 
-        public class CacheManager : CacheManagerBase<string, Cache>
+        public class CacheManager : CacheManagerBase<string, string, Cache>
         {
             #region CacheManagerBase
             protected override Cache? TryCreateFromFile(Uri path)

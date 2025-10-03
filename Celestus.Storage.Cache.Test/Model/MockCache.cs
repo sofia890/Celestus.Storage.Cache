@@ -3,7 +3,7 @@
 namespace Celestus.Storage.Cache.Test.Model
 {
     internal class MockCache(string key = "") :
-        CacheBase<string>(key)
+        CacheBase<string, string>(key)
     {
         public AutoResetEvent EntryRemoved { get; private set; } = new(false);
 
@@ -11,20 +11,22 @@ namespace Celestus.Storage.Cache.Test.Model
 
         private bool _disposed = false;
 
-        #region CacheBase<string>
+        private CacheCleanerBase<string, string>? _cleaner;
+
+        #region CacheBase<string, string>
         public override bool IsDisposed => _disposed;
 
         internal override Dictionary<string, CacheEntry> Storage { get; set; } = [];
 
-        internal override CacheCleanerBase<string> Cleaner
+        internal override CacheCleanerBase<string, string> Cleaner
         {
-            get => throw new NotImplementedException();
-            set => throw new NotImplementedException();
+            get => _cleaner!;
+            set => _cleaner = value;
         }
 
         public override Uri? PersistenceStoragePath
         {
-            get => throw new NotImplementedException();
+            get => null;
             set => throw new NotImplementedException();
         }
 

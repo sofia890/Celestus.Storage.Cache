@@ -88,11 +88,13 @@ public class TestCaches
         const double VALUE_2 = 988.1234;
         cache.Set(KEY_2, VALUE_2);
 
-        cache.TryLoadFromFile(tempFile.Uri);
+       var loaded = cache.TryLoadFromFile(tempFile.Uri);
 
         //
         // Assert
         //
+        Assert.IsTrue(loaded);
+
         Assert.IsTrue(cache.TryGet<int>(KEY_1, out var restored));
         Assert.AreEqual(VALUE_1, restored);
 

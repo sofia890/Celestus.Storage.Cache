@@ -138,8 +138,7 @@ namespace Celestus.Storage.Cache.Test
             Assert.IsTrue(cache.TryGet<int>(KEY_1, out var value1));
             Assert.AreEqual(VALUE_1, value1);
 
-            Assert.IsFalse(cache.TryGet<double>(KEY_2, out var value2));
-            Assert.AreEqual(VALUE_2, value2);
+            Assert.IsFalse(cache.TryGet<double>(KEY_2, out _));
         }
 
         [TestMethod]
