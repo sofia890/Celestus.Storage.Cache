@@ -56,7 +56,7 @@ namespace Celestus.Storage.Cache
                 }
                 else if (storeToFile)
                 {
-                    PersistenceStoragePath = GetDefaultpersistenceEnabledPath(Id);
+                    PersistenceStoragePath = GetDefaultPersistencePath(Id);
                 }
                 else
                 {
@@ -91,7 +91,7 @@ namespace Celestus.Storage.Cache
             }
         }
 
-        private static Uri GetDefaultpersistenceEnabledPath(string key)
+        private static Uri GetDefaultPersistencePath(string key)
         {
             string commonAppDataPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
             var appPath = System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName;
@@ -137,8 +137,13 @@ namespace Celestus.Storage.Cache
             get => _cleaner!;
             set
             {
-                _cleaner = value;
-                _cleaner.RegisterCache(new(this));
+                if (_cleaner != value)
+                {
+                    _cleaner?.UnregisterCache();
+
+                    _cleaner = value;
+                    _cleaner.RegisterCache(new(this));
+                }
             }
         }
 

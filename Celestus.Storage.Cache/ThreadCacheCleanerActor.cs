@@ -68,6 +68,10 @@ namespace Celestus.Storage.Cache
                             _cacheReference = payload.Cache;
                             break;
 
+                        case CleanerProtocol.UnregisterCacheInd:
+                            _cacheReference = null;
+                            break;
+
                         case CleanerProtocol.ResetInd when rawSignal is ResetInd payload:
                             _cleanupIntervalInTicks = payload.CleanupIntervalInTicks;
                             _nextCleanupOpportunityInTicks = DateTime.UtcNow.Ticks + _cleanupIntervalInTicks;

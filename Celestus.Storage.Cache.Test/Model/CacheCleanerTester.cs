@@ -58,6 +58,16 @@ namespace Celestus.Storage.Cache.Test.Model
             _cacheReference = cache;
         }
 
+        public override void UnregisterCache()
+        {
+            if (IsDisposed)
+            {
+                return;
+            }
+
+            _cacheReference = null;
+        }
+
         public override void SetCleaningInterval(TimeSpan interval)
         {
             throw new NotImplementedException();

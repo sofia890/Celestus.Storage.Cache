@@ -33,6 +33,13 @@ namespace Celestus.Storage.Cache
             _ = _server.CleanerPort.Writer.TryWrite(new RegisterCacheInd<CacheIdType, CacheKeyType>(cache));
         }
 
+        public override void UnregisterCache()
+        {
+            ObjectDisposedException.ThrowIf(IsDisposed, this);
+
+            _ = _server.CleanerPort.Writer.TryWrite(new UnregisterCacheInd());
+        }
+
         public override void ReadSettings(ref Utf8JsonReader reader, JsonSerializerOptions options)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);

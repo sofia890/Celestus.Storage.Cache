@@ -71,6 +71,11 @@ namespace Celestus.Storage.Cache
             _cacheReference = cache;
         }
 
+        public override void UnregisterCache()
+        {
+            _cacheReference = null;
+        }
+
         public override void SetCleaningInterval(TimeSpan interval)
         {
             SetCleaningInterval(interval.Ticks);

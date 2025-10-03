@@ -21,6 +21,8 @@ namespace Celestus.Storage.Cache
             {
                 if (_cache != value)
                 {
+                    _cache?.Cleaner.UnregisterCache();
+
                     _cache = value;
                     _cache.Cleaner.RegisterCache(new(this));
                 }
