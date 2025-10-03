@@ -82,19 +82,19 @@ public class TestThreadCacheCleaning
 
         for (int i = 0; i < NROF_KEYS; i++)
         {
-            _ = cache.TrySet(keys.Next(), ElementHelper.CreateSmallArray(), CacheConstants.ShortDuration);
+            Assert.IsTrue(cache.TrySet(keys.Next(), ElementHelper.CreateSmallArray(), CacheConstants.ShortDuration));
         }
 
-        bool LastKeyNoLongerInCache()
+        bool LastKeyNoLongerInCacheOrExpired()
         {
-            var success = cache.TryGet<byte[]>(keys.Current(), out var value, timeout: CacheConstants.TimingIterationInterval);
-            return !success && value == null;
+            return cache.Cache.Storage.Count() == 1;
         }
-        var cleaned = ThreadHelper.DoPeriodicallyUntil(LastKeyNoLongerInCache,
+
+        var cleaned = ThreadHelper.DoPeriodicallyUntil(LastKeyNoLongerInCacheOrExpired,
                                                        CacheConstants.TimingIterations,
                                                        CacheConstants.TimingIterationInterval,
                                                        CacheConstants.VeryLongDuration);
-
+        
         using var tempFile2 = new TempFile();
         _ = cache.TrySaveToFile(tempFile2.Uri);
 
