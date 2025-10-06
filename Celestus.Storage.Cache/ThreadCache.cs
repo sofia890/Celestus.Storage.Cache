@@ -1,10 +1,27 @@
-﻿using Celestus.Serialization;
+﻿using Celestus.Exceptions;
+using Celestus.Serialization;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
 
 namespace Celestus.Storage.Cache
 {
+    class ReadLockException(string message) : Exception(message)
+    {
+        public static void ThrowIf(bool condition, string message)
+        {
+            Condition.ThrowIf<ReadLockException>(condition, message);
+        }
+    }
+
+    class WriteLockException(string message) : Exception(message)
+    {
+        public static void ThrowIf(bool condition, string message)
+        {
+            Condition.ThrowIf<WriteLockException>(condition, message);
+        }
+    }
+
     [JsonConverter(typeof(ThreadCacheJsonConverter))]
     public partial class ThreadCache : CacheBase<string, string>, IDisposable
     {
@@ -248,7 +265,12 @@ namespace Celestus.Storage.Cache
         public override Uri? PersistenceStoragePath
         {
             get => Cache?.PersistenceStoragePath ?? null;
-            set => Cache.PersistenceStoragePath = value;
+            set
+            {
+                Condition.ThrowIf<InvalidOperationException>(value == null, "Cannot set persistence storage path before cache is set.");
+
+                Cache.PersistenceStoragePath = value;
+            }
         }
 
         internal override CacheCleanerBase<string, string> Cleaner
@@ -264,16 +286,20 @@ namespace Celestus.Storage.Cache
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 
-            DoWhileWriteLocked(() => Cache.Set(key, value, duration), DefaultTimeout);
+            var result = DoWhileWriteLocked(() => Cache.Set(key, value, duration), DefaultTimeout);
+
+            WriteLockException.ThrowIf(!result, "Could not acquire write lock.");
         }
 
         public override DataType Get<DataType>(string key)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 
-            _ = DoWhileReadLocked(() => Cache.Get<DataType>(key), out var result, DefaultTimeout);
+            var result = DoWhileReadLocked(() => Cache.Get<DataType>(key), out var value, DefaultTimeout);
 
-            return result;
+            ReadLockException.ThrowIf(!result, "Could not acquire read lock.");
+
+            return value;
         }
 
         public override bool TryGet<DataType>(string key, [MaybeNullWhen(false)] out DataType data)
