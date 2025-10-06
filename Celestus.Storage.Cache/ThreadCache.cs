@@ -326,7 +326,14 @@ namespace Celestus.Storage.Cache
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 
-            return DoWhileReadLocked(() => Serialize.SaveToFile(this, path), DefaultTimeout);
+            try
+            {
+                return DoWhileReadLocked(() => Serialize.SaveToFile(this, path), DefaultTimeout);
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         public static ThreadCache? TryCreateFromFile(Uri path)

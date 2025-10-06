@@ -205,9 +205,16 @@ namespace Celestus.Storage.Cache
 
         public override bool TrySet<DataType>(string key, DataType value, TimeSpan? duration = null)
         {
-            Set(key, value, duration);
+            try
+            {
+                Set(key, value, duration);
 
-            return true;
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         public override DataType Get<DataType>(string key)
@@ -277,9 +284,16 @@ namespace Celestus.Storage.Cache
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 
-            Serialize.SaveToFile(this, path);
+            try
+            {
+                Serialize.SaveToFile(this, path);
 
-            return true;
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         public override bool TryLoadFromFile(Uri path)
