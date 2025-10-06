@@ -4,11 +4,11 @@
     {
         public static void AddEntryToCache(string key, DateTime expiration, MockCache cache, out CacheEntry entry)
         {
-            entry = new(expiration.Ticks, null);
+            entry = new(expiration, null);
 
             lock (cache)
             {
-                cache.Storage.Add(key, new(expiration.Ticks, new()));
+                cache.Storage.Add(key, new(expiration, new()));
             }
         }
 

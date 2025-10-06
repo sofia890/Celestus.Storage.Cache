@@ -9,18 +9,18 @@ namespace Celestus.Storage.Cache
     {
         const int DEFAULT_INTERVAL = 5000;
 
-        long _cleanupIntervalInTicks = interval.Ticks;
-        long _nextCleanupOpportunityInTicks;
+        TimeSpan _cleanupInterval = interval;
+        DateTime _nextCleanupOpportunity;
         WeakReference<CacheBase<CacheIdType, CacheKeyType>>? _cacheReference;
 
         public CacheCleaner() : this(interval: TimeSpan.FromMilliseconds(DEFAULT_INTERVAL))
         {
-            SetCleaningInterval(_cleanupIntervalInTicks);
+            SetCleaningInterval(_cleanupInterval);
         }
 
-        private void Prune(long currentTimeInTicks)
+        private void Prune(DateTime now)
         {
-            if (_nextCleanupOpportunityInTicks > currentTimeInTicks)
+            if (_nextCleanupOpportunity > now)
             {
                 return;
             }
@@ -36,7 +36,7 @@ namespace Celestus.Storage.Cache
 
                 foreach (var (key, entry) in cache.Storage)
                 {
-                    if (ExpiredCriteria(entry, currentTimeInTicks))
+                    if (ExpiredCriteria(entry, now))
                     {
                         expiredKeys.Add((key, entry));
                     }
@@ -47,23 +47,23 @@ namespace Celestus.Storage.Cache
                     _ = cache.TryRemove([.. expiredKeys.Select(x => x.key)]);
                 }
 
-                _nextCleanupOpportunityInTicks = currentTimeInTicks + _cleanupIntervalInTicks;
+                _nextCleanupOpportunity = now + _cleanupInterval;
             }
         }
 
-        public static bool ExpiredCriteria(CacheEntry entry, long currentTimeInTicks)
+        public static bool ExpiredCriteria(CacheEntry entry, DateTime now)
         {
-            return entry.Expiration <= currentTimeInTicks;
+            return entry.Expiration <= now;
         }
 
         public override void EntryAccessed(ref CacheEntry entry, CacheKeyType key)
         {
-            EntryAccessed(ref entry, key, DateTime.UtcNow.Ticks);
+            EntryAccessed(ref entry, key, DateTime.UtcNow);
         }
 
-        public override void EntryAccessed(ref CacheEntry entry, CacheKeyType key, long timeInMilliseconds)
+        public override void EntryAccessed(ref CacheEntry entry, CacheKeyType key, DateTime when)
         {
-            Prune(timeInMilliseconds);
+            Prune(when);
         }
 
         public override void RegisterCache(WeakReference<CacheBase<CacheIdType, CacheKeyType>> cache)
@@ -78,13 +78,8 @@ namespace Celestus.Storage.Cache
 
         public override void SetCleaningInterval(TimeSpan interval)
         {
-            SetCleaningInterval(interval.Ticks);
-        }
-
-        public void SetCleaningInterval(long _intervalInTicks)
-        {
-            _cleanupIntervalInTicks = _intervalInTicks;
-            _nextCleanupOpportunityInTicks = DateTime.UtcNow.Ticks + _cleanupIntervalInTicks;
+            _cleanupInterval = interval;
+            _nextCleanupOpportunity = DateTime.UtcNow + _cleanupInterval;
         }
 
         public override void ReadSettings(ref Utf8JsonReader reader, JsonSerializerOptions options)
@@ -95,52 +90,42 @@ namespace Celestus.Storage.Cache
             {
                 switch (reader.TokenType)
                 {
-                    default:
-                        break;
-
                     case JsonTokenType.EndObject:
                         goto End;
-
-                    case JsonTokenType.StartObject:
-                        break;
-
                     case JsonTokenType.PropertyName:
-                        switch (reader.GetString())
-                        {
-                            case nameof(_cleanupIntervalInTicks):
-                                _ = reader.Read();
+                        var propertyName = reader.GetString();
+                        _ = reader.Read();
 
-                                _cleanupIntervalInTicks = reader.GetInt64();
-                                _nextCleanupOpportunityInTicks = 0;
+                        switch (propertyName)
+                        {
+                            case nameof(_cleanupInterval):
+                                _cleanupInterval = JsonSerializer.Deserialize<TimeSpan>(ref reader, options);
                                 intervalValueFound = true;
                                 break;
-
                             default:
+                                reader.Skip();
                                 break;
-
                         }
+                        break;
+                    default:
                         break;
                 }
             }
-
         End:
-            Condition.ThrowIf<MissingValueJsonException>(!intervalValueFound, nameof(_cleanupIntervalInTicks));
+            Condition.ThrowIf<MissingValueJsonException>(!intervalValueFound, $"Invalid JSON for {nameof(CacheCleaner<CacheIdType, CacheKeyType>)}");
         }
 
         public override void WriteSettings(Utf8JsonWriter writer, JsonSerializerOptions options)
         {
             writer.WriteStartObject();
-            writer.WritePropertyName(nameof(_cleanupIntervalInTicks));
-            writer.WriteNumberValue(_cleanupIntervalInTicks);
+            writer.WritePropertyName(nameof(_cleanupInterval));
+            JsonSerializer.Serialize(writer, _cleanupInterval, options);
             writer.WriteEndObject();
         }
 
         public override object Clone()
         {
-            var newCleaner = new CacheCleaner<CacheIdType, CacheKeyType>(TimeSpan.FromTicks(_cleanupIntervalInTicks));
-            newCleaner.RegisterCache(_cacheReference!);
-
-            return newCleaner;
+            return new CacheCleaner<CacheIdType, CacheKeyType>(TimeSpan.FromTicks(_cleanupInterval.Ticks));
         }
     }
 }

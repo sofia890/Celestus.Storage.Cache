@@ -5,7 +5,7 @@ using System.Text.Json.Serialization;
 namespace Celestus.Storage.Cache
 {
     [JsonConverter(typeof(CacheEntryJsonConverter))]
-    public record CacheEntry(long Expiration, object? Data)
+    public record CacheEntry(DateTime Expiration, object? Data)
     {
         public class CacheEntryJsonConverter : JsonConverter<CacheEntry>
         {
@@ -17,7 +17,7 @@ namespace Celestus.Storage.Cache
                                                  $"Invalid JSON for {nameof(CacheEntry)}.");
 
                 Type? type = null;
-                long? expiration = null;
+                DateTime? expiration = null;
                 bool dataSet = false;
                 object? data = null;
 
@@ -52,7 +52,8 @@ namespace Celestus.Storage.Cache
                                     break;
 
                                 case nameof(Expiration):
-                                    expiration = reader.GetInt64();
+                                    var ticks = reader.GetInt64();
+                                    expiration = new DateTime(ticks, DateTimeKind.Utc);
                                     break;
 
                                 case nameof(Data):
@@ -99,7 +100,7 @@ namespace Celestus.Storage.Cache
                 }
                 else
                 {
-                    return new CacheEntry((long)expiration, data);
+                    return new CacheEntry(expiration.Value, data);
                 }
             }
 
@@ -121,7 +122,7 @@ namespace Celestus.Storage.Cache
                 }
 
                 writer.WritePropertyName(nameof(Expiration));
-                writer.WriteNumberValue(value.Expiration);
+                writer.WriteNumberValue(value.Expiration.Ticks);
 
                 writer.WritePropertyName(nameof(Data));
                 JsonSerializer.Serialize(writer, value.Data, options);

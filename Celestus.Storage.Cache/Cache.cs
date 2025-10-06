@@ -166,13 +166,13 @@ namespace Celestus.Storage.Cache
         {
         }
 
-        private static long GetExpiration(TimeSpan? duration = null)
+        private static DateTime GetExpiration(TimeSpan? duration = null)
         {
-            long expiration = long.MaxValue;
+            DateTime expiration = DateTime.MaxValue;
 
             if (duration is TimeSpan timeDuration)
             {
-                expiration = DateTime.UtcNow.Ticks + timeDuration.Ticks;
+                expiration = DateTime.UtcNow.Add(timeDuration);
             }
 
             return expiration;
@@ -183,12 +183,12 @@ namespace Celestus.Storage.Cache
             Set(key, value, GetExpiration(duration));
         }
 
-        public void Set<DataType>(string key, DataType value, long expiration)
+        public void Set<DataType>(string key, DataType value, DateTime expiration)
         {
             Set(key, value, expiration, out var _);
         }
 
-        public void Set<DataType>(string key, DataType value, long expiration, out CacheEntry entry)
+        public void Set<DataType>(string key, DataType value, DateTime expiration, out CacheEntry entry)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 
@@ -229,8 +229,8 @@ namespace Celestus.Storage.Cache
 
             if (Storage.TryGetValue(key, out var entry))
             {
-                var currentTimeInTicks = DateTime.UtcNow.Ticks;
-                found = entry.Expiration >= currentTimeInTicks;
+                var currentTime = DateTime.UtcNow;
+                found = entry.Expiration >= currentTime;
 
                 if (entry.Data is DataType data)
                 {

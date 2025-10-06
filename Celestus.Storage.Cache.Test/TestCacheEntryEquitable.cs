@@ -6,17 +6,14 @@ namespace Celestus.Storage.Cache.Test
         [TestMethod]
         public void VerifyThatCacheEntryEqualsWorksCorrectly()
         {
-            //
             // Arrange
-            //
-            var entry1 = new CacheEntry(12345, "test value");
-            var entry2 = new CacheEntry(12345, "test value");
-            var entry3 = new CacheEntry(54321, "test value");
-            var entry4 = new CacheEntry(12345, "different value");
+            var baseTime = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+            var entry1 = new CacheEntry(baseTime, "test value");
+            var entry2 = new CacheEntry(baseTime, "test value");
+            var entry3 = new CacheEntry(baseTime.AddMinutes(1), "test value");
+            var entry4 = new CacheEntry(baseTime, "different value");
 
-            //
             // Act & Assert
-            //
             Assert.AreEqual(entry1, entry2);
             Assert.AreNotEqual(entry1, entry3);
             Assert.AreNotEqual(entry1, entry4);
@@ -26,9 +23,7 @@ namespace Celestus.Storage.Cache.Test
         [TestMethod]
         public void VerifyThatCacheEntryHashCodeIsConsistent()
         {
-            //
             // Arrange
-            //
             var complexObject = new Dictionary<string, object>
             {
                 { "int", 42 },
@@ -36,12 +31,11 @@ namespace Celestus.Storage.Cache.Test
                 { "list", new List<int> { 1, 2, 3 } }
             };
 
-            var entry1 = new CacheEntry(12345, complexObject);
-            var entry2 = new CacheEntry(12345, complexObject);
+            var baseTime = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+            var entry1 = new CacheEntry(baseTime, complexObject);
+            var entry2 = new CacheEntry(baseTime, complexObject);
 
-            //
             // Act & Assert
-            //
             Assert.AreEqual(entry1.GetHashCode(), entry2.GetHashCode());
         }
     }

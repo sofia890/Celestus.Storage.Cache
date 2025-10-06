@@ -106,9 +106,7 @@ namespace Celestus.Storage.Cache
             return DoWhileWriteLocked(
                 () =>
                 {
-                    Cache.Dispose();
-
-                    Cache = newCache;
+                    ReplaceCache(newCache);
                 },
                 timeout);
         }
@@ -233,6 +231,16 @@ namespace Celestus.Storage.Cache
             }
         }
 
+        private void ReplaceCache(Cache newCache)
+        {
+            // Assignment causes cleaner of old cache to unregister ThreadCache. Need to dispose after cleanup.
+            var oldCache = Cache;
+
+            Cache = newCache;
+
+            oldCache?.Dispose();
+        }
+
         #region CacheBase<string, string>
 
         [MemberNotNullWhen(true, nameof(PersistenceStoragePath))]
@@ -322,8 +330,8 @@ namespace Celestus.Storage.Cache
                         return false;
                     }
 
-                    Cache.Dispose();
-                    Cache = loadedData.Cache;
+                    ReplaceCache(loadedData.Cache);
+
                     result = true;
                 }
 

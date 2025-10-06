@@ -87,7 +87,7 @@ namespace Celestus.Storage.Cache.Test
             //
             // Arrange
             //
-            CacheEntry entry = new(0, null);
+            CacheEntry entry = new(DateTime.MinValue, null);
 
             //
             // Act

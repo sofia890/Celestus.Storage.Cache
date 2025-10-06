@@ -27,7 +27,7 @@ namespace Celestus.Storage.Cache.Test
                         "Cleaner":{
                             "Type":"{{typeof(CacheCleaner<string, string>).UnderlyingSystemType.FullName}}",
                             "Content":{
-                                "_cleanupIntervalInTicks": 0
+                                "_cleanupInterval": "00:00:00.5"
                             }
                         }
                     }

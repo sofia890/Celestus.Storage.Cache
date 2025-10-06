@@ -20,7 +20,7 @@ namespace Celestus.Storage.Cache
             ObjectDisposedException.ThrowIf(IsDisposed, this);
         }
 
-        public override void EntryAccessed(ref CacheEntry entry, CacheKeyType key, long timeInTicks)
+        public override void EntryAccessed(ref CacheEntry entry, CacheKeyType key, DateTime when)
         {
             // For performance cleanup only happens according to a periodic timer.
             ObjectDisposedException.ThrowIf(IsDisposed, this);
@@ -44,19 +44,19 @@ namespace Celestus.Storage.Cache
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 
-            _server.ReadSettings(ref reader);
+            _server.ReadSettings(ref reader, options);
         }
 
         public override void WriteSettings(Utf8JsonWriter writer, JsonSerializerOptions options)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 
-            _server.WriteSettings(writer);
+            _server.WriteSettings(writer, options);
         }
 
         public override void SetCleaningInterval(TimeSpan interval)
         {
-            _ = _server.CleanerPort.Writer.TryWrite(new ResetInd(interval.Ticks));
+            _ = _server.CleanerPort.Writer.TryWrite(new ResetInd(interval));
         }
 
         protected override void Dispose(bool disposing)

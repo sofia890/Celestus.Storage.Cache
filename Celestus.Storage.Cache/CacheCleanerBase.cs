@@ -15,7 +15,7 @@ namespace Celestus.Storage.Cache
 
         public abstract void EntryAccessed(ref CacheEntry entry, CacheKeyType key);
 
-        public abstract void EntryAccessed(ref CacheEntry entry, CacheKeyType key, long timeInTicks);
+        public abstract void EntryAccessed(ref CacheEntry entry, CacheKeyType key, DateTime when);
 
         public abstract void RegisterCache(WeakReference<CacheBase<CacheIdType, CacheKeyType>> cache);
 

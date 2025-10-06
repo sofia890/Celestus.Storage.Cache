@@ -124,7 +124,7 @@ public class TestCacheCleaning
     [TestMethod]
     public void VerifyThatUnknownParametersAreIgnored()
     {
-        string json = "{\"ExtraParameter\":\"500\",\"_cleanupIntervalInTicks\":500}";
+        string json = "{\"ExtraParameter\":\"500\",\"_cleanupInterval\":\"00:00:00.5\"}";
         CleaningHelper.ReadSettings<CacheCleaner<string, string>>(json);
     }
 }

@@ -25,7 +25,7 @@ public class TestCacheCleaners
         //
         Assert.IsFalse(cache.EntryRemoved.WaitOne(CacheConstants.ShortDuration));
 
-        cleaner.EntryAccessed(ref entry, KEY, long.MaxValue);
+        cleaner.EntryAccessed(ref entry, KEY, DateTime.UtcNow.AddDays(1));
 
         Assert.IsTrue(cache.EntryRemoved.WaitOne(CacheConstants.ShortDuration));
         Assert.IsFalse(cache.EntryRemoved.WaitOne(CacheConstants.ShortDuration));
@@ -137,7 +137,7 @@ public class TestCacheCleaners
         //
         using var cleaner = CacheCleanerHelper.GetCleaner(cleanerTypeToTest, CacheConstants.ShortDuration, out _);
 
-        string json = "{\"ExtraParameter\":\"500\",\"_cleanupIntervalInTicks\":500}";
+        string json = "{\"ExtraParameter\":\"500\",\"_cleanupInterval\":\"00:00:00.5\"}";
         CleaningHelper.ReadSettings(cleaner, json);
     }
 }

@@ -17,7 +17,7 @@
 
     internal record UnregisterCacheInd() : Signal(CleanerProtocol.UnregisterCacheInd);
 
-    internal record ResetInd(long CleanupIntervalInTicks) : Signal(CleanerProtocol.ResetInd);
+    internal record ResetInd(TimeSpan CleanupInterval) : Signal(CleanerProtocol.ResetInd);
 
     internal record StopInd() : Signal(CleanerProtocol.Stop);
 }

@@ -1,4 +1,5 @@
 ﻿using Celestus.Exceptions;
+using System.Reflection.PortableExecutable;
 using System.Text.Json;
 using System.Threading.Channels;
 
@@ -11,8 +12,8 @@ namespace Celestus.Storage.Cache
         public const int DEFAULT_TIMEOUT_IN_MS = 5000;
         public const int STOP_TIMEOUT = 30000;
 
-        long _cleanupIntervalInTicks;
-        long _nextCleanupOpportunityInTicks;
+        TimeSpan _cleanupInterval;
+        DateTime _nextCleanupOpportunity;
         WeakReference<CacheBase<CacheIdType, CacheKeyType>>? _cacheReference = null;
         private bool _disposed = false;
         private readonly Task _signalHandlerTask;
@@ -27,14 +28,14 @@ namespace Celestus.Storage.Cache
 
         public ThreadCacheCleanerActor(TimeSpan interval)
         {
-            _cleanupIntervalInTicks = interval.Ticks;
-            _nextCleanupOpportunityInTicks = DateTime.UtcNow.Ticks + _cleanupIntervalInTicks;
+            _cleanupInterval = interval;
+            _nextCleanupOpportunity = DateTime.UtcNow + _cleanupInterval;
             _signalHandlerTask = Task.Run(HandleSignals);
         }
 
         private Task NewTimeoutTask()
         {
-            return Task.Delay(TimeSpan.FromTicks(_cleanupIntervalInTicks));
+            return Task.Delay(_cleanupInterval);
         }
 
         private async Task HandleSignals()
@@ -51,7 +52,7 @@ namespace Celestus.Storage.Cache
                 }
                 else if (await Task.WhenAny(signalTask, NewTimeoutTask()) != signalTask)
                 {
-                    Prune(DateTime.UtcNow.Ticks);
+                    Prune(DateTime.UtcNow);
                 }
                 else if (signalTask.IsCompletedSuccessfully)
                 {
@@ -73,21 +74,21 @@ namespace Celestus.Storage.Cache
                             break;
 
                         case CleanerProtocol.ResetInd when rawSignal is ResetInd payload:
-                            _cleanupIntervalInTicks = payload.CleanupIntervalInTicks;
-                            _nextCleanupOpportunityInTicks = DateTime.UtcNow.Ticks + _cleanupIntervalInTicks;
+                            _cleanupInterval = payload.CleanupInterval;
+                            _nextCleanupOpportunity = DateTime.UtcNow + _cleanupInterval;
                             break;
                     }
 
-                    Prune(DateTime.UtcNow.Ticks);
+                    Prune(DateTime.UtcNow);
                 }
             }
         }
 
-        private void Prune(long timeInTicks)
+        private void Prune(DateTime now)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 
-            if (_nextCleanupOpportunityInTicks > timeInTicks)
+            if (_nextCleanupOpportunity > now)
             {
                 return;
             }
@@ -110,7 +111,7 @@ namespace Celestus.Storage.Cache
                         return;
                     }
 
-                    if (CacheCleaner<CacheIdType, CacheKeyType>.ExpiredCriteria(entry.Value, timeInTicks))
+                    if (CacheCleaner<CacheIdType, CacheKeyType>.ExpiredCriteria(entry.Value, now))
                     {
                         expiredKeys.Add(entry.Key);
                     }
@@ -121,11 +122,11 @@ namespace Celestus.Storage.Cache
                     _ = cache.TryRemove([.. expiredKeys]);
                 }
 
-                _nextCleanupOpportunityInTicks = timeInTicks + _cleanupIntervalInTicks;
+                _nextCleanupOpportunity = now + _cleanupInterval;
             }
         }
 
-        public void ReadSettings(ref Utf8JsonReader reader)
+        public void ReadSettings(ref Utf8JsonReader reader, JsonSerializerOptions options)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 
@@ -147,11 +148,11 @@ namespace Celestus.Storage.Cache
                     case JsonTokenType.PropertyName:
                         switch (reader.GetString())
                         {
-                            case nameof(_cleanupIntervalInTicks):
+                            case nameof(_cleanupInterval):
                                 _ = reader.Read();
 
-                                var cleanupIntervalInTicks = reader.GetInt64();
-                                CleanerPort.Writer.TryWrite(new ResetInd(cleanupIntervalInTicks));
+                                var cleanupInterval = JsonSerializer.Deserialize<TimeSpan>(ref reader, options);
+                                CleanerPort.Writer.TryWrite(new ResetInd(cleanupInterval));
 
                                 intervalValueFound = true;
                                 break;
@@ -165,16 +166,16 @@ namespace Celestus.Storage.Cache
             }
 
         End:
-            Condition.ThrowIf<MissingValueJsonException>(!intervalValueFound, nameof(_cleanupIntervalInTicks));
+            Condition.ThrowIf<MissingValueJsonException>(!intervalValueFound, nameof(_cleanupInterval));
         }
 
-        public void WriteSettings(Utf8JsonWriter writer)
+        public void WriteSettings(Utf8JsonWriter writer, JsonSerializerOptions options)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 
             writer.WriteStartObject();
-            writer.WritePropertyName(nameof(_cleanupIntervalInTicks));
-            writer.WriteNumberValue(_cleanupIntervalInTicks);
+            writer.WritePropertyName(nameof(_cleanupInterval));
+            JsonSerializer.Serialize(writer, _cleanupInterval, options);
             writer.WriteEndObject();
         }
 

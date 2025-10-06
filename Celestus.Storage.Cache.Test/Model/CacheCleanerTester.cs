@@ -38,7 +38,7 @@ namespace Celestus.Storage.Cache.Test.Model
             AccessedKeys.Add(key);
         }
 
-        public override void EntryAccessed(ref CacheEntry entry, string key, long timeInTicks)
+        public override void EntryAccessed(ref CacheEntry entry, string key, DateTime when)
         {
             if (IsDisposed)
             {
