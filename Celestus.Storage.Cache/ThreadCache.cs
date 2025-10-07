@@ -25,8 +25,8 @@ namespace Celestus.Storage.Cache
     [JsonConverter(typeof(ThreadCacheJsonConverter))]
     public partial class ThreadCache : CacheBase<string, string>, IDisposable
     {
-        const int CLEANER_INTERVAL_IN_MS = 5000;
         public static TimeSpan DefaultTimeout { get; } = TimeSpan.FromMilliseconds(5000);
+        public static TimeSpan DefaultCleanerInterval { get; } = TimeSpan.FromMilliseconds(60000);
 
         private bool _disposed = false;
 
@@ -80,7 +80,7 @@ namespace Celestus.Storage.Cache
 
         public ThreadCache(string id, TimeSpan? cleaningInterval, bool persistenceEnabled = false, string persistenceStorageLocation = "") :
             this(id,
-                cleaner: new ThreadCacheCleaner<string, string>(cleaningInterval ?? TimeSpan.FromMilliseconds(CLEANER_INTERVAL_IN_MS)),
+                cleaner: new ThreadCacheCleaner<string, string>(cleaningInterval ?? DefaultCleanerInterval),
                 persistenceEnabled: persistenceEnabled,
                 persistenceStorageLocation: persistenceStorageLocation)
         {
@@ -92,7 +92,7 @@ namespace Celestus.Storage.Cache
         }
 
         public ThreadCache(string id, bool persistenceEnabled, string persistenceStorageLocation = "") :
-            this(id, TimeSpan.FromMilliseconds(CLEANER_INTERVAL_IN_MS), persistenceEnabled: persistenceEnabled, persistenceStorageLocation: persistenceStorageLocation)
+            this(id, DefaultCleanerInterval, persistenceEnabled: persistenceEnabled, persistenceStorageLocation: persistenceStorageLocation)
         {
         }
 

@@ -6,6 +6,7 @@
 
         public class ThreadCacheManager : CacheManagerBase<string, string, ThreadCache>
         {
+            public static TimeSpan DefaultTimeout { get; } = TimeSpan.FromMilliseconds(5000);
 
             #region CacheManagerBase
 
