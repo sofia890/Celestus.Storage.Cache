@@ -10,9 +10,9 @@
 
             #region CacheManagerBase
 
-            protected override ThreadCache? TryCreateFromFile(Uri path)
+            protected override ThreadCache? TryCreateFromFile(FileInfo file)
             {
-                return ThreadCache.TryCreateFromFile(path);
+                return ThreadCache.TryCreateFromFile(file);
             }
 
             protected override bool Update(ThreadCache from, ThreadCache to, TimeSpan? timeout)

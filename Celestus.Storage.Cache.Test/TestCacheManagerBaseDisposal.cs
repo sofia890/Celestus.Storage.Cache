@@ -48,7 +48,7 @@ namespace Celestus.Storage.Cache.Test
             using (var cache = new Cache("test-key"))
             {
                 cache.Set("test-item", "test-value");
-                _ = cache.TrySaveToFile(tempFile.Uri);
+                _ = cache.TrySaveToFile(tempFile.Info);
             }
 
             manager.Dispose();
@@ -56,7 +56,7 @@ namespace Celestus.Storage.Cache.Test
             //
             // Act & Assert
             //
-            Assert.ThrowsException<ObjectDisposedException>(() => manager.UpdateOrLoadSharedFromFile(tempFile.Uri));
+            Assert.ThrowsException<ObjectDisposedException>(() => manager.UpdateOrLoadSharedFromFile(tempFile.Info));
         }
 
         [TestMethod]
@@ -117,14 +117,14 @@ namespace Celestus.Storage.Cache.Test
             using var cache = new ThreadCache("test-key");
 
             _ = cache.TrySet("test-item", "test-value");
-            _ = cache.TrySaveToFile(tempFile.Uri);
+            _ = cache.TrySaveToFile(tempFile.Info);
 
             manager.Dispose();
 
             //
             // Act & Assert
             //
-            Assert.ThrowsException<ObjectDisposedException>(() => manager.UpdateOrLoadSharedFromFile(tempFile.Uri));
+            Assert.ThrowsException<ObjectDisposedException>(() => manager.UpdateOrLoadSharedFromFile(tempFile.Info));
         }
 
         [TestMethod]

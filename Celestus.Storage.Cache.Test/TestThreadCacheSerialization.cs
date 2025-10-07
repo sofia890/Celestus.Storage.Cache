@@ -38,9 +38,9 @@ namespace Celestus.Storage.Cache.Test
             // Act
             //
             using var tempFile = new TempFile();
-            var loaded = originalCache.TrySaveToFile(tempFile.Uri);
+            var loaded = originalCache.TrySaveToFile(tempFile.Info);
 
-            using ThreadCache? loadedCache = ThreadCache.TryCreateFromFile(tempFile.Uri);
+            using ThreadCache? loadedCache = ThreadCache.TryCreateFromFile(tempFile.Info);
 
             //
             // Assert
@@ -78,14 +78,14 @@ namespace Celestus.Storage.Cache.Test
             _ = cacheOne.TrySet(KEY_1, VALUE_1);
 
             using var tempFile = new TempFile();
-            cacheOne.TrySaveToFile(tempFile.Uri);
+            cacheOne.TrySaveToFile(tempFile.Info);
 
             //
             // Act
             //
             using ThreadCache cacheTwo = new("anotherKey");
 
-            var loaded = cacheTwo.TryLoadFromFile(tempFile.Uri);
+            var loaded = cacheTwo.TryLoadFromFile(tempFile.Info);
 
             //
             // Assert
@@ -108,8 +108,9 @@ namespace Celestus.Storage.Cache.Test
             //
             // Act
             //
-            var path = new Uri(Path.GetTempFileName());
-            _ = cache.TrySaveToFile(path);
+            using var file = new TempFile();
+
+            _ = cache.TrySaveToFile(file.Info);
 
             _ = cache.TrySet(KEY_1, VALUE_1 * 2);
 
@@ -117,7 +118,7 @@ namespace Celestus.Storage.Cache.Test
             const double VALUE_2 = 78.1234;
             _ = cache.TrySet(KEY_2, VALUE_2);
 
-            bool loaded = cache.TryLoadFromFile(path);
+            bool loaded = cache.TryLoadFromFile(file.Info);
 
             //
             // Assert
@@ -128,9 +129,6 @@ namespace Celestus.Storage.Cache.Test
             Assert.AreEqual(VALUE_1, value);
 
             Assert.IsFalse(cache.TryGet<double>(KEY_2, out _));
-
-            // Cleanup
-            File.Delete(path.AbsolutePath);
         }
 
         [TestMethod]
@@ -141,21 +139,19 @@ namespace Celestus.Storage.Cache.Test
             //
             using var cache = new ThreadCache();
 
-            var path = new Uri(Path.GetTempFileName());
-            File.WriteAllText(path.AbsolutePath, "");
+            using var file = new TempFile();
+
+            File.WriteAllText(file.Info.FullName, "");
 
             //
             // Act
             //
-            bool loaded = cache.TryLoadFromFile(path);
+            bool loaded = cache.TryLoadFromFile(file.Info);
 
             //
             // Assert
             //
             Assert.IsFalse(loaded);
-
-            // Cleanup
-            File.Delete(path.AbsolutePath);
         }
     }
 }

@@ -26,9 +26,9 @@ namespace Celestus.Storage.Cache
         public abstract bool IsDisposed { get; }
         internal abstract Dictionary<CacheKeyType, CacheEntry> Storage { get; set; }
 
-        [MemberNotNullWhen(true, nameof(PersistenceStoragePath))]
-        public virtual bool PersistenceEnabled { get => PersistenceStoragePath != null; }
-        public abstract Uri? PersistenceStoragePath { get; set; }
+        [MemberNotNullWhen(true, nameof(PersistenceStorageFile))]
+        public virtual bool PersistenceEnabled { get => PersistenceStorageFile != null; }
+        public abstract FileInfo? PersistenceStorageFile { get; set; }
 
         public CacheBase(CacheIdType id)
         {
@@ -47,9 +47,9 @@ namespace Celestus.Storage.Cache
 
         public abstract bool TryRemove(CacheKeyType[] key);
 
-        public abstract bool TrySaveToFile(Uri path);
+        public abstract bool TrySaveToFile(FileInfo file);
 
-        public abstract bool TryLoadFromFile(Uri path);
+        public abstract bool TryLoadFromFile(FileInfo file);
 
         #region IDisposable
         public abstract void Dispose();

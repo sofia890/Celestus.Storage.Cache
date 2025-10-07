@@ -19,7 +19,7 @@ namespace Celestus.Storage.Cache.Test
             var oneDay = TimeSpan.FromDays(1);
 
             const string CACHE_KEY = nameof(VerifyThatPersistentCacheSavesOnDispose);
-            var cache = CacheHelper.Create(cacheTypeToTest, CACHE_KEY, persistenceEnabled: true, tempFile.Uri.AbsolutePath);
+            var cache = CacheHelper.Create(cacheTypeToTest, CACHE_KEY, persistenceEnabled: true, tempFile.Info.FullName);
 
             const string KEY_A = "A";
             const int VALUE_A = 123;
@@ -40,7 +40,7 @@ namespace Celestus.Storage.Cache.Test
             //
             // Assert
             //
-            var loaded = CacheHelper.Create(cacheTypeToTest, CACHE_KEY, persistenceEnabled: true, tempFile.Uri.AbsolutePath);
+            var loaded = CacheHelper.Create(cacheTypeToTest, CACHE_KEY, persistenceEnabled: true, tempFile.Info.FullName);
             Assert.AreEqual(VALUE_A, loaded.Get<int>(KEY_A));
             Assert.AreEqual(VALUE_B, loaded.Get<string>(KEY_B));
 
@@ -60,7 +60,7 @@ namespace Celestus.Storage.Cache.Test
             //
             using var tempFile = new TempFile();
             const string CACHE_KEY = nameof(VerifyThatpersistenceEnabledCacheMismatchThrowsException);
-            var cacheA = CacheHelper.GetOrCreateShared(cacheTypeToTest, CACHE_KEY, persistenceEnabled: true, tempFile.Uri.AbsolutePath);
+            var cacheA = CacheHelper.GetOrCreateShared(cacheTypeToTest, CACHE_KEY, persistenceEnabled: true, tempFile.Info.FullName);
 
             //
             // Act & Assert

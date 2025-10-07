@@ -100,11 +100,11 @@ namespace Celestus.Storage.Cache
             }
         }
 
-        public CacheType? UpdateOrLoadSharedFromFile(Uri path, TimeSpan? timeout = null)
+        public CacheType? UpdateOrLoadSharedFromFile(FileInfo file, TimeSpan? timeout = null)
         {
             ObjectDisposedException.ThrowIf(_isDisposed, this);
 
-            if (TryCreateFromFile(path) is not CacheType loadedCache)
+            if (TryCreateFromFile(file) is not CacheType loadedCache)
             {
                 return null;
             }
@@ -182,7 +182,7 @@ namespace Celestus.Storage.Cache
             }
         }
 
-        protected abstract CacheType? TryCreateFromFile(Uri path);
+        protected abstract CacheType? TryCreateFromFile(FileInfo file);
 
         protected abstract bool Update(CacheType from, CacheType to, TimeSpan? timeout);
 

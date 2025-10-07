@@ -13,7 +13,7 @@ namespace Celestus.Storage.Cache.Test
             //
             // Arrange
             //
-            var nonExistentFile = new Uri("file:///non-existent-file.json");
+            var nonExistentFile = new FileInfo("C:/Users/so/non-existent-file.json");
 
             //
             // Act
@@ -59,22 +59,20 @@ namespace Celestus.Storage.Cache.Test
             //
             // Arrange
             //
-            var path = new Uri(Path.GetTempFileName());
-            File.WriteAllText(path.AbsolutePath, "");
+            using var file = new TempFile();
+
+            File.WriteAllText(file.Info.FullName, "");
 
             //
             // Act
             //
 
-            using var cache = ThreadCache.TryCreateFromFile(path);
+            using var cache = ThreadCache.TryCreateFromFile(file.Info);
 
             //
             // Assert
             //
             Assert.IsNull(cache);
-
-            // Cleanup
-            File.Delete(path.AbsolutePath);
         }
 
         [TestMethod]
@@ -119,12 +117,12 @@ namespace Celestus.Storage.Cache.Test
             _ = cache.TrySet(ELEMENT_KEY, ELEMENT_VALUE);
 
             using var tempFile = new TempFile();
-            _ = cache.TrySaveToFile(tempFile.Uri);
+            _ = cache.TrySaveToFile(tempFile.Info);
 
             //
             // Act
             //
-            using ThreadCache? otherCache = ThreadCache.Factory.UpdateOrLoadSharedFromFile(tempFile.Uri);
+            using ThreadCache? otherCache = ThreadCache.Factory.UpdateOrLoadSharedFromFile(tempFile.Info);
 
             //
             // Assert
@@ -151,7 +149,7 @@ namespace Celestus.Storage.Cache.Test
             // Act
             //
             using var tempFile = new TempFile();
-            _ = cache.TrySaveToFile(tempFile.Uri);
+            _ = cache.TrySaveToFile(tempFile.Info);
 
             _ = cache.TrySet(KEY_1, VALUE_1 * 2);
 
@@ -159,7 +157,7 @@ namespace Celestus.Storage.Cache.Test
             const double VALUE_2 = 78.1234;
             _ = cache.TrySet(KEY_2, VALUE_2);
 
-            ThreadCache? otherCache = ThreadCache.Factory.UpdateOrLoadSharedFromFile(tempFile.Uri);
+            ThreadCache? otherCache = ThreadCache.Factory.UpdateOrLoadSharedFromFile(tempFile.Info);
 
             //
             // Assert
@@ -184,7 +182,7 @@ namespace Celestus.Storage.Cache.Test
             //
             // Act
             //
-            using ThreadCache? cache = ThreadCache.Factory.UpdateOrLoadSharedFromFile(tempFile.Uri);
+            using ThreadCache? cache = ThreadCache.Factory.UpdateOrLoadSharedFromFile(tempFile.Info);
 
             //
             // Assert

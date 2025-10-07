@@ -63,7 +63,7 @@ namespace Celestus.Storage.Cache.Test
             using (var cache = new Cache(Key))
             {
                 cache.Set(Item, Value);
-                _ = cache.TrySaveToFile(tempFile.Uri);
+                _ = cache.TrySaveToFile(tempFile.Info);
             }
 
             //
@@ -73,7 +73,7 @@ namespace Celestus.Storage.Cache.Test
                 () => ((IDoWhileLocked)manager).DoWhileReadLocked(
                     () =>
                     {
-                        _ = manager.UpdateOrLoadSharedFromFile(tempFile.Uri, timeout: CacheConstants.VeryShortDuration);
+                        _ = manager.UpdateOrLoadSharedFromFile(tempFile.Info, timeout: CacheConstants.VeryShortDuration);
                         return true;
                     }
                 )
@@ -159,7 +159,7 @@ namespace Celestus.Storage.Cache.Test
             using var cache = new ThreadCache(Key);
 
             _ = cache.TrySet(Item, Value);
-            _ = cache.TrySaveToFile(tempFile.Uri);
+            _ = cache.TrySaveToFile(tempFile.Info);
 
             //
             // Act & Assert
@@ -168,7 +168,7 @@ namespace Celestus.Storage.Cache.Test
                 () => ((IDoWhileLocked)manager).DoWhileReadLocked(
                     () =>
                     {
-                        _ = manager.UpdateOrLoadSharedFromFile(tempFile.Uri, timeout: CacheConstants.VeryShortDuration);
+                        _ = manager.UpdateOrLoadSharedFromFile(tempFile.Info, timeout: CacheConstants.VeryShortDuration);
                         return true;
                     }
                 )

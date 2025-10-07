@@ -4,12 +4,7 @@
     {
         private bool _disposed;
 
-        public Uri Uri { get; init; } = new Uri(Path.GetTempFileName());
-
-        public FileInfo ToFileInfo()
-        {
-            return new FileInfo(Uri.AbsolutePath);
-        }
+        public FileInfo Info { get; init; } = new(Path.GetTempFileName());
 
         #region IDisposable
         /// <summary>
@@ -29,9 +24,9 @@
         {
             if (!_disposed)
             {
-                if (disposing && File.Exists(Uri.AbsolutePath))
+                if (disposing && Info.Exists)
                 {
-                    File.Delete(Uri.AbsolutePath);
+                    Info.Delete();
                 }
 
                 _disposed = true;

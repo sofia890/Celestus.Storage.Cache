@@ -68,10 +68,10 @@ namespace Celestus.Storage.Cache
 
             writer.WriteBoolean(nameof(ThreadCache.PersistenceEnabled), value.PersistenceEnabled);
 
-            if (value.PersistenceStoragePath != null)
+            if (value.PersistenceStorageFile != null)
             {
-                writer.WriteString(nameof(ThreadCache.PersistenceStoragePath),
-                                   value.PersistenceStoragePath.OriginalString);
+                writer.WriteString(nameof(ThreadCache.PersistenceStorageFile),
+                                   value.PersistenceStorageFile.FullName);
             }
 
             writer.WritePropertyName(nameof(ThreadCache.Cache));

@@ -2,12 +2,12 @@
 {
     public static class CanWrite
     {
-        public static bool Test(Uri path)
+        public static bool Test(FileInfo file)
         {
             try
             {
-                File.WriteAllText(path.AbsolutePath, string.Empty);
-                File.Delete(path.AbsolutePath);
+                File.WriteAllText(file.FullName, string.Empty);
+                File.Delete(file.FullName);
 
                 return true;
             }

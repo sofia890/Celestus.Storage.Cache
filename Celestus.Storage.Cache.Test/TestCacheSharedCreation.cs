@@ -12,7 +12,7 @@ namespace Celestus.Storage.Cache.Test
             //
             // Arrange
             //
-            var nonExistentFile = new Uri("file:///non-existent-file.json");
+            var nonExistentFile = new FileInfo("C:/Users/so/non-existent-file.json");
 
             //
             // Act
@@ -31,13 +31,13 @@ namespace Celestus.Storage.Cache.Test
             //
             // Arrange
             //
-            var path = new Uri(Path.GetTempFileName());
-            File.WriteAllText(path.AbsolutePath, "");
+            var file = new FileInfo(Path.GetTempFileName());
+            File.WriteAllText(file.FullName, "");
 
             //
             // Act
             //
-            using var cache = Cache.TryCreateFromFile(path);
+            using var cache = Cache.TryCreateFromFile(file);
 
             //
             // Assert
@@ -45,7 +45,7 @@ namespace Celestus.Storage.Cache.Test
             Assert.IsNull(cache);
 
             // Cleanup
-            File.Delete(path.AbsolutePath);
+            File.Delete(file.FullName);
         }
 
         [TestMethod]
@@ -87,12 +87,12 @@ namespace Celestus.Storage.Cache.Test
             cache.Set(ELEMENT_KEY, ELEMENT_VALUE);
 
             using var tempFile = new TempFile();
-            _ = cache.TrySaveToFile(tempFile.Uri);
+            _ = cache.TrySaveToFile(tempFile.Info);
 
             //
             // Act
             //
-            using var otherCache = Cache.Factory.UpdateOrLoadSharedFromFile(tempFile.Uri);
+            using var otherCache = Cache.Factory.UpdateOrLoadSharedFromFile(tempFile.Info);
 
             //
             // Assert
@@ -120,7 +120,7 @@ namespace Celestus.Storage.Cache.Test
             // Act
             //
             using var tempFile = new TempFile();
-            _ = cache.TrySaveToFile(tempFile.Uri);
+            _ = cache.TrySaveToFile(tempFile.Info);
 
             cache.Set(KEY_1, VALUE_1 * 2, duration: longDuration);
 
@@ -128,7 +128,7 @@ namespace Celestus.Storage.Cache.Test
             const double VALUE_2 = 78.1234;
             cache.Set(KEY_2, VALUE_2, duration: longDuration);
 
-            using Cache? otherCache = Cache.Factory.UpdateOrLoadSharedFromFile(tempFile.Uri);
+            using Cache? otherCache = Cache.Factory.UpdateOrLoadSharedFromFile(tempFile.Info);
 
             //
             // Assert
@@ -152,7 +152,7 @@ namespace Celestus.Storage.Cache.Test
             //
             // Act
             //
-            using var cache = Cache.TryCreateFromFile(tempFile.Uri);
+            using var cache = Cache.TryCreateFromFile(tempFile.Info);
 
             //
             // Assert

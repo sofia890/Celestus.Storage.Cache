@@ -96,7 +96,7 @@ namespace Celestus.Storage.Cache.Test
             cache.TrySet(KEY, 1);
 
             using var tempFile = new TempFile();
-            _ = cache.TrySaveToFile(tempFile.Uri);
+            _ = cache.TrySaveToFile(tempFile.Info);
 
             //
             // Act & Assert
@@ -106,7 +106,7 @@ namespace Celestus.Storage.Cache.Test
                 {
                     var loadedCache = ThreadHelper.DoWhileLocked(
                         cache,
-                        () => ThreadCache.Factory.UpdateOrLoadSharedFromFile(tempFile.Uri, timeout: CacheConstants.VeryShortDuration),
+                        () => ThreadCache.Factory.UpdateOrLoadSharedFromFile(tempFile.Info, timeout: CacheConstants.VeryShortDuration),
                         CacheConstants.TimingDuration);
                 }
             );

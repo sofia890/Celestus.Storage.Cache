@@ -260,16 +260,16 @@ namespace Celestus.Storage.Cache
 
         #region CacheBase<string, string>
 
-        [MemberNotNullWhen(true, nameof(PersistenceStoragePath))]
+        [MemberNotNullWhen(true, nameof(PersistenceStorageFile))]
         public override bool PersistenceEnabled { get => Cache?.PersistenceEnabled ?? false; }
-        public override Uri? PersistenceStoragePath
+        public override FileInfo? PersistenceStorageFile
         {
-            get => Cache?.PersistenceStoragePath ?? null;
+            get => Cache?.PersistenceStorageFile ?? null;
             set
             {
                 Condition.ThrowIf<InvalidOperationException>(value == null, "Cannot set persistence storage path before cache is set.");
 
-                Cache.PersistenceStoragePath = value;
+                Cache.PersistenceStorageFile = value;
             }
         }
 
@@ -322,13 +322,13 @@ namespace Celestus.Storage.Cache
             return TryRemove(key, timeout: null);
         }
 
-        public override bool TrySaveToFile(Uri path)
+        public override bool TrySaveToFile(FileInfo file)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 
             try
             {
-                return DoWhileReadLocked(() => Serialize.SaveToFile(this, path), DefaultTimeout);
+                return DoWhileReadLocked(() => Serialize.SaveToFile(this, file), DefaultTimeout);
             }
             catch
             {
@@ -336,12 +336,12 @@ namespace Celestus.Storage.Cache
             }
         }
 
-        public static ThreadCache? TryCreateFromFile(Uri path)
+        public static ThreadCache? TryCreateFromFile(FileInfo file)
         {
-            return Serialize.TryCreateFromFile<ThreadCache>(path);
+            return Serialize.TryCreateFromFile<ThreadCache>(file);
         }
 
-        public override bool TryLoadFromFile(Uri path)
+        public override bool TryLoadFromFile(FileInfo file)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 
@@ -349,7 +349,7 @@ namespace Celestus.Storage.Cache
             {
                 bool result = false;
 
-                var loadedData = Serialize.TryCreateFromFile<ThreadCache>(path);
+                var loadedData = Serialize.TryCreateFromFile<ThreadCache>(file);
 
                 if (loadedData != null && Id == loadedData.Id)
                 {
@@ -358,7 +358,7 @@ namespace Celestus.Storage.Cache
                         return false;
                     }
                     else if (PersistenceEnabled &&
-                            PersistenceStoragePath?.AbsolutePath != loadedData.PersistenceStoragePath?.AbsolutePath)
+                            PersistenceStorageFile?.FullName != loadedData.PersistenceStorageFile?.FullName)
                     {
                         return false;
                     }
@@ -446,7 +446,7 @@ namespace Celestus.Storage.Cache
         #region ICloneable
         public override object Clone()
         {
-            return new ThreadCache(Id, (Cache)Cache.Clone(), PersistenceEnabled, PersistenceStoragePath?.AbsolutePath ?? string.Empty);
+            return new ThreadCache(Id, (Cache)Cache.Clone(), PersistenceEnabled, PersistenceStorageFile?.FullName ?? string.Empty);
         }
         #endregion
     }

@@ -43,11 +43,10 @@ public class TestCacheCleaning
         //
         // Act
         //
-        var path = new Uri(Path.GetTempFileName());
-        _ = cache.TrySaveToFile(path);
-        _ = Cache.TryCreateFromFile(path);
+        using var file = new TempFile();
 
-        File.Delete(path.AbsolutePath);
+        _ = cache.TrySaveToFile(file.Info);
+        _ = Cache.TryCreateFromFile(file.Info);
 
         //
         // Assert
@@ -79,7 +78,7 @@ public class TestCacheCleaning
 
         using var tempFileA = new TempFile();
 
-        _ = cache.TrySaveToFile(tempFileA.Uri);
+        _ = cache.TrySaveToFile(tempFileA.Info);
 
         //
         // Act
@@ -97,7 +96,7 @@ public class TestCacheCleaning
         var result = cache.TryGet<byte[]>(firstKey, out var firstValue);
 
         using var tempFileB = new TempFile();
-        _ = cache.TrySaveToFile(tempFileB.Uri);
+        _ = cache.TrySaveToFile(tempFileB.Info);
 
         // Verify that the first key did not expire.
         var removeLast = cache.TryRemove([firstKey]);
@@ -105,8 +104,8 @@ public class TestCacheCleaning
         //
         // Assert
         //
-        var fileA = tempFileA.ToFileInfo();
-        var fileB = tempFileB.ToFileInfo();
+        var fileA = tempFileA.Info;
+        var fileB = tempFileB.Info;
 
         Assert.IsTrue(removeLast);
         Assert.IsTrue(result);

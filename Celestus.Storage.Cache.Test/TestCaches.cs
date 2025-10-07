@@ -37,9 +37,9 @@ public class TestCaches
         // Act
         //
         using var tempFile = new TempFile();
-        var saved = cache.TrySaveToFile(tempFile.Uri);
+        var saved = cache.TrySaveToFile(tempFile.Info);
 
-        using var otherCache = CacheHelper.TryCreateFromFile(cacheType, tempFile.Uri);
+        using var otherCache = CacheHelper.TryCreateFromFile(cacheType, tempFile.Info);
 
         //
         // Assert
@@ -80,7 +80,7 @@ public class TestCaches
         // Act
         //
         using var tempFile = new TempFile();
-        _ = cache.TrySaveToFile(tempFile.Uri);
+        _ = cache.TrySaveToFile(tempFile.Info);
 
         cache.Set(KEY_1, VALUE_1 * 2);
 
@@ -88,7 +88,7 @@ public class TestCaches
         const double VALUE_2 = 988.1234;
         cache.Set(KEY_2, VALUE_2);
 
-       var loaded = cache.TryLoadFromFile(tempFile.Uri);
+       var loaded = cache.TryLoadFromFile(tempFile.Info);
 
         //
         // Assert
@@ -116,7 +116,7 @@ public class TestCaches
         //
         // Act
         //
-        bool loaded = cache.TryLoadFromFile(tempFile.Uri);
+        bool loaded = cache.TryLoadFromFile(tempFile.Info);
 
         //
         // Assert

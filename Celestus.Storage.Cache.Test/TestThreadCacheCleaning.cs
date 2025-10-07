@@ -45,9 +45,9 @@ public class TestThreadCacheCleaning
         // Act
         //
         using var tempFile = new TempFile();
-        _ = cache.TrySaveToFile(tempFile.Uri);
+        _ = cache.TrySaveToFile(tempFile.Info);
 
-        using ThreadCache? loadedCache = ThreadCache.TryCreateFromFile(tempFile.Uri);
+        using ThreadCache? loadedCache = ThreadCache.TryCreateFromFile(tempFile.Info);
 
         //
         // Assert
@@ -73,7 +73,7 @@ public class TestThreadCacheCleaning
         _ = cache.TrySet(firstKey, ElementHelper.CreateSmallArray(), TimeSpan.FromDays(1));
 
         using var tempFile1 = new TempFile();
-        _ = cache.TrySaveToFile(tempFile1.Uri);
+        _ = cache.TrySaveToFile(tempFile1.Info);
 
         //
         // Act
@@ -96,15 +96,15 @@ public class TestThreadCacheCleaning
                                                        CacheConstants.VeryLongDuration);
         
         using var tempFile2 = new TempFile();
-        _ = cache.TrySaveToFile(tempFile2.Uri);
+        _ = cache.TrySaveToFile(tempFile2.Info);
 
         //
         // Assert
         //
         Assert.IsTrue(cleaned);
 
-        var file_1 = tempFile1.ToFileInfo();
-        var file_2 = tempFile2.ToFileInfo();
+        var file_1 = tempFile1.Info;
+        var file_2 = tempFile2.Info;
 
         Assert.AreEqual(file_1.Length, file_2.Length);
     }

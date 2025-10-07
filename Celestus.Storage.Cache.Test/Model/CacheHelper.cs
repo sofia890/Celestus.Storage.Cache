@@ -14,15 +14,15 @@ namespace Celestus.Storage.Cache.Test.Model
             }
         }
 
-        public static CacheBase<string, string>? TryCreateFromFile(Type cacheType, Uri path)
+        public static CacheBase<string, string>? TryCreateFromFile(Type cacheType, FileInfo file)
         {
             if (typeof(ThreadCache) == cacheType)
             {
-                return ThreadCache.TryCreateFromFile(path);
+                return ThreadCache.TryCreateFromFile(file);
             }
             else
             {
-                return Cache.TryCreateFromFile(path);
+                return Cache.TryCreateFromFile(file);
             }
         }
 

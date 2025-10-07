@@ -24,7 +24,7 @@ namespace Celestus.Storage.Cache.Test.Model
             set => _cleaner = value;
         }
 
-        public override Uri? PersistenceStoragePath
+        public override FileInfo? PersistenceStorageFile
         {
             get => null;
             set => throw new NotImplementedException();
@@ -57,7 +57,7 @@ namespace Celestus.Storage.Cache.Test.Model
             throw new NotImplementedException();
         }
 
-        public override bool TryLoadFromFile(Uri path)
+        public override bool TryLoadFromFile(FileInfo file)
         {
             throw new NotImplementedException();
         }
@@ -71,7 +71,7 @@ namespace Celestus.Storage.Cache.Test.Model
             return true;
         }
 
-        public override bool TrySaveToFile(Uri path)
+        public override bool TrySaveToFile(FileInfo file)
         {
             throw new NotImplementedException();
         }

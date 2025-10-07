@@ -30,9 +30,9 @@ namespace Celestus.Storage.Cache
             Cleaner = cleaner;
         }
 
-        public static Cache? TryCreateFromFile(Uri path)
+        public static Cache? TryCreateFromFile(FileInfo file)
         {
-            return Serialize.TryCreateFromFile<Cache>(path);
+            return Serialize.TryCreateFromFile<Cache>(file);
         }
 
         public Cache ToCache()
@@ -52,25 +52,22 @@ namespace Celestus.Storage.Cache
             {
                 if (storeToFile && path?.Length > 0)
                 {
-                    PersistenceStoragePath = new(path);
+                    PersistenceStorageFile = new(path);
                 }
                 else if (storeToFile)
                 {
-                    PersistenceStoragePath = GetDefaultPersistencePath(Id);
+                    PersistenceStorageFile = GetDefaultPersistencePath(Id);
                 }
                 else
                 {
-                    PersistenceStoragePath = null;
+                    PersistenceStorageFile = null;
                 }
 
-                if (PersistenceStoragePath != null)
+                if (PersistenceStorageFile != null &&
+                    PersistenceStorageFile.Exists &&
+                    PersistenceStorageFile.Length > 0)
                 {
-                    var file = new FileInfo(PersistenceStoragePath.AbsolutePath);
-
-                    if (file.Exists && file.Length > 0)
-                    {
-                        CacheLoadException.ThrowIf(!TryLoadFromFile(PersistenceStoragePath), $"Could not load cache for key '{Id}'.");
-                    }
+                    CacheLoadException.ThrowIf(!TryLoadFromFile(PersistenceStorageFile), $"Could not load cache for key '{Id}'.");
                 }
             }
         }
@@ -79,26 +76,26 @@ namespace Celestus.Storage.Cache
         {
             if (PersistenceEnabled && !_persistenceEnabledHandled)
             {
-                if (!File.Exists(PersistenceStoragePath.AbsolutePath))
+                if (!PersistenceStorageFile.Exists)
                 {
-                    _ = Directory.CreateDirectory(PersistenceStoragePath.AbsolutePath);
+                    _ = Directory.CreateDirectory(PersistenceStorageFile.FullName);
                 }
 
-                CacheSaveException.ThrowIf(!TrySaveToFile(PersistenceStoragePath),
+                CacheSaveException.ThrowIf(!TrySaveToFile(PersistenceStorageFile),
                                            $"Could not save cache for key '{Id}'.");
 
                 _persistenceEnabledHandled = true;
             }
         }
 
-        private static Uri GetDefaultPersistencePath(string key)
+        private static FileInfo GetDefaultPersistencePath(string key)
         {
             string commonAppDataPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
             var appPath = System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName;
 
             var assemblyName = Assembly.GetExecutingAssembly().GetName().Name;
 
-            Uri filePath;
+            FileInfo filePath;
 
             if (appPath == null)
             {
@@ -114,7 +111,7 @@ namespace Celestus.Storage.Cache
 
                 if (!CanWrite.Test(filePath))
                 {
-                    filePath = new Uri($"{file.DirectoryName}/{assemblyName}/{key}.json");
+                    filePath = new($"{file.DirectoryName}/{assemblyName}/{key}.json");
                 }
             }
 
@@ -126,10 +123,10 @@ namespace Celestus.Storage.Cache
         #region CacheBase<string, string>
         internal override Dictionary<string, CacheEntry> Storage { get; set; }
 
-        [MemberNotNullWhen(true, nameof(PersistenceStoragePath))]
-        public override bool PersistenceEnabled { get => PersistenceStoragePath != null; }
+        [MemberNotNullWhen(true, nameof(PersistenceStorageFile))]
+        public override bool PersistenceEnabled { get => PersistenceStorageFile != null; }
 
-        public override Uri? PersistenceStoragePath { get; set; }
+        public override FileInfo? PersistenceStorageFile { get; set; }
 
         private CacheCleanerBase<string, string>? _cleaner;
         internal override CacheCleanerBase<string, string> Cleaner
@@ -280,13 +277,13 @@ namespace Celestus.Storage.Cache
             return Storage.Remove(key);
         }
 
-        public override bool TrySaveToFile(Uri path)
+        public override bool TrySaveToFile(FileInfo file)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 
             try
             {
-                Serialize.SaveToFile(this, path);
+                Serialize.SaveToFile(this, file);
 
                 return true;
             }
@@ -296,11 +293,11 @@ namespace Celestus.Storage.Cache
             }
         }
 
-        public override bool TryLoadFromFile(Uri path)
+        public override bool TryLoadFromFile(FileInfo file)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 
-            var loadedData = Serialize.TryCreateFromFile<Cache>(path);
+            var loadedData = Serialize.TryCreateFromFile<Cache>(file);
 
             if (loadedData == null)
             {

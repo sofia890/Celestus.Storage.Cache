@@ -1,3 +1,4 @@
+using Celestus.Io;
 using Celestus.Serialization;
 using Celestus.Storage.Cache.Test.Model;
 using System.Text.Json;
@@ -92,12 +93,11 @@ namespace Celestus.Storage.Cache.Test
             //
             // Act
             //
-            var path = new Uri(Path.GetTempFileName());
-            Serialize.SaveToFile(entry, path);
+            using var file = new TempFile();
 
-            var json = File.ReadAllText(path.AbsolutePath);
+            Serialize.SaveToFile(entry, file.Info);
 
-            File.Delete(path.AbsolutePath);
+            var json = File.ReadAllText(file.Info.FullName);
 
             //
             // Assert

@@ -7,9 +7,9 @@
         public class CacheManager : CacheManagerBase<string, string, Cache>
         {
             #region CacheManagerBase
-            protected override Cache? TryCreateFromFile(Uri path)
+            protected override Cache? TryCreateFromFile(FileInfo file)
             {
-                return Cache.TryCreateFromFile(path);
+                return Cache.TryCreateFromFile(file);
             }
 
             protected override bool Update(Cache from, Cache to, TimeSpan? timeout)
