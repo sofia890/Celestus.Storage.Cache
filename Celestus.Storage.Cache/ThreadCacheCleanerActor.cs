@@ -195,7 +195,15 @@ namespace Celestus.Storage.Cache
                     CleanerPort.Writer.TryWrite(new StopInd());
                     CleanerPort.Writer.Complete();
                     _ = _signalHandlerTask.Wait(STOP_TIMEOUT);
-                    _signalHandlerTask.Dispose();
+
+                    try
+                    {
+                        _signalHandlerTask.Dispose();
+                    }
+                    catch (InvalidOperationException)
+                    {
+                        // Ignore, task already stopped.
+                    }
                 }
 
                 _disposed = true;

@@ -111,7 +111,14 @@ namespace Celestus.Storage.Cache.Test.Model
             }
             else
             {
-                task.Dispose();
+                try
+                {
+                    task.Dispose();
+                }
+                catch (InvalidOperationException)
+                {
+                    // Ignore, task already stopped. Can happen due to race condition.
+                }
 
                 return task.Result;
             }

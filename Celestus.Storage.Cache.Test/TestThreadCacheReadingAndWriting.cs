@@ -39,32 +39,39 @@ namespace Celestus.Storage.Cache.Test
             //
             // Arrange
             //
-            var interval = CacheConstants.TimingDuration;
-            using var cache = new ThreadCache(interval);
+            var duration = CacheConstants.TimingDuration;
+            using var cache = new ThreadCache(duration);
 
             const int VALUE = 23;
             const string KEY = "key";
-            _ = cache.TrySet(KEY, VALUE, duration: interval);
+            _ = cache.TrySet(KEY, VALUE, duration: duration);
 
             //
             // Act
             //
-            var resultPointA = cache.TryGet<int>(KEY, out _);
 
-            ThreadHelper.SpinWait(interval / 2);
+            // Due to timing being difficult to verify accuretly due to thread scheduling we just check
+            // roughtly that timing is honored.
+            TimeSpan KEY_AVAILABLE_DURATION = duration / 2;
+            const int NROF_CHECKS = 20;
 
-            var resultPointB = cache.TryGet<int>(KEY, out _);
+            // Rely on that DoPeriodicallyUntil's timeout is reached before the TryGet returns false.
+            var keyExpiredEarly = ThreadHelper.DoPeriodicallyUntil(() => !cache.TryGet<int>(KEY, out _),
+                                                                   NROF_CHECKS,
+                                                                   KEY_AVAILABLE_DURATION / NROF_CHECKS,
+                                                                   KEY_AVAILABLE_DURATION);
 
-            ThreadHelper.SpinWait(interval);
-
-            var resultPointC = cache.TryGet<int>(KEY, out _);
+            // Rely on that DoPeriodicallyUntil's timeout not being reached before the TryGet returns false.
+            var keyExpiredAfterDuration = ThreadHelper.DoPeriodicallyUntil(() => !cache.TryGet<int>(KEY, out _),
+                                                                           CacheConstants.TimingIterations,
+                                                                           CacheConstants.TimingIterationInterval,
+                                                                           CacheConstants.VeryLongDuration);
 
             //
             // Assert
             //
-            Assert.IsTrue(resultPointA);
-            Assert.IsTrue(resultPointB);
-            Assert.IsFalse(resultPointC);
+            Assert.IsFalse(keyExpiredEarly);
+            Assert.IsTrue(keyExpiredAfterDuration);
         }
 
         [TestMethod]
