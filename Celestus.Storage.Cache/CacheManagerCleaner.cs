@@ -24,7 +24,6 @@ namespace Celestus.Storage.Cache
 
         TimeSpan _cleanupInterval = TimeSpan.FromMilliseconds(DEFAULT_INTERVAL_IN_MS);
         private bool _isDisposed;
-        private bool _abort = false;
         readonly Task _cleanerLoop;
         readonly CancellationTokenSource cleanerLoopCancellationTokenSource = new();
 
@@ -37,13 +36,13 @@ namespace Celestus.Storage.Cache
         {
             var cancelToken = cleanerLoopCancellationTokenSource.Token;
 
-            while (!_abort)
+            while (!cancelToken.IsCancellationRequested)
             {
                 cancelToken.ThrowIfCancellationRequested();
 
                 var remainingElements = new List<FactoryEntry<CacheIdType, CacheKeyType, CacheType>>();
 
-                while (_elements.TryDequeue(out var entry) && !_abort)
+                while (_elements.TryDequeue(out var entry))
                 {
                     cancelToken.ThrowIfCancellationRequested();
 
@@ -58,7 +57,7 @@ namespace Celestus.Storage.Cache
                     }
                 }
 
-                if (!_abort)
+                if (!cancelToken.IsCancellationRequested)
                 {
                     foreach (var entry in remainingElements)
                     {
@@ -96,8 +95,6 @@ namespace Celestus.Storage.Cache
             {
                 if (disposing)
                 {
-                    _abort = true;
-
                     try
                     {
                         cleanerLoopCancellationTokenSource.Cancel();
