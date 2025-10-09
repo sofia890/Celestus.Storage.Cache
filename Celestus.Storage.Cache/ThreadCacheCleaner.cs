@@ -2,6 +2,9 @@
 
 namespace Celestus.Storage.Cache
 {
+    /// <summary>
+    /// Thread safe cache cleaner.
+    /// </summary>
     public class ThreadCacheCleaner<CacheIdType, CacheKeyType>(TimeSpan interval) : CacheCleanerBase<CacheIdType, CacheKeyType>
         where CacheIdType : notnull
         where CacheKeyType : notnull

@@ -3,6 +3,9 @@ using System.Text.Json;
 
 namespace Celestus.Storage.Cache
 {
+    /// <summary>
+    /// Single threaded cache cleaner.
+    /// </summary>
     public class CacheCleaner<CacheIdType, CacheKeyType>(TimeSpan interval) : CacheCleanerBase<CacheIdType, CacheKeyType>()
         where CacheIdType : notnull
         where CacheKeyType : notnull

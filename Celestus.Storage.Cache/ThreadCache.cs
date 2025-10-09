@@ -22,6 +22,9 @@ namespace Celestus.Storage.Cache
         }
     }
 
+    /// <summary>
+    /// Thread safe cache implementation with optional persistence to file.
+    /// </summary>
     [JsonConverter(typeof(ThreadCacheJsonConverter))]
     public partial class ThreadCache : CacheBase<string, string>, IDisposable
     {

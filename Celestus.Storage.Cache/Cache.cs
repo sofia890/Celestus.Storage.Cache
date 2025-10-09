@@ -7,6 +7,9 @@ using System.Text.Json.Serialization;
 
 namespace Celestus.Storage.Cache
 {
+    /// <summary>
+    /// Single threaded cache implementation with optional persistence to file.
+    /// </summary>
     [JsonConverter(typeof(CacheJsonConverter))]
     public partial class Cache : CacheBase<string, string>, IDisposable
     {
