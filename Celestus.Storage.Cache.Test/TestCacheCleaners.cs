@@ -92,7 +92,7 @@ public class TestCacheCleaners
 
         using var stream = new MemoryStream();
         using Utf8JsonWriter writer = new(stream);
-        cleanerA.WriteSettings(writer, new());
+        cleanerA.Serialize(writer, new());
         writer.Flush();
 
         //
@@ -101,7 +101,7 @@ public class TestCacheCleaners
         using var cleanerB = CacheCleanerHelper.GetCleaner(cleanerTypeToTest, CacheConstants.VeryLongDuration, out var cacheB);
 
         Utf8JsonReader reader = new(stream.ToArray());
-        cleanerB.ReadSettings(ref reader, new());
+        cleanerB.Deserialize(ref reader, new());
 
         const string KEY = "Key";
         CleanerHelper.AddEntryToCache(KEY, DateTime.UtcNow, cacheB, out var entry);

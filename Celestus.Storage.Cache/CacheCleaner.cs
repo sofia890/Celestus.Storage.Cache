@@ -85,7 +85,7 @@ namespace Celestus.Storage.Cache
             _nextCleanupOpportunity = DateTime.UtcNow + _cleanupInterval;
         }
 
-        public override void ReadSettings(ref Utf8JsonReader reader, JsonSerializerOptions options)
+        public override void Deserialize(ref Utf8JsonReader reader, JsonSerializerOptions options)
         {
             bool intervalValueFound = false;
 
@@ -118,7 +118,7 @@ namespace Celestus.Storage.Cache
             Condition.ThrowIf<MissingValueJsonException>(!intervalValueFound, $"Invalid JSON for {nameof(CacheCleaner<CacheIdType, CacheKeyType>)}");
         }
 
-        public override void WriteSettings(Utf8JsonWriter writer, JsonSerializerOptions options)
+        public override void Serialize(Utf8JsonWriter writer, JsonSerializerOptions options)
         {
             writer.WriteStartObject();
             writer.WritePropertyName(nameof(_cleanupInterval));

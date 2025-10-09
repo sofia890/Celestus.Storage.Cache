@@ -21,9 +21,9 @@ namespace Celestus.Storage.Cache
 
         public abstract void UnregisterCache();
 
-        public abstract void ReadSettings(ref Utf8JsonReader reader, JsonSerializerOptions options);
+        public abstract void Deserialize(ref Utf8JsonReader reader, JsonSerializerOptions options);
 
-        public abstract void WriteSettings(Utf8JsonWriter writer, JsonSerializerOptions options);
+        public abstract void Serialize(Utf8JsonWriter writer, JsonSerializerOptions options);
 
         public abstract void SetCleaningInterval(TimeSpan interval);
 

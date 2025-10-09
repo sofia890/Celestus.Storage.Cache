@@ -43,14 +43,14 @@ namespace Celestus.Storage.Cache
             _ = _server.CleanerPort.Writer.TryWrite(new UnregisterCacheInd());
         }
 
-        public override void ReadSettings(ref Utf8JsonReader reader, JsonSerializerOptions options)
+        public override void Deserialize(ref Utf8JsonReader reader, JsonSerializerOptions options)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 
             _server.ReadSettings(ref reader, options);
         }
 
-        public override void WriteSettings(Utf8JsonWriter writer, JsonSerializerOptions options)
+        public override void Serialize(Utf8JsonWriter writer, JsonSerializerOptions options)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 

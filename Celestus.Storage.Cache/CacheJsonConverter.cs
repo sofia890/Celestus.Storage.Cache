@@ -115,7 +115,7 @@ namespace Celestus.Storage.Cache
                                 }
                                 else
                                 {
-                                    cleaner.ReadSettings(ref reader, options);
+                                    cleaner.Deserialize(ref reader, options);
                                     cleanerConfigured = true;
                                 }
                                 break;
@@ -189,7 +189,7 @@ namespace Celestus.Storage.Cache
             writer.WriteStringValue(type.AssemblyQualifiedName);
 
             writer.WritePropertyName(CONTENT_PROPERTY_NAME);
-            value.Cleaner.WriteSettings(writer, options);
+            value.Cleaner.Serialize(writer, options);
             writer.WriteEndObject();
 
             writer.WriteEndObject();

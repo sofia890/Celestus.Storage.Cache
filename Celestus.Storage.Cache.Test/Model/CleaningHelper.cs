@@ -11,14 +11,14 @@ namespace Celestus.Storage.Cache.Test.Model
             Utf8JsonReader reader = new(Encoding.UTF8.GetBytes(json));
 
             CleanerType cleaner = new();
-            cleaner.ReadSettings(ref reader, new());
+            cleaner.Deserialize(ref reader, new());
         }
 
         public static void ReadSettings(CacheCleanerBase<string, string> cleaner, string json)
         {
             Utf8JsonReader reader = new(Encoding.UTF8.GetBytes(json));
 
-            cleaner.ReadSettings(ref reader, new());
+            cleaner.Deserialize(ref reader, new());
         }
     }
 }
