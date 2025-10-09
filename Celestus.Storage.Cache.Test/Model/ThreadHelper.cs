@@ -78,10 +78,15 @@ namespace Celestus.Storage.Cache.Test.Model
             TimeSpan interval,
             TimeSpan timeout)
         {
+            CancellationTokenSource cancellationTokenSource = new();
+            var cancelToken = cancellationTokenSource.Token;
+
             bool Loop()
             {
                 for (int i = 0; i < maxIterations; i++)
                 {
+                    cancelToken.ThrowIfCancellationRequested();
+
                     if (action())
                     {
                         return true;
@@ -93,17 +98,22 @@ namespace Celestus.Storage.Cache.Test.Model
                 return false;
             }
 
-            CancellationTokenSource cancellationTokenSource = new();
-            var task = Task.Run(Loop, cancellationTokenSource.Token);
+            var task = Task.Run(Loop, cancelToken);
 
             if (!task.Wait(timeout))
             {
                 try
                 {
                     cancellationTokenSource.Cancel();
+                    task.Wait();
                 }
-                catch (TaskCanceledException)
+                catch (AggregateException exception)
                 {
+                    if (exception.InnerException?.GetType() != typeof(OperationCanceledException))
+                    {
+                        throw;
+                    }
+
                     task.Dispose();
                 }
 
@@ -111,14 +121,7 @@ namespace Celestus.Storage.Cache.Test.Model
             }
             else
             {
-                try
-                {
-                    task.Dispose();
-                }
-                catch (InvalidOperationException)
-                {
-                    // Ignore, task already stopped. Can happen due to race condition.
-                }
+                task.Dispose();
 
                 return task.Result;
             }

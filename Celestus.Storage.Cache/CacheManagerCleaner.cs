@@ -1,4 +1,6 @@
-﻿namespace Celestus.Storage.Cache
+﻿using System.Threading.Tasks;
+
+namespace Celestus.Storage.Cache
 {
     public record FactoryEntry<CacheIdType, CacheKeyType, CacheType>(
         WeakReference<CacheType> CacheReference,
@@ -32,12 +34,18 @@
 
         public async Task Cleanup()
         {
+            var cancelToken = cleanerLoopCancellationTokenSource.Token;
+
             while (!_abort)
             {
+                cancelToken.ThrowIfCancellationRequested();
+
                 var remainingElements = new List<FactoryEntry<CacheIdType, CacheKeyType, CacheType>>();
 
                 while (_elements.TryDequeue(out var entry) && !_abort)
                 {
+                    cancelToken.ThrowIfCancellationRequested();
+
                     if (!entry.CacheReference.TryGetTarget(out var cache))
                     {
                         entry.Cleaner.Dispose();
@@ -69,14 +77,7 @@
                     }
                 }
 
-                try
-                {
-                    await Task.Delay(_cleanupInterval, cleanerLoopCancellationTokenSource.Token);
-                }
-                catch (OperationCanceledException)
-                {
-                    // Do nothing
-                }
+                await Task.Delay(_cleanupInterval, cleanerLoopCancellationTokenSource.Token);
             }
         }
 
@@ -108,14 +109,26 @@
                         try
                         {
                             cleanerLoopCancellationTokenSource.Cancel();
+                            _cleanerLoop.Wait();
                         }
-                        catch (OperationCanceledException)
+                        catch (AggregateException exception)
                         {
-                        }
-                    }
+                            if (exception.InnerException?.GetType() != typeof(OperationCanceledException))
+                            {
+                                throw;
+                            }
 
-                    _cleanerLoop.Dispose();
-                    cleanerLoopCancellationTokenSource.Dispose();
+                            _cleanerLoop.Dispose();
+                        }
+
+                        cleanerLoopCancellationTokenSource.Dispose();
+                    }
+                    else
+                    {
+                        _cleanerLoop.Dispose();
+
+                        cleanerLoopCancellationTokenSource.Dispose();
+                    }
                 }
 
                 _isDisposed = true;
