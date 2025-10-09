@@ -92,6 +92,11 @@ namespace Celestus.Storage.Cache
             _cacheManager = manager;
         }
 
+        public TimeSpan GetCleanupInterval()
+        {
+            return _cleanupInterval;
+        }
+
         public void SetCleanupInterval(TimeSpan interval)
         {
             _cleanupInterval = interval;

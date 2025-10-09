@@ -10,6 +10,8 @@ namespace Celestus.Storage.Cache
 
         public CacheType? UpdateOrLoadSharedFromFile(FileInfo file, TimeSpan? timeout = null);
 
+        public TimeSpan GetCleanupInterval();
+
         public void SetCleanupInterval(TimeSpan interval);
 
         public void Remove(CacheKeyType key);
