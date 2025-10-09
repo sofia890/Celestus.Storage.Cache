@@ -372,14 +372,14 @@ namespace Celestus.Storage.Cache.Generator
 
             if (ClassHelper.HasStaticMethods(classDeclaration))
             {
-                _ = builder.AppendLine($"{indentation}    readonly static private ThreadCache _staticThreadCache = ThreadCache.Factory.GetOrCreateShared({cacheKey}, {persistenceEnabled});");
-                _ = builder.AppendLine($"{indentation}    public static ThreadCache StaticThreadCache => _staticThreadCache;");
+                _ = builder.AppendLine($"{indentation}    readonly static private ThreadSafeCache _staticThreadCache = ThreadSafeCache.Factory.GetOrCreateShared({cacheKey}, {persistenceEnabled});");
+                _ = builder.AppendLine($"{indentation}    public static ThreadSafeCache StaticThreadCache => _staticThreadCache;");
             }
 
             if (ClassHelper.HasNonStaticMethods(classDeclaration))
             {
-                _ = builder.AppendLine($"{indentation}    readonly private ThreadCache _threadCache = ThreadCache.Factory.GetOrCreateShared({cacheKey}, {persistenceEnabled});");
-                _ = builder.AppendLine($"{indentation}    public ThreadCache ThreadCache => _threadCache;");
+                _ = builder.AppendLine($"{indentation}    readonly private ThreadSafeCache _threadCache = ThreadSafeCache.Factory.GetOrCreateShared({cacheKey}, {persistenceEnabled});");
+                _ = builder.AppendLine($"{indentation}    public ThreadSafeCache ThreadSafeCache => _threadCache;");
             }
 
             _ = builder.AppendLine($"{indentation}}}");

@@ -1,14 +1,14 @@
-﻿using Celestus.Exceptions;
+using Celestus.Exceptions;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace Celestus.Storage.Cache
 {
-    public class ThreadCacheJsonConverter : JsonConverter<ThreadCache>
+    public class ThreadSafeCacheJsonConverter : JsonConverter<ThreadSafeCache>
     {
         const int DEFAULT_LOCK_TIMEOUT = 10000;
 
-        public override ThreadCache? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        public override ThreadSafeCache? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             Condition.ThrowIf<StartTokenJsonException>(
                 reader.TokenType != JsonTokenType.StartObject,
@@ -28,13 +28,13 @@ namespace Celestus.Storage.Cache
                     case JsonTokenType.PropertyName:
                         switch (reader.GetString())
                         {
-                            case nameof(ThreadCache.Id):
+                            case nameof(ThreadSafeCache.Id):
                                 _ = reader.Read();
 
                                 id = reader.GetString();
                                 break;
 
-                            case nameof(ThreadCache.Cache):
+                            case nameof(ThreadSafeCache.Cache):
                                 _ = reader.Read();
 
                                 cache = JsonSerializer.Deserialize<Cache>(ref reader, options);
@@ -52,29 +52,29 @@ namespace Celestus.Storage.Cache
         End:
             if (id == null || cache == null)
             {
-                throw new MissingValueJsonException($"Invalid JSON for {nameof(ThreadCache)}.");
+                throw new MissingValueJsonException($"Invalid JSON for {nameof(ThreadSafeCache)}.");
             }
             else
             {
-                return new ThreadCache(id, cache);
+                return new ThreadSafeCache(id, cache);
             }
         }
 
-        public override void Write(Utf8JsonWriter writer, ThreadCache value, JsonSerializerOptions options)
+        public override void Write(Utf8JsonWriter writer, ThreadSafeCache value, JsonSerializerOptions options)
         {
             writer.WriteStartObject();
 
-            writer.WriteString(nameof(ThreadCache.Id), value.Id);
+            writer.WriteString(nameof(ThreadSafeCache.Id), value.Id);
 
-            writer.WriteBoolean(nameof(ThreadCache.PersistenceEnabled), value.PersistenceEnabled);
+            writer.WriteBoolean(nameof(ThreadSafeCache.PersistenceEnabled), value.PersistenceEnabled);
 
             if (value.PersistenceStorageFile != null)
             {
-                writer.WriteString(nameof(ThreadCache.PersistenceStorageFile),
+                writer.WriteString(nameof(ThreadSafeCache.PersistenceStorageFile),
                                    value.PersistenceStorageFile.FullName);
             }
 
-            writer.WritePropertyName(nameof(ThreadCache.Cache));
+            writer.WritePropertyName(nameof(ThreadSafeCache.Cache));
             JsonSerializer.Serialize(writer, value.Cache, options);
 
             writer.WriteEndObject();

@@ -48,7 +48,7 @@ namespace Celestus.Storage.Cache.Test.Model
             return results;
         }
 
-        public static ReturnType DoWhileLocked<ReturnType>(ThreadCache cache, Func<ReturnType> action, TimeSpan timeout)
+        public static ReturnType DoWhileLocked<ReturnType>(ThreadSafeCache cache, Func<ReturnType> action, TimeSpan timeout)
         {
             return DoUntil(() =>
                            {
@@ -60,7 +60,7 @@ namespace Celestus.Storage.Cache.Test.Model
                            timeout);
         }
 
-        public static void DoWhileLocked(ThreadCache cache, Action action, TimeSpan timeout)
+        public static void DoWhileLocked(ThreadSafeCache cache, Action action, TimeSpan timeout)
         {
             DoUntil(() =>
                     {

@@ -7,7 +7,7 @@ namespace Celestus.Storage.Cache.Test
     {
         [TestMethod]
         [DataRow(typeof(Cache))]
-        [DataRow(typeof(ThreadCache))]
+        [DataRow(typeof(ThreadSafeCache))]
         public void VerifyThatCacheIsDisposedStateIsCorrect(Type cacheType)
         {
             //
@@ -25,7 +25,7 @@ namespace Celestus.Storage.Cache.Test
 
         [TestMethod]
         [DataRow(typeof(Cache))]
-        [DataRow(typeof(ThreadCache))]
+        [DataRow(typeof(ThreadSafeCache))]
         public void VerifyThatMultipleDisposeCallsAreSafe(Type cacheType)
         {
             //

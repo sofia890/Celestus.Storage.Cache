@@ -108,7 +108,7 @@ namespace Celestus.Storage.Cache.Test
             //
             // Arrange
             //
-            using var manager = new ThreadCacheManagerHelper(CacheConstants.ShortDuration);
+            using var manager = new ThreadSafeCacheManagerHelper(CacheConstants.ShortDuration);
 
             //
             // Act & Assert
@@ -130,7 +130,7 @@ namespace Celestus.Storage.Cache.Test
             //
             // Arrange
             //
-            using var manager = new ThreadCacheManagerHelper(CacheConstants.ShortDuration);
+            using var manager = new ThreadSafeCacheManagerHelper(CacheConstants.ShortDuration);
 
             //
             // Act & Assert
@@ -152,11 +152,11 @@ namespace Celestus.Storage.Cache.Test
             //
             // Arrange
             //
-            using var manager = new ThreadCacheManagerHelper(CacheConstants.ShortDuration);
+            using var manager = new ThreadSafeCacheManagerHelper(CacheConstants.ShortDuration);
 
             // Create a valid test file
             using var tempFile = new TempFile();
-            using var cache = new ThreadCache(Key);
+            using var cache = new ThreadSafeCache(Key);
 
             _ = cache.TrySet(Item, Value);
             _ = cache.TrySaveToFile(tempFile.Info);
@@ -181,7 +181,7 @@ namespace Celestus.Storage.Cache.Test
             //
             // Arrange
             //
-            using var manager = new ThreadCacheManagerHelper(CacheConstants.ShortDuration);
+            using var manager = new ThreadSafeCacheManagerHelper(CacheConstants.ShortDuration);
 
             //
             // Act & Assert

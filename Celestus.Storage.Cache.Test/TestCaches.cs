@@ -9,7 +9,7 @@ public class TestCaches
 {
     [TestMethod]
     [DataRow(typeof(Cache))]
-    [DataRow(typeof(ThreadCache))]
+    [DataRow(typeof(ThreadSafeCache))]
     public void VerifyThatStaticMethodForSerializationToAndFromFileWorksType(Type cacheType)
     {
         //
@@ -64,7 +64,7 @@ public class TestCaches
 
     [TestMethod]
     [DataRow(typeof(Cache))]
-    [DataRow(typeof(ThreadCache))]
+    [DataRow(typeof(ThreadSafeCache))]
     public void VerifyThatSharedCacheCanBeUpdatedFromFile(Type cacheType)
     {
         //
@@ -103,7 +103,7 @@ public class TestCaches
 
     [TestMethod]
     [DataRow(typeof(Cache))]
-    [DataRow(typeof(ThreadCache))]
+    [DataRow(typeof(ThreadSafeCache))]
     public void VerifyThatReadingEmptyFileFails(Type cacheType)
     {
         //
@@ -126,7 +126,7 @@ public class TestCaches
 
     [TestMethod]
     [DataRow(typeof(Cache))]
-    [DataRow(typeof(ThreadCache))]
+    [DataRow(typeof(ThreadSafeCache))]
     public void VerifyThatReadingValueUsingWrongTypeFails(Type cacheType)
     {
         //
@@ -155,7 +155,7 @@ public class TestCaches
 
     [TestMethod]
     [DataRow(typeof(Cache))]
-    [DataRow(typeof(ThreadCache))]
+    [DataRow(typeof(ThreadSafeCache))]
     public void VerifyThatGetThrowsInvalidOperationExceptionWhenKeyNotFound(Type cacheType)
     {
         //
@@ -171,7 +171,7 @@ public class TestCaches
 
     [TestMethod]
     [DataRow(typeof(Cache))]
-    [DataRow(typeof(ThreadCache))]
+    [DataRow(typeof(ThreadSafeCache))]
     public void VerifyThatGetThrowsInvalidOperationExceptionWhenWrongType(Type cacheType)
     {
         //
@@ -188,7 +188,7 @@ public class TestCaches
 
     [TestMethod]
     [DataRow(typeof(Cache))]
-    [DataRow(typeof(ThreadCache))]
+    [DataRow(typeof(ThreadSafeCache))]
     public void VerifyThatNullableTypesWorkCorrectly(Type cacheType)
     {
         //
@@ -218,7 +218,7 @@ public class TestCaches
 
     [TestMethod]
     [DataRow(typeof(Cache))]
-    [DataRow(typeof(ThreadCache))]
+    [DataRow(typeof(ThreadSafeCache))]
     public void VerifyThatValueTypesHandledCorrectly(Type cacheType)
     {
         //
@@ -326,7 +326,7 @@ public class TestCaches
 
     [TestMethod]
     [DataRow(typeof(Cache))]
-    [DataRow(typeof(ThreadCache))]
+    [DataRow(typeof(ThreadSafeCache))]
     public void VerifyThatComplexGenericTypesWork(Type cacheType)
     {
         //
@@ -359,7 +359,7 @@ public class TestCaches
 
     [TestMethod]
     [DataRow(typeof(Cache))]
-    [DataRow(typeof(ThreadCache))]
+    [DataRow(typeof(ThreadSafeCache))]
     public void VerifyThatEnumTypesWork(Type cacheType)
     {
         //

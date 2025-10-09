@@ -7,7 +7,7 @@ namespace Celestus.Storage.Cache.Test
     {
         [TestMethod]
         [DataRow(typeof(Cache))]
-        [DataRow(typeof(ThreadCache))]
+        [DataRow(typeof(ThreadSafeCache))]
         public void VerifyThatToCacheCreatesIndependentCopy(Type cacheType)
         {
             //
@@ -32,7 +32,7 @@ namespace Celestus.Storage.Cache.Test
 
         [TestMethod]
         [DataRow(typeof(Cache))]
-        [DataRow(typeof(ThreadCache))]
+        [DataRow(typeof(ThreadSafeCache))]
         public void VerifyThatClonesAreIndependent(Type cacheType)
         {
             //
@@ -78,7 +78,7 @@ namespace Celestus.Storage.Cache.Test
 
         [TestMethod]
         [DataRow(typeof(Cache))]
-        [DataRow(typeof(ThreadCache))]
+        [DataRow(typeof(ThreadSafeCache))]
         public void VerifyThatICloneableCloneWorks(Type cacheType)
         {
             //
@@ -106,7 +106,7 @@ namespace Celestus.Storage.Cache.Test
 
         [TestMethod]
         [DataRow(typeof(Cache))]
-        [DataRow(typeof(ThreadCache))]
+        [DataRow(typeof(ThreadSafeCache))]
         public void VerifyThatClonedCacheCanBeModifiedIndependently(Type cacheType)
         {
             //
@@ -146,7 +146,7 @@ namespace Celestus.Storage.Cache.Test
 
         [TestMethod]
         [DataRow(typeof(Cache))]
-        [DataRow(typeof(ThreadCache))]
+        [DataRow(typeof(ThreadSafeCache))]
         public void VerifyThatEmptyCacheClonedCorrectly(Type cacheType)
         {
             //

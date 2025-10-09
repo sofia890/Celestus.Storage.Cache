@@ -8,7 +8,7 @@ namespace Celestus.Storage.Cache.Test
     {
         [TestMethod]
         [DataRow(typeof(Cache))]
-        [DataRow(typeof(ThreadCache))]
+        [DataRow(typeof(ThreadSafeCache))]
         public void VerifyThatPersistentCacheSavesOnDispose(Type cacheTypeToTest)
         {
             //
@@ -52,7 +52,7 @@ namespace Celestus.Storage.Cache.Test
 
         [TestMethod]
         [DataRow(typeof(Cache))]
-        [DataRow(typeof(ThreadCache))]
+        [DataRow(typeof(ThreadSafeCache))]
         public void VerifyThatpersistenceEnabledCacheMismatchThrowsException(Type cacheTypeToTest)
         {
             //

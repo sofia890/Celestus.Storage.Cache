@@ -5,29 +5,19 @@ namespace Celestus.Storage.Cache.Test;
 
 [TestClass]
 [DoNotParallelize] // Timing tests become unreliable when run in parallel.
-public class TestThreadCacheCleaning
+public class TestThreadSafeCacheCleaning
 {
     [TestMethod]
     public void VerifyThatCleanerIsInformedWhenEntriesAreAccessed()
     {
-        //
-        // Arrange
-        //
         using var cleanerTester = new CacheCleanerTester();
-        using var cache = new ThreadCache(cleanerTester);
+        using var cache = new ThreadSafeCache(cleanerTester);
 
-        //
-        // Act
-        //
         const string KEY_1 = "Hamster";
         const bool VALUE_1 = true;
         _ = cache.TrySet(KEY_1, VALUE_1);
-
         _ = cache.TryGet<bool>(KEY_1, out _);
 
-        //
-        // Assert
-        //
         Assert.AreEqual(2, cleanerTester.AccessedKeys.Count);
         Assert.AreEqual(KEY_1, cleanerTester.AccessedKeys[0]);
     }
@@ -35,23 +25,14 @@ public class TestThreadCacheCleaning
     [TestMethod]
     public void VerifyThatCleanerSerializationIsConnected()
     {
-        //
-        // Arrange
-        //
         using var cleanerTester = new CacheCleanerTester();
-        using var cache = new ThreadCache(cleanerTester);
+        using var cache = new ThreadSafeCache(cleanerTester);
 
-        //
-        // Act
-        //
         using var tempFile = new TempFile();
         _ = cache.TrySaveToFile(tempFile.Info);
 
-        using ThreadCache? loadedCache = ThreadCache.TryCreateFromFile(tempFile.Info);
+        using ThreadSafeCache? loadedCache = ThreadSafeCache.TryCreateFromFile(tempFile.Info);
 
-        //
-        // Assert
-        //
         Assert.IsTrue(cleanerTester.SettingsWritten);
         Assert.IsTrue(cleanerTester.SettingsReadCorrectly);
     }
@@ -59,14 +40,11 @@ public class TestThreadCacheCleaning
     [TestMethod]
     public void VerifyThatCacheFreesUpMemory()
     {
-        //
-        // Arrange
-        //
         GC.Collect();
         GC.WaitForPendingFinalizers();
 
         var interval = CacheConstants.TimingDuration;
-        using var cache = new ThreadCache(interval);
+        using var cache = new ThreadSafeCache(interval);
 
         var keys = new SerialKeys();
         var firstKey = keys.Next();
@@ -75,37 +53,23 @@ public class TestThreadCacheCleaning
         using var tempFile1 = new TempFile();
         _ = cache.TrySaveToFile(tempFile1.Info);
 
-        //
-        // Act
-        //
         const int NROF_KEYS = 1000;
-
         for (int i = 0; i < NROF_KEYS; i++)
         {
             Assert.IsTrue(cache.TrySet(keys.Next(), ElementHelper.CreateSmallArray(), CacheConstants.ShortDuration));
         }
 
-        bool LastKeyNoLongerInCacheOrExpired()
-        {
-            return cache.Cache.Storage.Count() == 1;
-        }
+        bool LastKeyNoLongerInCacheOrExpired() => cache.Cache.Storage.Count() == 1;
 
         var cleaned = ThreadHelper.DoPeriodicallyUntil(LastKeyNoLongerInCacheOrExpired,
                                                        CacheConstants.TimingIterations,
                                                        CacheConstants.TimingIterationInterval,
                                                        CacheConstants.VeryLongDuration);
-        
+
         using var tempFile2 = new TempFile();
         _ = cache.TrySaveToFile(tempFile2.Info);
 
-        //
-        // Assert
-        //
         Assert.IsTrue(cleaned);
-
-        var file_1 = tempFile1.Info;
-        var file_2 = tempFile2.Info;
-
-        Assert.AreEqual(file_1.Length, file_2.Length);
+        Assert.AreEqual(tempFile1.Info.Length, tempFile2.Info.Length);
     }
 }

@@ -1,21 +1,21 @@
-﻿namespace Celestus.Storage.Cache
+namespace Celestus.Storage.Cache
 {
-    public partial class ThreadCache
+    public partial class ThreadSafeCache
     {
-        public static ThreadCacheManager Factory { get; } = new();
+        public static ThreadSafeCacheManager Factory { get; } = new();
 
-        public class ThreadCacheManager : CacheManagerBase<string, string, ThreadCache>
+        public class ThreadSafeCacheManager : CacheManagerBase<string, string, ThreadSafeCache>
         {
             public static TimeSpan DefaultTimeout { get; } = TimeSpan.FromMilliseconds(5000);
 
             #region CacheManagerBase
 
-            protected override ThreadCache? TryCreateFromFile(FileInfo file)
+            protected override ThreadSafeCache? TryCreateFromFile(FileInfo file)
             {
-                return ThreadCache.TryCreateFromFile(file);
+                return ThreadSafeCache.TryCreateFromFile(file);
             }
 
-            protected override bool Update(ThreadCache from, ThreadCache to, TimeSpan? timeout)
+            protected override bool Update(ThreadSafeCache from, ThreadSafeCache to, TimeSpan? timeout)
             {
                 // Should really be a read lock and not a write lock but we have write lock easily
                 // available.

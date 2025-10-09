@@ -40,13 +40,13 @@ namespace Celestus.Storage.Cache
                                 id = reader.GetString();
                                 break;
 
-                            case nameof(ThreadCache.PersistenceEnabled):
+                            case nameof(ThreadSafeCache.PersistenceEnabled):
                                 _ = reader.Read();
 
                                 persistenceEnabled = reader.GetBoolean();
                                 break;
 
-                            case nameof(ThreadCache.PersistenceStorageFile):
+                            case nameof(ThreadSafeCache.PersistenceStorageFile):
                                 _ = reader.Read();
 
                                 persistenceStorageLocation = reader.GetString();
@@ -170,11 +170,11 @@ namespace Celestus.Storage.Cache
 
             writer.WriteString(nameof(Cache.Id), value.Id);
 
-            writer.WriteBoolean(nameof(ThreadCache.PersistenceEnabled), value.PersistenceEnabled);
+            writer.WriteBoolean(nameof(ThreadSafeCache.PersistenceEnabled), value.PersistenceEnabled);
 
             if (value.PersistenceStorageFile != null)
             {
-                writer.WriteString(nameof(ThreadCache.PersistenceStorageFile),
+                writer.WriteString(nameof(ThreadSafeCache.PersistenceStorageFile),
                                    value.PersistenceStorageFile.FullName);
             }
 

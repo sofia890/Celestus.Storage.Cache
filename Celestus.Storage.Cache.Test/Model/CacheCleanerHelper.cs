@@ -14,9 +14,9 @@
             }
             else
             {
-                Assert.AreEqual(cleanerTypeToTest, typeof(ThreadCacheCleaner<string, string>));
+                Assert.AreEqual(cleanerTypeToTest, typeof(ThreadSafeCacheCleaner<string, string>));
 
-                cleaner = new ThreadCacheCleaner<string, string>(interval);
+                cleaner = new ThreadSafeCacheCleaner<string, string>(interval);
             }
 
             cleaner.RegisterCache(new(cache));

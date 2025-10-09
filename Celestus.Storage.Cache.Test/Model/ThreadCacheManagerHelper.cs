@@ -1,11 +1,11 @@
 ﻿namespace Celestus.Storage.Cache.Test.Model
 {
     /// <summary>
-    /// Helper class that extends ThreadCacheManager to expose the internal lock for testing
+    /// Helper class that extends ThreadSafeCacheManager to expose the internal lock for testing
     /// </summary>
-    internal class ThreadCacheManagerHelper : ThreadCache.ThreadCacheManager, IDoWhileLocked
+    internal class ThreadSafeCacheManagerHelper : ThreadSafeCache.ThreadSafeCacheManager, IDoWhileLocked
     {
-        public ThreadCacheManagerHelper(TimeSpan lockTimeout)
+        public ThreadSafeCacheManagerHelper(TimeSpan lockTimeout)
         {
             SetLockTimeoutInterval(lockTimeout);
         }

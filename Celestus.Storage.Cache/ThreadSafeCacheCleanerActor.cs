@@ -1,4 +1,4 @@
-﻿using Celestus.Exceptions;
+using Celestus.Exceptions;
 using System.Text.Json;
 using System.Threading.Channels;
 
@@ -6,7 +6,7 @@ namespace Celestus.Storage.Cache
 {
     class UnknownSignalException(string message) : Exception(message);
 
-    internal class ThreadCacheCleanerActor<CacheIdType, CacheKeyType> : IDisposable
+    internal class ThreadSafeCacheCleanerActor<CacheIdType, CacheKeyType> : IDisposable
         where CacheIdType : notnull
         where CacheKeyType : notnull
     {
@@ -29,7 +29,7 @@ namespace Celestus.Storage.Cache
             }
         );
 
-        public ThreadCacheCleanerActor(TimeSpan interval)
+        public ThreadSafeCacheCleanerActor(TimeSpan interval)
         {
             _cleanupInterval = interval;
             _nextCleanupOpportunity = DateTime.UtcNow + _cleanupInterval;

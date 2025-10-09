@@ -25,8 +25,8 @@ namespace Celestus.Storage.Cache
     /// <summary>
     /// Thread safe cache implementation with optional persistence to file.
     /// </summary>
-    [JsonConverter(typeof(ThreadCacheJsonConverter))]
-    public partial class ThreadCache : CacheBase<string, string>, IDisposable
+    [JsonConverter(typeof(ThreadSafeCacheJsonConverter))]
+    public partial class ThreadSafeCache : CacheBase<string, string>, IDisposable
     {
         public static TimeSpan DefaultTimeout { get; } = TimeSpan.FromMilliseconds(5000);
         public static TimeSpan DefaultCleanerInterval { get; } = TimeSpan.FromMilliseconds(60000);
@@ -51,7 +51,7 @@ namespace Celestus.Storage.Cache
 
         readonly ReaderWriterLockSlim _lock = new();
 
-        public ThreadCache(string id,
+        public ThreadSafeCache(string id,
                            Cache cache,
                            bool persistenceEnabled = false,
                            string persistenceStorageLocation = "") : base(id)
@@ -65,36 +65,36 @@ namespace Celestus.Storage.Cache
             }
         }
 
-        public ThreadCache(string id, CacheCleanerBase<string, string> cleaner, bool persistenceEnabled = false, string persistenceStorageLocation = "") :
+        public ThreadSafeCache(string id, CacheCleanerBase<string, string> cleaner, bool persistenceEnabled = false, string persistenceStorageLocation = "") :
             this(id, new Cache(cleaner,
                                 persistenceEnabled: persistenceEnabled,
                                 persistenceStorageLocation: persistenceStorageLocation))
         {
         }
 
-        public ThreadCache(CacheCleanerBase<string, string> cleaner) :
+        public ThreadSafeCache(CacheCleanerBase<string, string> cleaner) :
             this(string.Empty, cleaner)
         {
         }
 
-        public ThreadCache(string id) : this(id, new Cache())
+        public ThreadSafeCache(string id) : this(id, new Cache())
         {
         }
 
-        public ThreadCache(string id, TimeSpan? cleaningInterval, bool persistenceEnabled = false, string persistenceStorageLocation = "") :
+        public ThreadSafeCache(string id, TimeSpan? cleaningInterval, bool persistenceEnabled = false, string persistenceStorageLocation = "") :
             this(id,
-                cleaner: new ThreadCacheCleaner<string, string>(cleaningInterval ?? DefaultCleanerInterval),
+                cleaner: new ThreadSafeCacheCleaner<string, string>(cleaningInterval ?? DefaultCleanerInterval),
                 persistenceEnabled: persistenceEnabled,
                 persistenceStorageLocation: persistenceStorageLocation)
         {
         }
 
-        public ThreadCache(TimeSpan? cleaningInterval = null, bool persistenceEnabled = false, string persistenceStorageLocation = "") :
+        public ThreadSafeCache(TimeSpan? cleaningInterval = null, bool persistenceEnabled = false, string persistenceStorageLocation = "") :
             this(string.Empty, cleaningInterval, persistenceEnabled: persistenceEnabled, persistenceStorageLocation: persistenceStorageLocation)
         {
         }
 
-        public ThreadCache(string id, bool persistenceEnabled, string persistenceStorageLocation = "") :
+        public ThreadSafeCache(string id, bool persistenceEnabled, string persistenceStorageLocation = "") :
             this(id, DefaultCleanerInterval, persistenceEnabled: persistenceEnabled, persistenceStorageLocation: persistenceStorageLocation)
         {
         }
@@ -339,9 +339,9 @@ namespace Celestus.Storage.Cache
             }
         }
 
-        public static ThreadCache? TryCreateFromFile(FileInfo file)
+        public static ThreadSafeCache? TryCreateFromFile(FileInfo file)
         {
-            return Serialize.TryCreateFromFile<ThreadCache>(file);
+            return Serialize.TryCreateFromFile<ThreadSafeCache>(file);
         }
 
         public override bool TryLoadFromFile(FileInfo file)
@@ -352,7 +352,7 @@ namespace Celestus.Storage.Cache
             {
                 bool result = false;
 
-                var loadedData = Serialize.TryCreateFromFile<ThreadCache>(file);
+                var loadedData = Serialize.TryCreateFromFile<ThreadSafeCache>(file);
 
                 if (loadedData != null && Id == loadedData.Id)
                 {
@@ -414,7 +414,7 @@ namespace Celestus.Storage.Cache
         #endregion
 
         #region IEquatable
-        public bool Equals(ThreadCache? other)
+        public bool Equals(ThreadSafeCache? other)
         {
             return other != null &&
                    Cache.Equals(other.Cache) &&
@@ -423,7 +423,7 @@ namespace Celestus.Storage.Cache
 
         public override bool Equals(object? obj)
         {
-            return Equals(obj as ThreadCache);
+            return Equals(obj as ThreadSafeCache);
         }
 
         public override int GetHashCode()
@@ -435,7 +435,7 @@ namespace Celestus.Storage.Cache
         #region ICloneable
         public override object Clone()
         {
-            return new ThreadCache(Id, (Cache)Cache.Clone(), PersistenceEnabled, PersistenceStorageFile?.FullName ?? string.Empty);
+            return new ThreadSafeCache(Id, (Cache)Cache.Clone(), PersistenceEnabled, PersistenceStorageFile?.FullName ?? string.Empty);
         }
         #endregion
     }

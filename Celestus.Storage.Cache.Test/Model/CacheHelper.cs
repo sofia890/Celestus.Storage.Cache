@@ -4,9 +4,9 @@ namespace Celestus.Storage.Cache.Test.Model
     {
         public static CacheBase<string, string> GetOrCreateShared(Type cacheType, string key, bool persistenceEnabled = false, string persistenceStorageLocation = "")
         {
-            if (typeof(ThreadCache) == cacheType)
+            if (typeof(ThreadSafeCache) == cacheType)
             {
-                return ThreadCache.Factory.GetOrCreateShared(key, persistenceEnabled, persistenceStorageLocation);
+                return ThreadSafeCache.Factory.GetOrCreateShared(key, persistenceEnabled, persistenceStorageLocation);
             }
             else
             {
@@ -16,9 +16,9 @@ namespace Celestus.Storage.Cache.Test.Model
 
         public static CacheBase<string, string>? TryCreateFromFile(Type cacheType, FileInfo file)
         {
-            if (typeof(ThreadCache) == cacheType)
+            if (typeof(ThreadSafeCache) == cacheType)
             {
-                return ThreadCache.TryCreateFromFile(file);
+                return ThreadSafeCache.TryCreateFromFile(file);
             }
             else
             {

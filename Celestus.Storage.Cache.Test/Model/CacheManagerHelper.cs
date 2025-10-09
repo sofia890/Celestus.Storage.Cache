@@ -23,7 +23,7 @@
             }
             else
             {
-                ThreadCache.Factory.SetCleanupInterval(interval);
+                ThreadSafeCache.Factory.SetCleanupInterval(interval);
             }
         }
 
@@ -35,7 +35,7 @@
             }
             else
             {
-                ThreadCache.Factory.SetCleanupInterval(TimeSpan.FromMilliseconds(CacheManagerCleaner<string, string, Cache>.DEFAULT_INTERVAL_IN_MS));
+                ThreadSafeCache.Factory.SetCleanupInterval(TimeSpan.FromMilliseconds(CacheManagerCleaner<string, string, Cache>.DEFAULT_INTERVAL_IN_MS));
             }
         }
 

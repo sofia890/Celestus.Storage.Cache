@@ -9,7 +9,7 @@ public class TestCacheCleaners
 {
     [TestMethod]
     [DataRow(typeof(CacheCleaner<string, string>))]
-    // ThreadCacheCleaner does not prune on accesses due to optimization.
+    // ThreadSafeCacheCleaner does not prune on accesses due to optimization.
     public void VerifyThatExpiredElementsAreRemovedWhenEntryIsAccessed(Type cleanerTypeToTest)
     {
         //
@@ -36,7 +36,7 @@ public class TestCacheCleaners
 
     [TestMethod]
     [DataRow(typeof(CacheCleaner<string, string>))]
-    [DataRow(typeof(ThreadCacheCleaner<string, string>))]
+    [DataRow(typeof(ThreadSafeCacheCleaner<string, string>))]
     public void VerifyThatCleanupOnlyHappensAfterInterval(Type cleanerTypeToTest)
     {
         //
@@ -81,7 +81,7 @@ public class TestCacheCleaners
 
     [TestMethod]
     [DataRow(typeof(CacheCleaner<string, string>))]
-    [DataRow(typeof(ThreadCacheCleaner<string, string>))]
+    [DataRow(typeof(ThreadSafeCacheCleaner<string, string>))]
     public void VerifyThatSerializationHandlesSettingsCorrectly(Type cleanerTypeToTest)
     {
         //
@@ -118,7 +118,7 @@ public class TestCacheCleaners
 
     [TestMethod]
     [DataRow(typeof(CacheCleaner<string, string>))]
-    [DataRow(typeof(ThreadCacheCleaner<string, string>))]
+    [DataRow(typeof(ThreadSafeCacheCleaner<string, string>))]
     public void VerifyThatMissingIntervalCausesCrash(Type cleanerTypeToTest)
     {
         using var cleaner = CacheCleanerHelper.GetCleaner(cleanerTypeToTest, CacheConstants.ShortDuration, out _);
@@ -129,7 +129,7 @@ public class TestCacheCleaners
 
     [TestMethod]
     [DataRow(typeof(CacheCleaner<string, string>))]
-    [DataRow(typeof(ThreadCacheCleaner<string, string>))]
+    [DataRow(typeof(ThreadSafeCacheCleaner<string, string>))]
     public void VerifyThatUnknownParametersAreIgnored(Type cleanerTypeToTest)
     {
         //

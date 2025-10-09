@@ -1,18 +1,18 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 
 namespace Celestus.Storage.Cache
 {
     /// <summary>
     /// Thread safe cache cleaner.
     /// </summary>
-    public class ThreadCacheCleaner<CacheIdType, CacheKeyType>(TimeSpan interval) : CacheCleanerBase<CacheIdType, CacheKeyType>
+    public class ThreadSafeCacheCleaner<CacheIdType, CacheKeyType>(TimeSpan interval) : CacheCleanerBase<CacheIdType, CacheKeyType>
         where CacheIdType : notnull
         where CacheKeyType : notnull
     {
         const int DEFAULT_INTERVAL_IN_MS = 60000;
-        readonly ThreadCacheCleanerActor<CacheIdType, CacheKeyType> _server = new(interval);
+        readonly ThreadSafeCacheCleanerActor<CacheIdType, CacheKeyType> _server = new(interval);
 
-        public ThreadCacheCleaner() : this(interval: TimeSpan.FromMilliseconds(DEFAULT_INTERVAL_IN_MS))
+        public ThreadSafeCacheCleaner() : this(interval: TimeSpan.FromMilliseconds(DEFAULT_INTERVAL_IN_MS))
         {
 
         }
@@ -77,10 +77,10 @@ namespace Celestus.Storage.Cache
 
         public override object Clone()
         {
-            return new ThreadCacheCleaner<CacheIdType, CacheKeyType>(interval);
+            return new ThreadSafeCacheCleaner<CacheIdType, CacheKeyType>(interval);
         }
 
-        ~ThreadCacheCleaner()
+        ~ThreadSafeCacheCleaner()
         {
             Dispose(false);
         }
