@@ -12,6 +12,7 @@ namespace Celestus.Storage.Cache
     {
         public const int DEFAULT_TIMEOUT_IN_MS = 5000;
         public const int STOP_TIMEOUT = 30000;
+        public const int EXPECTED_MAX_CONCURRENT_SIGNALS = 10;
 
         TimeSpan _cleanupInterval;
         DateTime _nextCleanupOpportunity;
@@ -20,8 +21,8 @@ namespace Celestus.Storage.Cache
         private readonly Task _signalHandlerTask;
         readonly CancellationTokenSource cleanerLoopCancellationTokenSource = new();
 
-        public Channel<Signal> CleanerPort { get; init; } = Channel.CreateUnbounded<Signal>(
-            options: new UnboundedChannelOptions()
+        public Channel<Signal> CleanerPort { get; init; } = Channel.CreateBounded<Signal>(
+            options: new BoundedChannelOptions(EXPECTED_MAX_CONCURRENT_SIGNALS)
             {
                 SingleReader = true,
                 SingleWriter = false
