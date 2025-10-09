@@ -51,20 +51,8 @@ namespace Celestus.Storage.Cache
                     {
                         entry.Cleaner.Dispose();
                     }
-                    else if (cache.IsDisposed)
-                    {
-                        if (_cacheManager?.TryGetTarget(out var manager) ?? false)
-                        {
-                            manager.Remove(cache.Id);
-                        }
-                        else
-                        {
-                            _elements.Enqueue(entry);
-
-                            break;
-                        }
-                    }
-                    else
+                    else if (!_cacheManager?.TryGetTarget(out var manager) ?? true ||
+                             !manager.RemoveIfExpired(cache.Id))
                     {
                         remainingElements.Add(entry);
                     }

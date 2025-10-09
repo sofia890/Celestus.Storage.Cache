@@ -179,6 +179,28 @@ namespace Celestus.Storage.Cache
             }
         }
 
+        public bool RemoveIfExpired(CacheIdType id)
+        {
+            Condition.ThrowIf<CleanupTimeoutException>(!_lock.TryEnterWriteLock(_lockTimeout),
+                                                       "Could not lock resource for writing.");
+
+            try
+            {
+                if (_caches[id].TryGetTarget(out var cache) && cache.IsDisposed)
+                {
+                    _caches.Remove(id);
+
+                    return true;
+                }
+            }
+            finally
+            {
+                _lock.ExitWriteLock();
+            }
+
+            return false;
+        }
+
         protected abstract CacheType? TryCreateFromFile(FileInfo file);
 
         protected abstract bool Update(CacheType from, CacheType to, TimeSpan? timeout);
