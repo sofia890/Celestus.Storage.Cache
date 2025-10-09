@@ -13,7 +13,8 @@ namespace Celestus.Storage.Cache
 
     public class CacheLoadException(string message) : CacheIoException(message);
     public class CacheSaveException(string message) : CacheIoException(message);
-    public class NoPersistenceEnabledPathException(string message) : CacheIoException(message);
+    public class NoPersistencePathException(string message) : CacheIoException(message);
+    public class PersistencePathNotWriteableException(string message) : CacheIoException(message);
 
     public abstract class CacheBase<CacheIdType, CacheKeyType> : IDisposable, ICloneable
         where CacheIdType : notnull

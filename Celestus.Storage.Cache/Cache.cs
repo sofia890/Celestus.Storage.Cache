@@ -57,6 +57,8 @@ namespace Celestus.Storage.Cache
                 else if (storeToFile)
                 {
                     PersistenceStorageFile = GetDefaultPersistencePath(Id);
+
+                    PersistencePathNotWriteableException.ThrowIf(!CanWrite.Test(PersistenceStorageFile), "Cannot write to provided path.");
                 }
                 else
                 {
@@ -78,7 +80,7 @@ namespace Celestus.Storage.Cache
             {
                 if (!PersistenceStorageFile.Exists)
                 {
-                    _ = Directory.CreateDirectory(PersistenceStorageFile.FullName);
+                    PersistenceStorageFile.Directory?.Create();
                 }
 
                 CacheSaveException.ThrowIf(!TrySaveToFile(PersistenceStorageFile),
@@ -93,13 +95,13 @@ namespace Celestus.Storage.Cache
             string commonAppDataPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
             var appPath = System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName;
 
-            var assemblyName = Assembly.GetExecutingAssembly().GetName().Name;
+            var assemblyName = Assembly.GetExecutingAssembly().GetName().Name ?? nameof(Celestus.Storage.Cache);
 
             FileInfo filePath;
 
             if (appPath == null)
             {
-                filePath = new($"{Directory.GetCurrentDirectory()}/{assemblyName}/{key}.json");
+                filePath = new(Path.Combine([Directory.GetCurrentDirectory(), assemblyName, $"{key}.json"]));
             }
             else
             {
@@ -107,15 +109,18 @@ namespace Celestus.Storage.Cache
 
                 var appName = file.Name;
 
-                filePath = new($"{commonAppDataPath}/{appName}/{assemblyName}/{key}.json");
+                filePath = new(Path.Combine([commonAppDataPath, appName, assemblyName, $"{key}.json"]));
 
                 if (!CanWrite.Test(filePath))
                 {
-                    filePath = new($"{file.DirectoryName}/{assemblyName}/{key}.json");
+                    if (file.DirectoryName != null)
+                    {
+                        filePath = new(Path.Combine([file.DirectoryName, assemblyName, $"{key}.json"]));
+                    }
                 }
             }
 
-            NoPersistenceEnabledPathException.ThrowIf(!CanWrite.Test(filePath), "Could not find any writeable path for application.");
+            NoPersistencePathException.ThrowIf(!CanWrite.Test(filePath), "Could not find any writeable path for application.");
 
             return filePath;
         }
@@ -234,7 +239,7 @@ namespace Celestus.Storage.Cache
             if (Storage.TryGetValue(key, out var entry))
             {
                 var currentTime = DateTime.UtcNow;
-                found = entry.Expiration >= currentTime;
+                found = entry.Expiration > currentTime;
 
                 if (entry.Data is DataType data)
                 {

@@ -2,19 +2,19 @@
 {
     public static class CanWrite
     {
-        public static bool Test(FileInfo file)
+        public static bool Test(FileInfo fileInfo)
         {
             try
             {
-                File.WriteAllText(file.FullName, string.Empty);
-                File.Delete(file.FullName);
+                using var fileStream = fileInfo.Open(FileMode.Open);
 
-                return true;
+                return fileStream.CanWrite;
             }
             catch
             {
                 return false;
             }
+            
         }
     }
 }
