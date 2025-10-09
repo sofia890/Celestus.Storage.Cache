@@ -1,10 +1,11 @@
 ﻿using Celestus.Exceptions;
-using System.Reflection.PortableExecutable;
 using System.Text.Json;
 using System.Threading.Channels;
 
 namespace Celestus.Storage.Cache
 {
+    class UnknownSignalException(string message) : Exception(message);
+
     internal class ThreadCacheCleanerActor<CacheIdType, CacheKeyType> : IDisposable
         where CacheIdType : notnull
         where CacheKeyType : notnull
@@ -34,12 +35,7 @@ namespace Celestus.Storage.Cache
             _signalHandlerTask = Task.Run(HandleSignals);
         }
 
-        private Task NewTimeoutTask()
-        {
-            return Task.Delay(_cleanupInterval, cleanerLoopCancellationTokenSource.Token);
-        }
-
-        private async Task HandleSignals()
+        private void HandleSignals()
         {
             var cancelToken = cleanerLoopCancellationTokenSource.Token;
 
@@ -55,35 +51,45 @@ namespace Celestus.Storage.Cache
                 {
                     signalTask = reader.ReadAsync().AsTask();
                 }
-                else if (await Task.WhenAny(signalTask, NewTimeoutTask()) != signalTask)
+                else if (signalTask.Wait(_cleanupInterval))
                 {
-                    Prune(DateTime.UtcNow);
-                }
-                else if (signalTask.IsCompletedSuccessfully)
-                {
-                    Signal rawSignal = signalTask.Result;
-                    signalTask = null;
-
-                    switch (rawSignal.SignalId)
+                    if (signalTask.IsCompletedSuccessfully)
                     {
-                        default:
-                        case CleanerProtocol.Stop:
-                            return;
+                        Signal rawSignal = signalTask.Result;
+                        signalTask = null;
 
-                        case CleanerProtocol.RegisterCacheInd when rawSignal is RegisterCacheInd<CacheIdType, CacheKeyType> payload:
-                            _cacheReference = payload.Cache;
-                            break;
+                        switch (rawSignal.SignalId)
+                        {
+                            default:
+                                throw new UnknownSignalException($"Unknown signal ID '{rawSignal.SignalId}' encountered.");
 
-                        case CleanerProtocol.UnregisterCacheInd:
-                            _cacheReference = null;
-                            break;
+                            case CleanerProtocol.Stop:
+                                return;
 
-                        case CleanerProtocol.ResetInd when rawSignal is ResetInd payload:
-                            _cleanupInterval = payload.CleanupInterval;
-                            _nextCleanupOpportunity = DateTime.UtcNow + _cleanupInterval;
-                            break;
+                            case CleanerProtocol.RegisterCacheInd when rawSignal is RegisterCacheInd<CacheIdType, CacheKeyType> payload:
+                                _cacheReference = payload.Cache;
+                                break;
+
+                            case CleanerProtocol.UnregisterCacheInd:
+                                _cacheReference = null;
+                                break;
+
+                            case CleanerProtocol.ResetInd when rawSignal is ResetInd payload:
+                                _cleanupInterval = payload.CleanupInterval;
+                                _nextCleanupOpportunity = DateTime.UtcNow + _cleanupInterval;
+                                break;
+                        }
+                    }
+                    else
+                    {
+                        signalTask = null;
                     }
 
+                    Prune(DateTime.UtcNow);
+
+                }
+                else
+                {
                     Prune(DateTime.UtcNow);
                 }
             }
