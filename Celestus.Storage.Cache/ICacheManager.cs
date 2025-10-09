@@ -14,6 +14,6 @@ namespace Celestus.Storage.Cache
 
         public void SetCleanupInterval(TimeSpan interval);
 
-        public void Remove(CacheKeyType key);
+        public bool Remove(CacheKeyType key, bool removeOnlyIfExpired = false);
     }
 }

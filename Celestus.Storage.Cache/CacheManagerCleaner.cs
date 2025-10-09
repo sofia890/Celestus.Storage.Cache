@@ -52,7 +52,7 @@ namespace Celestus.Storage.Cache
                         entry.Cleaner.Dispose();
                     }
                     else if (!_cacheManager?.TryGetTarget(out var manager) ?? true ||
-                             !manager.RemoveIfExpired(cache.Id))
+                             !manager.Remove(cache.Id, removeOnlyIfExpired: true))
                     {
                         remainingElements.Add(entry);
                     }
