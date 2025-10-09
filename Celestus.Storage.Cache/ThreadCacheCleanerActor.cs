@@ -17,6 +17,7 @@ namespace Celestus.Storage.Cache
         WeakReference<CacheBase<CacheIdType, CacheKeyType>>? _cacheReference = null;
         private bool _disposed = false;
         private readonly Task _signalHandlerTask;
+        readonly CancellationTokenSource cleanerLoopCancellationTokenSource = new();
 
         public Channel<Signal> CleanerPort { get; init; } = Channel.CreateUnbounded<Signal>(
             options: new UnboundedChannelOptions()
@@ -35,17 +36,21 @@ namespace Celestus.Storage.Cache
 
         private Task NewTimeoutTask()
         {
-            return Task.Delay(_cleanupInterval);
+            return Task.Delay(_cleanupInterval, cleanerLoopCancellationTokenSource.Token);
         }
 
         private async Task HandleSignals()
         {
+            var cancelToken = cleanerLoopCancellationTokenSource.Token;
+
             Task<Signal>? signalTask = null;
 
             var reader = CleanerPort.Reader;
 
             while (!reader.Completion.IsCompleted && !_disposed)
             {
+                cancelToken.ThrowIfCancellationRequested();
+
                 if (signalTask == null)
                 {
                     signalTask = reader.ReadAsync().AsTask();
@@ -100,12 +105,16 @@ namespace Celestus.Storage.Cache
             }
             else
             {
+                var cancelToken = cleanerLoopCancellationTokenSource.Token;
+
                 List<CacheKeyType> expiredKeys = [];
 
                 var reader = CleanerPort.Reader;
 
                 foreach (var entry in cache.Storage)
                 {
+                    cancelToken.ThrowIfCancellationRequested();
+
                     if (reader.Completion.IsCompleted)
                     {
                         return;
@@ -195,9 +204,29 @@ namespace Celestus.Storage.Cache
                     CleanerPort.Writer.TryWrite(new StopInd());
                     CleanerPort.Writer.Complete();
 
-                    _ = _signalHandlerTask.Wait(STOP_TIMEOUT);
+                    if (!_signalHandlerTask.Wait(STOP_TIMEOUT))
+                    {
+                        try
+                        {
+                            cleanerLoopCancellationTokenSource.Cancel();
+                            _signalHandlerTask.Wait();
+                        }
+                        catch (AggregateException exception)
+                        {
+                            if (exception.InnerException?.GetType() != typeof(OperationCanceledException))
+                            {
+                                throw;
+                            }
 
-                    _signalHandlerTask.Dispose();
+                            _signalHandlerTask.Dispose();
+                        }
+
+                        cleanerLoopCancellationTokenSource.Dispose();
+                    }
+                    else
+                    {
+                        _signalHandlerTask.Dispose();
+                    }
                 }
 
                 _disposed = true;
