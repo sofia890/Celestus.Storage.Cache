@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.Collections.Concurrent;
+using System.Threading.Tasks;
 
 namespace Celestus.Storage.Cache
 {
@@ -18,7 +19,7 @@ namespace Celestus.Storage.Cache
         public const int DEFAULT_INTERVAL_IN_MS = 10000;
         public const int STOP_TIMEOUT = 30000;
 
-        readonly Queue<FactoryEntry<CacheIdType, CacheKeyType, CacheType>> _elements = [];
+        readonly ConcurrentQueue<FactoryEntry<CacheIdType, CacheKeyType, CacheType>> _elements = [];
         WeakReference<CacheManagerBase<CacheIdType, CacheKeyType, CacheType>>? _cacheManager;
 
         TimeSpan _cleanupInterval = TimeSpan.FromMilliseconds(DEFAULT_INTERVAL_IN_MS);
@@ -54,7 +55,7 @@ namespace Celestus.Storage.Cache
                     {
                         if (_cacheManager?.TryGetTarget(out var manager) ?? false)
                         {
-                            manager.CacheExpired(cache.Id);
+                            manager.Remove(cache.Id);
                         }
                         else
                         {

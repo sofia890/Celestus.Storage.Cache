@@ -12,7 +12,7 @@
 
         public void CallCacheExpired(string key)
         {
-            CacheExpired(key);
+            Remove(key);
         }
 
         #region IDoWhileLocked

@@ -147,23 +147,6 @@ namespace Celestus.Storage.Cache
             }
         }
 
-        internal void CacheExpired(CacheIdType id)
-        {
-            ObjectDisposedException.ThrowIf(_isDisposed, this);
-
-            Condition.ThrowIf<CleanupTimeoutException>(!_lock.TryEnterWriteLock(_lockTimeout),
-                                                       "Could not lock resource for writing.");
-
-            try
-            {
-                _caches.Remove(id, out _);
-            }
-            finally
-            {
-                _lock.ExitWriteLock();
-            }
-        }
-
         public void SetCleanupInterval(TimeSpan interval)
         {
             _factoryCleaner.SetCleanupInterval(interval);
@@ -176,9 +159,16 @@ namespace Celestus.Storage.Cache
 
         public void Remove(CacheIdType id)
         {
-            lock (this)
+            Condition.ThrowIf<CleanupTimeoutException>(!_lock.TryEnterWriteLock(_lockTimeout),
+                                                       "Could not lock resource for writing.");
+
+            try
             {
                 _caches.Remove(id);
+            }
+            finally
+            {
+                _lock.ExitWriteLock();
             }
         }
 

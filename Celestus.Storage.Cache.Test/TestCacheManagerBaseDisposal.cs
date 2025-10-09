@@ -71,7 +71,7 @@ namespace Celestus.Storage.Cache.Test
             //
             // Act & Assert
             //
-            Assert.ThrowsException<ObjectDisposedException>(() => manager.CacheExpired("test-key"));
+            Assert.ThrowsException<ObjectDisposedException>(() => manager.Remove("test-key"));
         }
 
         [TestMethod]
@@ -139,7 +139,7 @@ namespace Celestus.Storage.Cache.Test
             //
             // Act & Assert
             //
-            Assert.ThrowsException<ObjectDisposedException>(() => manager.CacheExpired("test-key"));
+            Assert.ThrowsException<ObjectDisposedException>(() => manager.Remove("test-key"));
         }
     }
 }
