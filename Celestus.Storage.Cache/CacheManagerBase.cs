@@ -147,13 +147,19 @@ namespace Celestus.Storage.Cache
             }
         }
 
+        /// <summary>
+        /// Gets the next time interval between scheduled cleanup operations.
+        /// </summary>
+        /// <returns>Amount of time to wait between cleanups.</returns>
         public TimeSpan GetCleanupInterval()
         {
             return _factoryCleaner.GetCleanupInterval();
         }
 
-
-
+        /// <summary>
+        /// Sets the time interval between scheduled cleanup operations. Applies next time cleanup runs.
+        /// </summary>
+        /// <param name="interval">Amount of time to wait between cleanups.</param>
         public void SetCleanupInterval(TimeSpan interval)
         {
             _factoryCleaner.SetCleanupInterval(interval);
