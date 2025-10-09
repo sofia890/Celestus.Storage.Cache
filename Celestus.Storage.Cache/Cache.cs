@@ -245,12 +245,7 @@ namespace Celestus.Storage.Cache
                 {
                     value = data;
                 }
-                else if (entry.Data == null)
-                {
-                    value = default;
-                    found = true;
-                }
-                else
+                else if (entry.Data != null)
                 {
                     found = false;
                 }
