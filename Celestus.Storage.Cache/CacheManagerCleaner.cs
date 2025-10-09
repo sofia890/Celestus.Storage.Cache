@@ -105,31 +105,22 @@ namespace Celestus.Storage.Cache
                 {
                     _abort = true;
 
-                    if (!_cleanerLoop.Wait(STOP_TIMEOUT))
+                    try
                     {
-                        try
-                        {
-                            cleanerLoopCancellationTokenSource.Cancel();
-                            _cleanerLoop.Wait();
-                        }
-                        catch (AggregateException exception)
-                        {
-                            if (exception.InnerException?.GetType() != typeof(OperationCanceledException))
-                            {
-                                throw;
-                            }
-
-                            _cleanerLoop.Dispose();
-                        }
-
-                        cleanerLoopCancellationTokenSource.Dispose();
+                        cleanerLoopCancellationTokenSource.Cancel();
+                        _cleanerLoop.Wait();
                     }
-                    else
+                    catch (AggregateException exception)
                     {
+                        if (exception.InnerException?.GetType() != typeof(OperationCanceledException))
+                        {
+                            throw;
+                        }
+
                         _cleanerLoop.Dispose();
-
-                        cleanerLoopCancellationTokenSource.Dispose();
                     }
+
+                    cleanerLoopCancellationTokenSource.Dispose();
                 }
 
                 _isDisposed = true;
