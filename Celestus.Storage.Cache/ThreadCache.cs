@@ -382,18 +382,6 @@ namespace Celestus.Storage.Cache
             GC.SuppressFinalize(this);
         }
 
-        ~ThreadCache()
-        {
-            try
-            {
-                Dispose(false);
-            }
-            catch
-            {
-                // Suppress all exceptions
-            }
-        }
-
         protected virtual void Dispose(bool disposing)
         {
             if (!_disposed)
@@ -402,8 +390,6 @@ namespace Celestus.Storage.Cache
                     () =>
                     {
                         Factory.Remove(Id);
-
-                        Cache.HandlePersistenceEnabledFinalization();
 
                         if (disposing)
                         {

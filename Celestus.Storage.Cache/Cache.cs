@@ -328,6 +328,7 @@ namespace Celestus.Storage.Cache
 
         ~Cache()
         {
+            // Triggers persistence, saves state to file.
             Dispose(false);
         }
 
