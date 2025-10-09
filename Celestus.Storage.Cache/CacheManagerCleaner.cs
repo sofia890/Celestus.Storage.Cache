@@ -105,13 +105,24 @@ namespace Celestus.Storage.Cache
                     }
                     catch (AggregateException exception)
                     {
-                        if (exception.InnerException?.GetType() != typeof(OperationCanceledException))
+                        var exceptionType = exception.InnerException?.GetType();
+
+                        if (exceptionType == typeof(TaskCanceledException) ||
+                            exceptionType == typeof(OperationCanceledException))
+                        {
+                            // Ignore this exception
+                        }
+                        else
                         {
                             throw;
                         }
-
-                        _cleanerLoop.Dispose();
                     }
+                    catch (OperationCanceledException)
+                    {
+                        // Ignore this exception
+                    }
+
+                    _cleanerLoop.Dispose();
 
                     cleanerLoopCancellationTokenSource.Dispose();
                 }

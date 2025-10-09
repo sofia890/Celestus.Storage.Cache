@@ -109,13 +109,24 @@ namespace Celestus.Storage.Cache.Test.Model
                 }
                 catch (AggregateException exception)
                 {
-                    if (exception.InnerException?.GetType() != typeof(OperationCanceledException))
+                    var exceptionType = exception.InnerException?.GetType();
+
+                    if (exceptionType == typeof(TaskCanceledException) ||
+                        exceptionType == typeof(OperationCanceledException))
+                    {
+                        // Ignore this exception
+                    }
+                    else
                     {
                         throw;
                     }
-
-                    task.Dispose();
                 }
+                catch (OperationCanceledException)
+                {
+                    // Ignore this exception
+                }
+
+                task.Dispose();
 
                 return false;
             }
