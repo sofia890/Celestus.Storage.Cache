@@ -1,6 +1,7 @@
 ﻿using Celestus.Exceptions;
 using Celestus.Io;
 using Celestus.Serialization;
+using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Text.Json.Serialization;
@@ -38,6 +39,7 @@ namespace Celestus.Storage.Cache
             return Serialize.TryCreateFromFile<Cache>(file);
         }
 
+        /// <returns>Shallow clone of the cache.</returns>
         public Cache ToCache()
         {
             var clone = new Cache(Id)
@@ -313,6 +315,11 @@ namespace Celestus.Storage.Cache
                 return true;
             }
         }
+
+        internal override ImmutableDictionary<string, CacheEntry> GetEntries()
+        {
+            return Storage.ToImmutableDictionary();
+        }
         #endregion
 
         #region IDisposable
@@ -389,6 +396,7 @@ namespace Celestus.Storage.Cache
         #endregion
 
         #region ICloneable
+        /// <returns>Shallow clone of the cache.</returns>
         public override object Clone()
         {
             return ToCache();

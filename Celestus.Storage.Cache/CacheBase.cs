@@ -1,4 +1,6 @@
 ﻿using Celestus.Exceptions;
+using System.Collections.Immutable;
+using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Celestus.Storage.Cache
@@ -51,6 +53,8 @@ namespace Celestus.Storage.Cache
         public abstract bool TrySaveToFile(FileInfo file);
 
         public abstract bool TryLoadFromFile(FileInfo file);
+
+        internal abstract ImmutableDictionary<CacheKeyType, CacheEntry> GetEntries();
 
         #region IDisposable
         public abstract void Dispose();

@@ -118,7 +118,7 @@ namespace Celestus.Storage.Cache
 
                 var reader = CleanerPort.Reader;
 
-                foreach (var entry in cache.Storage)
+                foreach (var entry in cache.GetEntries())
                 {
                     cancelToken.ThrowIfCancellationRequested();
 

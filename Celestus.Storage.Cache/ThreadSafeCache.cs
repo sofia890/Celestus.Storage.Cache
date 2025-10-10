@@ -1,12 +1,15 @@
 ﻿using Celestus.Exceptions;
 using Celestus.Serialization;
+using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
 
 namespace Celestus.Storage.Cache
 {
-    class ReadLockException(string message) : Exception(message)
+    class LockException(string message) : Exception(message);
+
+    class ReadLockException(string message) : LockException(message)
     {
         public static void ThrowIf(bool condition, string message)
         {
@@ -14,7 +17,7 @@ namespace Celestus.Storage.Cache
         }
     }
 
-    class WriteLockException(string message) : Exception(message)
+    class WriteLockException(string message) : LockException(message)
     {
         public static void ThrowIf(bool condition, string message)
         {
@@ -376,6 +379,15 @@ namespace Celestus.Storage.Cache
 
             return DoWhileWriteLocked(TryLoad, out var result, DefaultTimeout) && result;
         }
+
+        internal override ImmutableDictionary<string, CacheEntry> GetEntries()
+        {
+            var result = DoWhileReadLocked(() => Cache.GetEntries(), out var dictionary, DefaultTimeout);
+
+            ReadLockException.ThrowIf(!result, "Could not acquire read lock.");
+
+            return dictionary;
+        }
         #endregion
 
         #region IDisposable
@@ -433,6 +445,7 @@ namespace Celestus.Storage.Cache
         #endregion
 
         #region ICloneable
+        /// <returns>Shallow clone of the cache.</returns>
         public override object Clone()
         {
             return new ThreadSafeCache(Id, (Cache)Cache.Clone(), PersistenceEnabled, PersistenceStorageFile?.FullName ?? string.Empty);
