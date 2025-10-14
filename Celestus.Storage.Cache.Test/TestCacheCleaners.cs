@@ -82,49 +82,10 @@ public class TestCacheCleaners
     [TestMethod]
     [DataRow(typeof(CacheCleaner<string, string>))]
     [DataRow(typeof(ThreadSafeCacheCleaner<string, string>))]
-    public void VerifyThatSerializationHandlesSettingsCorrectly(Type cleanerTypeToTest)
-    {
-        //
-        // Arrange
-        //
-        var interval = CacheConstants.TimingDuration;
-        using var cleanerA = CacheCleanerHelper.GetCleaner(cleanerTypeToTest, interval, out _);
-
-        using var stream = new MemoryStream();
-        using Utf8JsonWriter writer = new(stream);
-        cleanerA.Serialize(writer, new());
-        writer.Flush();
-
-        //
-        // Act
-        //
-        using var cleanerB = CacheCleanerHelper.GetCleaner(cleanerTypeToTest, CacheConstants.VeryLongDuration, out var cacheB);
-
-        Utf8JsonReader reader = new(stream.ToArray());
-        cleanerB.Deserialize(ref reader, new());
-
-        const string KEY = "Key";
-        CleanerHelper.AddEntryToCache(KEY, DateTime.UtcNow, cacheB, out var entry);
-
-        ThreadHelper.SpinWait(interval * 2);
-
-        cleanerB.EntryAccessed(ref entry, KEY);
-
-        //
-        // Assert
-        //
-        Assert.IsTrue(cacheB.EntryRemoved.WaitOne(interval * 2));
-    }
-
-    [TestMethod]
-    [DataRow(typeof(CacheCleaner<string, string>))]
-    [DataRow(typeof(ThreadSafeCacheCleaner<string, string>))]
     public void VerifyThatMissingIntervalCausesCrash(Type cleanerTypeToTest)
     {
-        using var cleaner = CacheCleanerHelper.GetCleaner(cleanerTypeToTest, CacheConstants.ShortDuration, out _);
-
-        string json = "{\"ExtraParameter\":\"500\"}";
-        Assert.ThrowsException<MissingValueJsonException>(() => CleaningHelper.ReadSettings(cleaner, json));
+        string json = "{\"parameter\":\"value\"}";
+        Assert.ThrowsException<MissingValueJsonException>(() => CleaningHelper.Deserialize(json, cleanerTypeToTest));
     }
 
     [TestMethod]
@@ -135,9 +96,7 @@ public class TestCacheCleaners
         //
         // Arrange
         //
-        using var cleaner = CacheCleanerHelper.GetCleaner(cleanerTypeToTest, CacheConstants.ShortDuration, out _);
-
-        string json = "{\"ExtraParameter\":\"500\",\"_cleanupInterval\":\"00:00:00.5\"}";
-        CleaningHelper.ReadSettings(cleaner, json);
+        string json = "{\"ExtraParameter\":\"500\",\"CleanupInterval\":\"00:00:00.5\"}";
+        CleaningHelper.Deserialize(json, cleanerTypeToTest);
     }
 }

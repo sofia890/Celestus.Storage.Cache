@@ -46,13 +46,14 @@ public class TestCacheCleaning
         using var file = new TempFile();
 
         _ = cache.TrySaveToFile(file.Info);
-        _ = Cache.TryCreateFromFile(file.Info);
+        var otherCache = Cache.TryCreateFromFile(file.Info);
 
         //
         // Assert
         //
         Assert.IsTrue(cleanerTester.SettingsWritten);
-        Assert.IsTrue(cleanerTester.SettingsReadCorrectly);
+        Assert.IsNotNull(otherCache);
+        Assert.IsTrue(((CacheCleanerTester)otherCache.Cleaner).SettingsReadCorrectly);
     }
 
     [TestMethod]
@@ -117,13 +118,13 @@ public class TestCacheCleaning
     public void VerifyThatMissingIntervalCausesCrash()
     {
         string json = "{\"ExtraParameter\":\"500\"}";
-        Assert.ThrowsException<MissingValueJsonException>(() => CleaningHelper.ReadSettings<CacheCleaner<string, string>>(json));
+        Assert.ThrowsException<MissingValueJsonException>(() => CleaningHelper.Deserialize<CacheCleaner<string, string>>(json));
     }
 
     [TestMethod]
     public void VerifyThatUnknownParametersAreIgnored()
     {
-        string json = "{\"ExtraParameter\":\"500\",\"_cleanupInterval\":\"00:00:00.5\"}";
-        CleaningHelper.ReadSettings<CacheCleaner<string, string>>(json);
+        string json = "{\"ExtraParameter\":\"500\",\"CleanupInterval\":\"00:00:00.5\"}";
+        CleaningHelper.Deserialize<CacheCleaner<string, string>>(json);
     }
 }

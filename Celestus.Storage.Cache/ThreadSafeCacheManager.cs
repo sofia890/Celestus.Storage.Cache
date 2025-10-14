@@ -23,7 +23,7 @@ namespace Celestus.Storage.Cache
                 {
                     using (cacheLock)
                     {
-                        return to.TrySetCache(from.Cache.ToCache(), timeout ?? DefaultTimeout);
+                        return to.TrySetCache((CacheBase<string, string>)from.Cache.Clone(), timeout ?? DefaultTimeout);
                     }
                 }
                 else

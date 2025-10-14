@@ -1,24 +1,29 @@
-﻿using System.Text;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Text;
 using System.Text.Json;
 
 namespace Celestus.Storage.Cache.Test.Model
 {
     public static class CleaningHelper
     {
-        public static void ReadSettings<CleanerType>(string json)
-            where CleanerType : CacheCleanerBase<string, string>, new()
+        public static void Deserialize<CleanerType>(string json)
+            where CleanerType : CacheCleanerBase<string, string>
         {
-            Utf8JsonReader reader = new(Encoding.UTF8.GetBytes(json));
-
-            CleanerType cleaner = new();
-            cleaner.Deserialize(ref reader, new());
+            JsonSerializer.Deserialize<CleanerType>(json);
         }
 
-        public static void ReadSettings(CacheCleanerBase<string, string> cleaner, string json)
+        public static bool Deserialize(string json, Type type)
         {
             Utf8JsonReader reader = new(Encoding.UTF8.GetBytes(json));
 
-            cleaner.Deserialize(ref reader, new());
+            if (JsonSerializer.Deserialize(ref reader, type) != null)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
     }
 }

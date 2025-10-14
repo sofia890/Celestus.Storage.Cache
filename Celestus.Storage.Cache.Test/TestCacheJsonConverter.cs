@@ -11,7 +11,7 @@ namespace Celestus.Storage.Cache.Test
             string json = """
                 "Invalid JSON"
                 """;
-            Assert.ThrowsException<StartTokenJsonException>(() => SerializationHelper.Deserialize<CacheJsonConverter, Cache>(json));
+            Assert.ThrowsException<WrongTokenJsonException>(() => SerializationHelper.Deserialize<CacheJsonConverter, Cache>(json));
         }
 
         [TestMethod]
@@ -23,9 +23,9 @@ namespace Celestus.Storage.Cache.Test
                     "Id":"a id",
                     "Storage":{},
                     "Cleaner":{
-                        "Type":"{{typeof(CacheCleaner<string, string>).UnderlyingSystemType.FullName}}",
+                        "Type":"{{typeof(CacheCleaner<string, string>).AssemblyQualifiedName}}",
                         "Content":{
-                            "_cleanupInterval": "00:00:00.5"
+                            "CleanupInterval": "00:00:00.5"
                         }
                     }
                 }
@@ -112,9 +112,14 @@ namespace Celestus.Storage.Cache.Test
         {
             string json = $$"""
                 {
+                    "Id": "a",
+                    "Storage": {
+                    },
                     "Cleaner":{
-                        "Type":"{{typeof(object).UnderlyingSystemType.FullName}}",
-                        "Content":{}
+                        "Type":"{{typeof(DummyClass).AssemblyQualifiedName}}",
+                        "Content":{
+                            "PlaceHolder": 5
+                        }
                     }
                 }
                 """;
@@ -127,7 +132,7 @@ namespace Celestus.Storage.Cache.Test
             string json = $$"""
                 {
                     "Cleaner":{
-                        "Type":"{{typeof(CacheCleaner<string, string>).UnderlyingSystemType.FullName}}",
+                        "Type":"{{typeof(CacheCleaner<string, string>).AssemblyQualifiedName}}",
                         "Content":{}
                     }
                 }
@@ -144,9 +149,9 @@ namespace Celestus.Storage.Cache.Test
                     "Storage":{},
                     "Cleaner":{
                         "Extra":1,
-                        "Type":"{{typeof(CacheCleaner<string, string>).UnderlyingSystemType.FullName}}",
+                        "Type":"{{typeof(CacheCleaner<string, string>).AssemblyQualifiedName}}",
                         "Content":{
-                            "_cleanupInterval": "00:00:00.5"
+                            "CleanupInterval": "00:00:00.5"
                         }
                     }
                 }
@@ -160,7 +165,7 @@ namespace Celestus.Storage.Cache.Test
             string json = $$"""
                 {
                     "Cleaner":{
-                        "Type":"{{typeof(CacheCleaner<string, string>).UnderlyingSystemType.FullName}}"
+                        "Type":"{{typeof(CacheCleaner<string, string>).AssemblyQualifiedName}}"
                     }
                 }
                 """;

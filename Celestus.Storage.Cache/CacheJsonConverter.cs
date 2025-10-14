@@ -7,12 +7,9 @@ namespace Celestus.Storage.Cache
 {
     public class CacheJsonConverter : JsonConverter<Cache>
     {
-        const string TYPE_PROPERTY_NAME = "Type";
-        const string CONTENT_PROPERTY_NAME = "Content";
-
         public override Cache Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            Condition.ThrowIf<StartTokenJsonException>(
+            Condition.ThrowIf<WrongTokenJsonException>(
                 reader.TokenType != JsonTokenType.StartObject,
                 parameters: [reader.TokenType, JsonTokenType.StartObject]);
 
@@ -21,7 +18,6 @@ namespace Celestus.Storage.Cache
             string? persistenceStorageLocation = null;
             Dictionary<string, CacheEntry>? storage = null;
             CacheCleanerBase<string, string>? cleaner = null;
-            bool cleanerConfigured = false;
 
             while (reader.Read())
             {
@@ -32,32 +28,29 @@ namespace Celestus.Storage.Cache
                         goto End;
 
                     case JsonTokenType.PropertyName:
-                        switch (reader.GetString())
+                        var name = reader.GetString();
+                        _ = reader.Read();
+
+                        switch (name)
                         {
                             case nameof(Cache.Id):
-                                _ = reader.Read();
-
                                 id = reader.GetString();
                                 break;
 
                             case nameof(ThreadSafeCache.PersistenceEnabled):
-                                _ = reader.Read();
-
                                 persistenceEnabled = reader.GetBoolean();
                                 break;
 
                             case nameof(ThreadSafeCache.PersistenceStorageFile):
-                                _ = reader.Read();
-
                                 persistenceStorageLocation = reader.GetString();
                                 break;
 
                             case nameof(Storage):
-                                storage = GetStorage(ref reader, options);
+                                storage = JsonSerializer.Deserialize<Dictionary<string, CacheEntry>>(ref reader, options);
                                 break;
 
                             case nameof(Cache.Cleaner):
-                                (cleaner, cleanerConfigured) = GetCleaner(ref reader, options);
+                                cleaner = JsonConverterHelper.DeserializeTypedObject<CacheCleanerBase<string, string>>(ref reader, options);
                                 break;
 
                             default:
@@ -69,7 +62,7 @@ namespace Celestus.Storage.Cache
             }
 
         End:
-            ValidateConfiguration(id, storage, cleaner, cleanerConfigured);
+            ValidateConfiguration(id, storage, cleaner);
 
             return new Cache(id,
                              storage,
@@ -79,89 +72,14 @@ namespace Celestus.Storage.Cache
                              persistenceLoadWhenCreated: false);
         }
 
-        private static Dictionary<string, CacheEntry>? GetStorage(ref Utf8JsonReader reader, JsonSerializerOptions options)
-        {
-            _ = reader.Read();
-            return JsonSerializer.Deserialize<Dictionary<string, CacheEntry>>(ref reader, options);
-        }
-
-        private static (CacheCleanerBase<string, string>? cleaner, bool cleanerConfigured) GetCleaner(ref Utf8JsonReader reader, JsonSerializerOptions options)
-        {
-            CacheCleanerBase<string, string>? cleaner = null;
-            bool cleanerConfigured = false;
-
-            while (reader.Read())
-            {
-                switch (reader.TokenType)
-                {
-                    default:
-                    case JsonTokenType.EndObject:
-                        goto CleanerDone;
-
-                    case JsonTokenType.StartObject:
-                        break;
-
-                    case JsonTokenType.PropertyName:
-                        switch (reader.GetString())
-                        {
-                            case TYPE_PROPERTY_NAME:
-                                cleaner = CreateCleaner(ref reader, options);
-                                break;
-
-                            case CONTENT_PROPERTY_NAME:
-                                if (cleaner == null)
-                                {
-                                    throw new PropertiesOutOfOrderJsonException(TYPE_PROPERTY_NAME, CONTENT_PROPERTY_NAME);
-                                }
-                                else
-                                {
-                                    cleaner.Deserialize(ref reader, options);
-                                    cleanerConfigured = true;
-                                }
-                                break;
-
-                            default:
-                                reader.Skip();
-                                break;
-                        }
-                        break;
-                }
-            }
-
-        CleanerDone:
-            return (cleaner, cleanerConfigured);
-        }
-
-        private static CacheCleanerBase<string, string>? CreateCleaner(ref Utf8JsonReader reader, JsonSerializerOptions options)
-        {
-            if (JsonSerializer.Deserialize<string>(ref reader, options) is not string typeString)
-            {
-                throw new ValueTypeJsonException(TYPE_PROPERTY_NAME, JsonTokenType.String, reader.TokenType);
-            }
-            else if (Type.GetType(typeString) is not Type cleanerType)
-            {
-                throw new NotObjectTypeJsonException(TYPE_PROPERTY_NAME, typeString);
-            }
-            else if (Activator.CreateInstance(cleanerType) is not CacheCleanerBase<string, string> createdCleaner)
-            {
-                throw new MissingInheritanceJsonException(TYPE_PROPERTY_NAME, cleanerType, typeof(CacheCleanerBase<string, string>));
-            }
-            else
-            {
-                return createdCleaner;
-            }
-        }
-
         private static void ValidateConfiguration(
             [NotNull] string? id,
             [NotNull] Dictionary<string, CacheEntry>? storage,
-            [NotNull] CacheCleanerBase<string, string>? cleaner,
-            bool cleanerConfigured)
+            [NotNull] CacheCleanerBase<string, string>? cleaner)
         {
             Condition.ThrowIf<MissingValueJsonException>(id == null, nameof(Cache.Id));
             Condition.ThrowIf<MissingValueJsonException>(storage == null, nameof(Cache.Storage));
             Condition.ThrowIf<MissingValueJsonException>(cleaner == null, nameof(Cache.Cleaner));
-            Condition.ThrowIf<MissingValueJsonException>(!cleanerConfigured, CONTENT_PROPERTY_NAME);
         }
 
         public override void Write(Utf8JsonWriter writer, Cache value, JsonSerializerOptions options)
@@ -178,19 +96,11 @@ namespace Celestus.Storage.Cache
                                    value.PersistenceStorageFile.FullName);
             }
 
-            writer.WritePropertyName(nameof(Storage));
+            writer.WritePropertyName(nameof(Cache.Storage));
             JsonSerializer.Serialize(writer, value.Storage, options);
 
             writer.WritePropertyName(nameof(Cache.Cleaner));
-            writer.WriteStartObject();
-
-            var type = value.Cleaner.GetType();
-            writer.WritePropertyName(TYPE_PROPERTY_NAME);
-            writer.WriteStringValue(type.AssemblyQualifiedName);
-
-            writer.WritePropertyName(CONTENT_PROPERTY_NAME);
-            value.Cleaner.Serialize(writer, options);
-            writer.WriteEndObject();
+            JsonConverterHelper.SerializeTypedObject(writer, value.Cleaner, options);
 
             writer.WriteEndObject();
         }

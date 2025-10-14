@@ -11,27 +11,30 @@ namespace Celestus.Storage.Cache.Test
             var json = """
                 "Invalid JSON"
                 """;
-            Assert.ThrowsException<StartTokenJsonException>(() => SerializationHelper.Deserialize<ThreadSafeCacheJsonConverter, ThreadSafeCache>(json));
+            Assert.ThrowsException<WrongTokenJsonException>(() => SerializationHelper.Deserialize<ThreadSafeCacheJsonConverter, ThreadSafeCache>(json));
         }
 
         [TestMethod]
         public void VerifyThatUnexpectedPropertyNameIsIgnored()
         {
             var json = $$"""
-                {{
+                {
+                    "Id":"a",
                     "UnknownProperty":"value",
-                    "Id":"a id",
-                    "Cache":{{
-                        "Id":"a id",
-                        "Storage": {{}},
-                        "Cleaner":{{
-                            "Type":"{{typeof(CacheCleaner<string, string>).UnderlyingSystemType.FullName}}",
-                            "Content":{{
-                                "_cleanupInterval": "00:00:00.5"
-                            }}
-                        }}
-                    }}
-                }}
+                    "Cache":{
+                        "Type": "{{typeof(Cache).AssemblyQualifiedName}}",
+                        "Content": {
+                            "Id":"",
+                            "Storage": {},
+                            "Cleaner":{
+                                "Type":"{{typeof(CacheCleaner<string, string>).AssemblyQualifiedName}}",
+                                "Content":{
+                                    "CleanupInterval": "00:00:00.5"
+                                }
+                            }
+                        }
+                    }
+                }
                 """;
             SerializationHelper.Deserialize<ThreadSafeCacheJsonConverter, ThreadSafeCache>(json);
         }
@@ -52,7 +55,7 @@ namespace Celestus.Storage.Cache.Test
         {
             var json = """
                 {
-                    "Cache":null
+                    "Cache":{}
                 }
                 """;
             Assert.ThrowsException<MissingValueJsonException>(() => SerializationHelper.Deserialize<ThreadSafeCacheJsonConverter, ThreadSafeCache>(json));

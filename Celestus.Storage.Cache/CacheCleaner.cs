@@ -1,11 +1,11 @@
-﻿using Celestus.Exceptions;
-using System.Text.Json;
+﻿using System.Text.Json.Serialization;
 
 namespace Celestus.Storage.Cache
 {
     /// <summary>
     /// Single threaded cache cleaner.
     /// </summary>
+    [JsonConverter(typeof(CacheCleanerJsonConverter))]
     public class CacheCleaner<CacheIdType, CacheKeyType>(TimeSpan interval) : CacheCleanerBase<CacheIdType, CacheKeyType>()
         where CacheIdType : notnull
         where CacheKeyType : notnull
@@ -79,51 +79,15 @@ namespace Celestus.Storage.Cache
             _cacheReference = null;
         }
 
+        public override TimeSpan GetCleaningInterval()
+        {
+            return _cleanupInterval;
+        }
+
         public override void SetCleaningInterval(TimeSpan interval)
         {
             _cleanupInterval = interval;
             _nextCleanupOpportunity = DateTime.UtcNow + _cleanupInterval;
-        }
-
-        public override void Deserialize(ref Utf8JsonReader reader, JsonSerializerOptions options)
-        {
-            bool intervalValueFound = false;
-
-            while (reader.Read())
-            {
-                switch (reader.TokenType)
-                {
-                    case JsonTokenType.EndObject:
-                        goto End;
-                    case JsonTokenType.PropertyName:
-                        var propertyName = reader.GetString();
-                        _ = reader.Read();
-
-                        switch (propertyName)
-                        {
-                            case nameof(_cleanupInterval):
-                                _cleanupInterval = JsonSerializer.Deserialize<TimeSpan>(ref reader, options);
-                                intervalValueFound = true;
-                                break;
-                            default:
-                                reader.Skip();
-                                break;
-                        }
-                        break;
-                    default:
-                        break;
-                }
-            }
-        End:
-            Condition.ThrowIf<MissingValueJsonException>(!intervalValueFound, $"Invalid JSON for {nameof(CacheCleaner<CacheIdType, CacheKeyType>)}");
-        }
-
-        public override void Serialize(Utf8JsonWriter writer, JsonSerializerOptions options)
-        {
-            writer.WriteStartObject();
-            writer.WritePropertyName(nameof(_cleanupInterval));
-            JsonSerializer.Serialize(writer, _cleanupInterval, options);
-            writer.WriteEndObject();
         }
 
         public override object Clone()

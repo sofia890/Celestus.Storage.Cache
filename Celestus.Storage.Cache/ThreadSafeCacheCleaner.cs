@@ -1,11 +1,13 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Celestus.Storage.Cache
 {
     /// <summary>
     /// Thread safe cache cleaner.
     /// </summary>
-    public class ThreadSafeCacheCleaner<CacheIdType, CacheKeyType>(TimeSpan interval) : CacheCleanerBase<CacheIdType, CacheKeyType>
+    [JsonConverter(typeof(ThreadSafeCacheCleanerJsonConverter))]
+    public partial class ThreadSafeCacheCleaner<CacheIdType, CacheKeyType>(TimeSpan interval) : CacheCleanerBase<CacheIdType, CacheKeyType>
         where CacheIdType : notnull
         where CacheKeyType : notnull
     {
@@ -43,23 +45,14 @@ namespace Celestus.Storage.Cache
             _ = _server.CleanerPort.Writer.TryWrite(new UnregisterCacheInd());
         }
 
-        public override void Deserialize(ref Utf8JsonReader reader, JsonSerializerOptions options)
+        public override TimeSpan GetCleaningInterval()
         {
-            ObjectDisposedException.ThrowIf(IsDisposed, this);
-
-            _server.ReadSettings(ref reader, options);
-        }
-
-        public override void Serialize(Utf8JsonWriter writer, JsonSerializerOptions options)
-        {
-            ObjectDisposedException.ThrowIf(IsDisposed, this);
-
-            _server.WriteSettings(writer, options);
+            return _server.GetCleaningInterval();
         }
 
         public override void SetCleaningInterval(TimeSpan interval)
         {
-            _ = _server.CleanerPort.Writer.TryWrite(new ResetInd(interval));
+            _server.SetCleaningInterval(interval);
         }
 
         protected override void Dispose(bool disposing)

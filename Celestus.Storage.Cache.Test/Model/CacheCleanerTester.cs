@@ -1,11 +1,10 @@
-﻿using System.Text.Json;
+﻿using System.Text.Json.Serialization;
 
 namespace Celestus.Storage.Cache.Test.Model
 {
+    [JsonConverter(typeof(CacheCleanerTesterJsonConverter))]
     internal class CacheCleanerTester : CacheCleanerBase<string, string>
     {
-        const string TEST_PROPERTY_NAME = "Test";
-
         public static Dictionary<Guid, CacheCleanerTester> Testers = [];
 
         public List<string> AccessedKeys { get; set; } = [];
@@ -68,40 +67,14 @@ namespace Celestus.Storage.Cache.Test.Model
             _cacheReference = null;
         }
 
-        public override void SetCleaningInterval(TimeSpan interval)
+        public override TimeSpan GetCleaningInterval()
         {
             throw new NotImplementedException();
         }
 
-        public override void Deserialize(ref Utf8JsonReader reader, JsonSerializerOptions options)
+        public override void SetCleaningInterval(TimeSpan interval)
         {
-            ObjectDisposedException.ThrowIf(IsDisposed, this);
-
-            _ = reader.Read();
-            _ = reader.Read();
-            _ = reader.Read();
-            _ = reader.TryGetGuid(out var readValue);
-            _ = reader.Read();
-
-            lock (Testers)
-            {
-                if (Testers.TryGetValue(readValue, out var tester))
-                {
-                    tester.SettingsReadCorrectly = true;
-                }
-            }
-        }
-
-        public override void Serialize(Utf8JsonWriter writer, JsonSerializerOptions options)
-        {
-            ObjectDisposedException.ThrowIf(IsDisposed, this);
-
-            writer.WriteStartObject();
-            writer.WritePropertyName(TEST_PROPERTY_NAME);
-            writer.WriteStringValue(Guid);
-            writer.WriteEndObject();
-
-            SettingsWritten = true;
+            throw new NotImplementedException();
         }
 
         protected override void Dispose(bool disposing)

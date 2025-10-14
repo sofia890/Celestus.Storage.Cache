@@ -36,8 +36,8 @@ namespace Celestus.Storage.Cache
 
         private bool _disposed = false;
 
-        private Cache? _cache;
-        internal Cache Cache
+        private CacheBase<string, string>? _cache;
+        internal CacheBase<string, string> Cache
         {
             get => _cache!;
             private set
@@ -55,9 +55,9 @@ namespace Celestus.Storage.Cache
         readonly ReaderWriterLockSlim _lock = new();
 
         public ThreadSafeCache(string id,
-                           Cache cache,
-                           bool persistenceEnabled = false,
-                           string persistenceStorageLocation = "") : base(id)
+                               CacheBase<string, string> cache,
+                               bool persistenceEnabled = false,
+                               string persistenceStorageLocation = "") : base(id)
         {
             // Not persistenceEnabled or no persistenceEnabled data loaded.
             // Base class constructor calls TryLoadFromFile(...) when persistence is enabled.
@@ -70,8 +70,8 @@ namespace Celestus.Storage.Cache
 
         public ThreadSafeCache(string id, CacheCleanerBase<string, string> cleaner, bool persistenceEnabled = false, string persistenceStorageLocation = "") :
             this(id, new Cache(cleaner,
-                                persistenceEnabled: persistenceEnabled,
-                                persistenceStorageLocation: persistenceStorageLocation))
+                               persistenceEnabled: persistenceEnabled,
+                               persistenceStorageLocation: persistenceStorageLocation))
         {
         }
 
@@ -86,9 +86,9 @@ namespace Celestus.Storage.Cache
 
         public ThreadSafeCache(string id, TimeSpan? cleaningInterval, bool persistenceEnabled = false, string persistenceStorageLocation = "") :
             this(id,
-                cleaner: new ThreadSafeCacheCleaner<string, string>(cleaningInterval ?? DefaultCleanerInterval),
-                persistenceEnabled: persistenceEnabled,
-                persistenceStorageLocation: persistenceStorageLocation)
+                 cleaner: new ThreadSafeCacheCleaner<string, string>(cleaningInterval ?? DefaultCleanerInterval),
+                 persistenceEnabled: persistenceEnabled,
+                 persistenceStorageLocation: persistenceStorageLocation)
         {
         }
 
@@ -122,7 +122,7 @@ namespace Celestus.Storage.Cache
             return CacheLock.TryReadLock(_lock, GetTimeout(timeout), out cacheLock);
         }
 
-        internal bool TrySetCache(Cache newCache, TimeSpan timeout)
+        internal bool TrySetCache(CacheBase<string, string> newCache, TimeSpan timeout)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 
@@ -254,7 +254,7 @@ namespace Celestus.Storage.Cache
             }
         }
 
-        private void ReplaceCache(Cache newCache)
+        private void ReplaceCache(CacheBase<string, string> newCache)
         {
             // Assignment causes cleaner of old cache to unregister ThreadCache. Need to dispose after cleanup.
             var oldCache = Cache;

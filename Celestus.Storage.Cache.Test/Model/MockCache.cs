@@ -1,4 +1,5 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using System.Collections.Immutable;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Celestus.Storage.Cache.Test.Model
 {
@@ -75,11 +76,15 @@ namespace Celestus.Storage.Cache.Test.Model
         {
             throw new NotImplementedException();
         }
+
+        internal override ImmutableDictionary<string, CacheEntry> GetEntries()
+        {
+            return Storage.ToImmutableDictionary();
+        }
         #endregion
 
 
         #region ICloneable
-
         public override object Clone()
         {
             throw new NotImplementedException();

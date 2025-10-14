@@ -45,8 +45,11 @@ public class TestThreadSafeCacheDisposal
     {
         using var cleanerTester = new CacheCleanerTester();
         var cache = new ThreadSafeCache("test-key", cleanerTester);
+
         _ = cache.TrySet("test", "value");
+
         cache.Dispose();
+
         Assert.IsTrue(cleanerTester.IsDisposed);
     }
 
@@ -54,9 +57,13 @@ public class TestThreadSafeCacheDisposal
     public void VerifyThatThreadSafeCacheDoesNotCrashDuringCleanup()
     {
         using var cache = new ThreadSafeCache("actor-disposal-test", cleaningInterval: CacheConstants.ShortDuration);
+
         _ = cache.TrySet("test-key", "test-value");
+
         cache.Dispose();
+
         Thread.Sleep(CacheConstants.ShortDuration);
+
         GC.Collect();
         GC.WaitForPendingFinalizers();
     }

@@ -6,16 +6,14 @@ namespace Celestus.Storage.Cache
 {
     public class ThreadSafeCacheJsonConverter : JsonConverter<ThreadSafeCache>
     {
-        const int DEFAULT_LOCK_TIMEOUT = 10000;
-
         public override ThreadSafeCache? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            Condition.ThrowIf<StartTokenJsonException>(
+            Condition.ThrowIf<WrongTokenJsonException>(
                 reader.TokenType != JsonTokenType.StartObject,
                 parameters: [reader.TokenType, JsonTokenType.StartObject]);
 
             string? id = null;
-            Cache? cache = null;
+            CacheBase<string, string>? cache = null;
 
             while (reader.Read())
             {
@@ -24,6 +22,9 @@ namespace Celestus.Storage.Cache
                     default:
                     case JsonTokenType.EndObject:
                         goto End;
+
+                    case JsonTokenType.StartObject:
+                        break;
 
                     case JsonTokenType.PropertyName:
                         switch (reader.GetString())
@@ -37,7 +38,7 @@ namespace Celestus.Storage.Cache
                             case nameof(ThreadSafeCache.Cache):
                                 _ = reader.Read();
 
-                                cache = JsonSerializer.Deserialize<Cache>(ref reader, options);
+                                cache = JsonConverterHelper.DeserializeTypedObject<CacheBase<string, string>>(ref reader, options);
                                 break;
 
                             default:
@@ -75,7 +76,7 @@ namespace Celestus.Storage.Cache
             }
 
             writer.WritePropertyName(nameof(ThreadSafeCache.Cache));
-            JsonSerializer.Serialize(writer, value.Cache, options);
+            JsonConverterHelper.SerializeTypedObject(writer, value.Cache, options);
 
             writer.WriteEndObject();
         }

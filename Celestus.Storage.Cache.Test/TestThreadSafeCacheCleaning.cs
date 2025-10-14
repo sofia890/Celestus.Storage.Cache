@@ -34,7 +34,9 @@ public class TestThreadSafeCacheCleaning
         using ThreadSafeCache? loadedCache = ThreadSafeCache.TryCreateFromFile(tempFile.Info);
 
         Assert.IsTrue(cleanerTester.SettingsWritten);
-        Assert.IsTrue(cleanerTester.SettingsReadCorrectly);
+        Assert.IsNotNull(loadedCache);
+        Assert.IsInstanceOfType<CacheCleanerTester>(loadedCache.Cleaner);
+        Assert.IsTrue(((CacheCleanerTester)loadedCache.Cleaner).SettingsReadCorrectly);
     }
 
     [TestMethod]

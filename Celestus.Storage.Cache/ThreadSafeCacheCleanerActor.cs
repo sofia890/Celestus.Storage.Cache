@@ -142,57 +142,14 @@ namespace Celestus.Storage.Cache
             }
         }
 
-        public void ReadSettings(ref Utf8JsonReader reader, JsonSerializerOptions options)
+        public TimeSpan GetCleaningInterval()
         {
-            ObjectDisposedException.ThrowIf(IsDisposed, this);
-
-            bool intervalValueFound = false;
-
-            while (reader.Read())
-            {
-                switch (reader.TokenType)
-                {
-                    default:
-                        break;
-
-                    case JsonTokenType.EndObject:
-                        goto End;
-
-                    case JsonTokenType.StartObject:
-                        break;
-
-                    case JsonTokenType.PropertyName:
-                        switch (reader.GetString())
-                        {
-                            case nameof(_cleanupInterval):
-                                _ = reader.Read();
-
-                                var cleanupInterval = JsonSerializer.Deserialize<TimeSpan>(ref reader, options);
-                                CleanerPort.Writer.TryWrite(new ResetInd(cleanupInterval));
-
-                                intervalValueFound = true;
-                                break;
-
-                            default:
-                                break;
-
-                        }
-                        break;
-                }
-            }
-
-        End:
-            Condition.ThrowIf<MissingValueJsonException>(!intervalValueFound, nameof(_cleanupInterval));
+            return _cleanupInterval;
         }
 
-        public void WriteSettings(Utf8JsonWriter writer, JsonSerializerOptions options)
+        public void SetCleaningInterval(TimeSpan interval)
         {
-            ObjectDisposedException.ThrowIf(IsDisposed, this);
-
-            writer.WriteStartObject();
-            writer.WritePropertyName(nameof(_cleanupInterval));
-            JsonSerializer.Serialize(writer, _cleanupInterval, options);
-            writer.WriteEndObject();
+            _ = CleanerPort.Writer.TryWrite(new ResetInd(interval));
         }
 
         #region IDisposable
