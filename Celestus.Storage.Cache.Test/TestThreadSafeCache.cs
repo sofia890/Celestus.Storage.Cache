@@ -11,7 +11,7 @@ public class TestThreadSafeCache
         using var cache = new ThreadSafeCache();
         cache.TrySet("initial", "value");
 
-        bool Act() => cache.TrySet("key", "value", timeout: CacheConstants.ZeroDuration);
+        bool Act() => cache.TrySet("key", "value", duration: CacheConstants.VeryLongDuration, timeout: CacheConstants.ZeroDuration);
 
         var result = ThreadHelper.DoWhileLocked(cache, Act, CacheConstants.TimingDuration);
 

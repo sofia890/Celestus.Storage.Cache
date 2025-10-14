@@ -3,67 +3,73 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Celestus.Storage.Cache.Test.Model
 {
-    internal class MockCache(string key = "") :
-        CacheBase<string, string>(key)
+    internal class MockCache() : CacheBase<string, string>
     {
         public AutoResetEvent EntryRemoved { get; private set; } = new(false);
 
         public List<string> RemovedKeys { get; private set; } = [];
 
+
+
+        #region CacheBase<string, string>
         private bool _disposed = false;
+        public bool IsDisposed => _disposed;
+
+        public Dictionary<string, CacheEntry> Storage { get; set; } = [];
 
         private CacheCleanerBase<string, string>? _cleaner;
 
-        #region CacheBase<string, string>
-        public override bool IsDisposed => _disposed;
-
-        internal override Dictionary<string, CacheEntry> Storage { get; set; } = [];
-
-        internal override CacheCleanerBase<string, string> Cleaner
+        public CacheCleanerBase<string, string> Cleaner
         {
             get => _cleaner!;
             set => _cleaner = value;
         }
 
-        public override FileInfo? PersistenceStorageFile
+        public FileInfo? PersistenceStorageFile
         {
             get => null;
             set => throw new NotImplementedException();
         }
 
-        public override void Dispose()
+        public string Id => throw new NotImplementedException();
+
+        CacheCleanerBase<string, string> CacheBase<string, string>.Cleaner { get => Cleaner; set => Cleaner = value; }
+
+        public bool PersistenceEnabled => throw new NotImplementedException();
+
+        public void Dispose()
         {
             _disposed = true;
             EntryRemoved.Dispose();
         }
 
-        public override DataType Get<DataType>(string key) where DataType : default
+        public DataType Get<DataType>(string key)
         {
             throw new NotImplementedException();
         }
-        public override bool TryGet<DataType>(string key, [MaybeNullWhen(false)] out DataType data) where DataType : default
+        public bool TryGet<DataType>(string key, [MaybeNullWhen(false)] out DataType data)
         {
             data = default;
 
             throw new NotImplementedException();
         }
 
-        public override void Set<DataType>(string key, DataType value, TimeSpan? duration = null)
+        public void Set<DataType>(string key, DataType value, TimeSpan? duration = null)
         {
             throw new NotImplementedException();
         }
 
-        public override bool TrySet<DataType>(string key, DataType value, TimeSpan? duration = null)
+        public bool TrySet<DataType>(string key, DataType value, TimeSpan? duration = null)
         {
             throw new NotImplementedException();
         }
 
-        public override bool TryLoadFromFile(FileInfo file)
+        public bool TryLoadFromFile(FileInfo file)
         {
             throw new NotImplementedException();
         }
 
-        public override bool TryRemove(string[] keys)
+        public bool TryRemove(string[] keys)
         {
             RemovedKeys.AddRange(keys);
 
@@ -72,25 +78,30 @@ namespace Celestus.Storage.Cache.Test.Model
             return true;
         }
 
-        public override bool TrySaveToFile(FileInfo file)
+        public bool TrySaveToFile(FileInfo file)
         {
             throw new NotImplementedException();
         }
 
-        internal override ImmutableDictionary<string, CacheEntry> GetEntries()
+        internal ImmutableDictionary<string, CacheEntry> GetEntries()
         {
             return Storage.ToImmutableDictionary();
+        }
+
+        public bool TryRemove(string key)
+        {
+            throw new NotImplementedException();
+        }
+
+        ImmutableDictionary<string, CacheEntry> CacheBase<string, string>.GetEntries()
+        {
+            return GetEntries();
         }
         #endregion
 
 
         #region ICloneable
-        public override object Clone()
-        {
-            throw new NotImplementedException();
-        }
-
-        public override bool TryRemove(string key)
+        public object Clone()
         {
             throw new NotImplementedException();
         }

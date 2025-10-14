@@ -18,25 +18,20 @@ namespace Celestus.Storage.Cache
     public class NoPersistencePathException(string message) : CacheIoException(message);
     public class PersistencePathNotWriteableException(string message) : CacheIoException(message);
 
-    public abstract class CacheBase<CacheIdType, CacheKeyType> : IDisposable, ICloneable
+    public interface CacheBase<CacheIdType, CacheKeyType> : IDisposable, ICloneable
         where CacheIdType : notnull
         where CacheKeyType : notnull
     {
         public const int NO_TIMEOUT = -1;
 
-        public CacheIdType Id { get; init; }
-        internal abstract CacheCleanerBase<CacheIdType, CacheKeyType> Cleaner { get; set; }
+        public abstract CacheIdType Id { get; }
+        public abstract CacheCleanerBase<CacheIdType, CacheKeyType> Cleaner { get; set; }
         public abstract bool IsDisposed { get; }
         internal abstract Dictionary<CacheKeyType, CacheEntry> Storage { get; set; }
 
         [MemberNotNullWhen(true, nameof(PersistenceStorageFile))]
-        public virtual bool PersistenceEnabled { get => PersistenceStorageFile != null; }
+        public abstract bool PersistenceEnabled { get; }
         public abstract FileInfo? PersistenceStorageFile { get; set; }
-
-        public CacheBase(CacheIdType id)
-        {
-            Id = id;
-        }
 
         public abstract DataType Get<DataType>(CacheKeyType key);
 
@@ -54,14 +49,6 @@ namespace Celestus.Storage.Cache
 
         public abstract bool TryLoadFromFile(FileInfo file);
 
-        internal abstract ImmutableDictionary<CacheKeyType, CacheEntry> GetEntries();
-
-        #region IDisposable
-        public abstract void Dispose();
-        #endregion
-
-        #region ICloneable
-        public abstract object Clone();
-        #endregion
+        public abstract ImmutableDictionary<CacheKeyType, CacheEntry> GetEntries();
     }
 }

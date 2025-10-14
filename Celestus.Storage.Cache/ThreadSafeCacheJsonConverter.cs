@@ -12,7 +12,6 @@ namespace Celestus.Storage.Cache
                 reader.TokenType != JsonTokenType.StartObject,
                 parameters: [reader.TokenType, JsonTokenType.StartObject]);
 
-            string? id = null;
             CacheBase<string, string>? cache = null;
 
             while (reader.Read())
@@ -29,15 +28,8 @@ namespace Celestus.Storage.Cache
                     case JsonTokenType.PropertyName:
                         switch (reader.GetString())
                         {
-                            case nameof(ThreadSafeCache.Id):
-                                _ = reader.Read();
-
-                                id = reader.GetString();
-                                break;
-
                             case nameof(ThreadSafeCache.Cache):
                                 _ = reader.Read();
-
                                 cache = JsonConverterHelper.DeserializeTypedObject<CacheBase<string, string>>(ref reader, options);
                                 break;
 
@@ -51,21 +43,19 @@ namespace Celestus.Storage.Cache
             }
 
         End:
-            if (id == null || cache == null)
+            if (cache == null)
             {
-                throw new MissingValueJsonException($"Invalid JSON for {nameof(ThreadSafeCache)}.");
+                throw new MissingValueJsonException($"Invalid JSON for {nameof(ThreadSafeCache)}. Missing {nameof(ThreadSafeCache.Cache)}.");
             }
             else
             {
-                return new ThreadSafeCache(id, cache);
+                return new ThreadSafeCache(cache);
             }
         }
 
         public override void Write(Utf8JsonWriter writer, ThreadSafeCache value, JsonSerializerOptions options)
         {
             writer.WriteStartObject();
-
-            writer.WriteString(nameof(ThreadSafeCache.Id), value.Id);
 
             writer.WriteBoolean(nameof(ThreadSafeCache.PersistenceEnabled), value.PersistenceEnabled);
 

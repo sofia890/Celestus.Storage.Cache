@@ -14,7 +14,7 @@ namespace Celestus.Storage.Cache
     [JsonConverter(typeof(CacheJsonConverter))]
     public partial class Cache : CacheBase<string, string>, IDisposable
     {
-        bool _persistenceEnabledHandled;
+        private bool _persistenceEnabledHandled;
 
         public Cache(
             string id,
@@ -22,8 +22,10 @@ namespace Celestus.Storage.Cache
             CacheCleanerBase<string, string> cleaner,
             bool persistenceEnabled = false,
             string persistenceStorageLocation = "",
-            bool persistenceLoadWhenCreated = true) : base(id)
+            bool persistenceLoadWhenCreated = true)
         {
+            Id = id;
+
             HandlePersistenceEnabledInitialization(persistenceEnabled, persistenceStorageLocation, persistenceLoadWhenCreated);
 
             if (!PersistenceEnabled || Storage == null)
@@ -32,6 +34,57 @@ namespace Celestus.Storage.Cache
             }
 
             Cleaner = cleaner;
+        }
+
+        public Cache(string id, bool persistenceEnabled = false, string persistenceStorageLocation = "") :
+            this(id, [], new CacheCleaner<string, string>(), persistenceEnabled: persistenceEnabled, persistenceStorageLocation: persistenceStorageLocation)
+        {
+        }
+
+        public Cache() :
+            this(string.Empty,
+                [],
+                new CacheCleaner<string, string>(),
+                persistenceEnabled: false,
+                persistenceStorageLocation: "")
+        {
+        }
+
+        public Cache(CacheCleanerBase<string, string> cleaner, bool persistenceEnabled = false, string persistenceStorageLocation = "") :
+            this(string.Empty, [], cleaner, persistenceEnabled: persistenceEnabled, persistenceStorageLocation: persistenceStorageLocation)
+        {
+        }
+
+        public void Set<DataType>(string key, DataType value, DateTime expiration)
+        {
+            Set(key, value, expiration, out var _);
+        }
+
+        public void Set<DataType>(string key, DataType value, DateTime expiration, out CacheEntry entry)
+        {
+            ObjectDisposedException.ThrowIf(IsDisposed, this);
+
+            entry = new CacheEntry(expiration, value);
+            Storage[key] = entry;
+
+            Cleaner.EntryAccessed(ref entry, key);
+        }
+
+        public void Set<DataType>(string key, DataType value, out CacheEntry entry, TimeSpan? duration = null)
+        {
+            Set(key, value, GetExpiration(duration), out entry);
+        }
+
+        private static DateTime GetExpiration(TimeSpan? duration = null)
+        {
+            DateTime expiration = DateTime.MaxValue;
+
+            if (duration is TimeSpan timeDuration)
+            {
+                expiration = DateTime.UtcNow.Add(timeDuration);
+            }
+
+            return expiration;
         }
 
         public static Cache? TryCreateFromFile(FileInfo file)
@@ -131,15 +184,17 @@ namespace Celestus.Storage.Cache
         }
 
         #region CacheBase<string, string>
-        internal override Dictionary<string, CacheEntry> Storage { get; set; }
+        public string Id { get; init; }
+
+        public Dictionary<string, CacheEntry> Storage { get; set; }
 
         [MemberNotNullWhen(true, nameof(PersistenceStorageFile))]
-        public override bool PersistenceEnabled { get => PersistenceStorageFile != null; }
+        public bool PersistenceEnabled { get => PersistenceStorageFile != null; }
 
-        public override FileInfo? PersistenceStorageFile { get; set; }
+        public FileInfo? PersistenceStorageFile { get; set; }
 
         private CacheCleanerBase<string, string>? _cleaner;
-        internal override CacheCleanerBase<string, string> Cleaner
+        public CacheCleanerBase<string, string> Cleaner
         {
             get => _cleaner!;
             set
@@ -154,63 +209,12 @@ namespace Celestus.Storage.Cache
             }
         }
 
-        public Cache(string id, bool persistenceEnabled = false, string persistenceStorageLocation = "") :
-            this(id, [], new CacheCleaner<string, string>(), persistenceEnabled: persistenceEnabled, persistenceStorageLocation: persistenceStorageLocation)
-        {
-        }
-
-        public Cache() :
-            this(string.Empty,
-                [],
-                new CacheCleaner<string, string>(),
-                persistenceEnabled: false,
-                persistenceStorageLocation: "")
-        {
-        }
-
-        public Cache(CacheCleanerBase<string, string> cleaner, bool persistenceEnabled = false, string persistenceStorageLocation = "") :
-            this(string.Empty, [], cleaner, persistenceEnabled: persistenceEnabled, persistenceStorageLocation: persistenceStorageLocation)
-        {
-        }
-
-        private static DateTime GetExpiration(TimeSpan? duration = null)
-        {
-            DateTime expiration = DateTime.MaxValue;
-
-            if (duration is TimeSpan timeDuration)
-            {
-                expiration = DateTime.UtcNow.Add(timeDuration);
-            }
-
-            return expiration;
-        }
-
-        public override void Set<DataType>(string key, DataType value, TimeSpan? duration = null)
+        public void Set<DataType>(string key, DataType value, TimeSpan? duration = null)
         {
             Set(key, value, GetExpiration(duration));
         }
 
-        public void Set<DataType>(string key, DataType value, DateTime expiration)
-        {
-            Set(key, value, expiration, out var _);
-        }
-
-        public void Set<DataType>(string key, DataType value, DateTime expiration, out CacheEntry entry)
-        {
-            ObjectDisposedException.ThrowIf(IsDisposed, this);
-
-            entry = new CacheEntry(expiration, value);
-            Storage[key] = entry;
-
-            Cleaner.EntryAccessed(ref entry, key);
-        }
-
-        public void Set<DataType>(string key, DataType value, out CacheEntry entry, TimeSpan? duration = null)
-        {
-            Set(key, value, GetExpiration(duration), out entry);
-        }
-
-        public override bool TrySet<DataType>(string key, DataType value, TimeSpan? duration = null)
+        public bool TrySet<DataType>(string key, DataType value, TimeSpan? duration = null)
         {
             try
             {
@@ -224,8 +228,7 @@ namespace Celestus.Storage.Cache
             }
         }
 
-        public override DataType Get<DataType>(string key)
-            where DataType : default
+        public DataType Get<DataType>(string key)
         {
             var result = TryGet<DataType>(key, out var value);
 
@@ -234,7 +237,7 @@ namespace Celestus.Storage.Cache
             return value!;
         }
 
-        public override bool TryGet<DataType>(string key, [MaybeNullWhen(false)] out DataType value)
+        public bool TryGet<DataType>(string key, [MaybeNullWhen(false)] out DataType value)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 
@@ -261,7 +264,7 @@ namespace Celestus.Storage.Cache
             return found;
         }
 
-        public override bool TryRemove(string[] keys)
+        public bool TryRemove(string[] keys)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 
@@ -275,14 +278,14 @@ namespace Celestus.Storage.Cache
             return anyRemoved;
         }
 
-        public override bool TryRemove(string key)
+        public bool TryRemove(string key)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 
             return Storage.Remove(key);
         }
 
-        public override bool TrySaveToFile(FileInfo file)
+        public bool TrySaveToFile(FileInfo file)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 
@@ -298,7 +301,7 @@ namespace Celestus.Storage.Cache
             }
         }
 
-        public override bool TryLoadFromFile(FileInfo file)
+        public bool TryLoadFromFile(FileInfo file)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 
@@ -316,7 +319,7 @@ namespace Celestus.Storage.Cache
             }
         }
 
-        internal override ImmutableDictionary<string, CacheEntry> GetEntries()
+        public ImmutableDictionary<string, CacheEntry> GetEntries()
         {
             return Storage.ToImmutableDictionary();
         }
@@ -325,7 +328,9 @@ namespace Celestus.Storage.Cache
         #region IDisposable
         private bool _disposed = false;
 
-        public override void Dispose()
+        public bool IsDisposed => _disposed;
+
+        public void Dispose()
         {
             Dispose(true);
             GC.SuppressFinalize(this);
@@ -353,7 +358,7 @@ namespace Celestus.Storage.Cache
             }
         }
 
-        public override bool IsDisposed => _disposed;
+        CacheCleanerBase<string, string> CacheBase<string, string>.Cleaner { get => Cleaner; set => Cleaner = value; }
         #endregion
 
         #region IEquatable
@@ -397,7 +402,7 @@ namespace Celestus.Storage.Cache
 
         #region ICloneable
         /// <returns>Shallow clone of the cache.</returns>
-        public override object Clone()
+        public object Clone()
         {
             return ToCache();
         }

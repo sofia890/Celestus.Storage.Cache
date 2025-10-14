@@ -84,11 +84,11 @@ namespace Celestus.Storage.Cache.Test
             {
                 startSignal.WaitOne();
                 var key = id.ToString();
-                Assert.IsTrue(cache.TrySet(key, id, timeout: CacheConstants.TimingDuration));
+                Assert.IsTrue(cache.TrySet(key, id, duration: CacheConstants.VeryLongDuration, timeout: CacheConstants.TimingDuration));
                 for (int i = 1; i <= N_ITERATION; i++)
                 {
                     Assert.IsTrue(cache.TryGet<int>(key, out var value, timeout: CacheConstants.TimingDuration));
-                    Assert.IsTrue(cache.TrySet(key, value + 1, timeout: CacheConstants.TimingDuration));
+                    Assert.IsTrue(cache.TrySet(key, value + 1, duration: CacheConstants.VeryLongDuration, timeout: CacheConstants.TimingDuration));
                 }
             };
 
@@ -108,7 +108,7 @@ namespace Celestus.Storage.Cache.Test
         {
             using var cache = new ThreadSafeCache();
             const string KEY = "hammer";
-            Assert.IsTrue(cache.TrySet(KEY, 0, timeout: CacheConstants.TimingDuration));
+            Assert.IsTrue(cache.TrySet(KEY, 0, duration: CacheConstants.VeryLongDuration, timeout: CacheConstants.TimingDuration));
             ManualResetEvent startSignal = new(false);
             const int N_ITERATION = 100;
             const int N_THREADS = 16;
@@ -119,7 +119,7 @@ namespace Celestus.Storage.Cache.Test
                 for (int i = 1; i <= N_ITERATION; i++)
                 {
                     Assert.IsTrue(cache.TryGet<int>(KEY, out var value, timeout: CacheConstants.TimingDuration));
-                    Assert.IsTrue(cache.TrySet(KEY, value + 1, timeout: CacheConstants.TimingDuration));
+                    Assert.IsTrue(cache.TrySet(KEY, value + 1, duration: CacheConstants.VeryLongDuration, timeout: CacheConstants.TimingDuration));
                 }
             };
 

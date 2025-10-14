@@ -9,12 +9,12 @@ namespace Celestus.Storage.Cache
         CacheIdType Key)
             where CacheIdType : class
             where CacheKeyType : class
-            where CacheType : CacheBase<CacheIdType, CacheKeyType>;
+            where CacheType : class, CacheBase<CacheIdType, CacheKeyType>;
 
     public class CacheManagerCleaner<CacheIdType, CacheKeyType, CacheType> : IDisposable
         where CacheIdType : class
         where CacheKeyType : class
-        where CacheType : CacheBase<CacheIdType, CacheKeyType>
+        where CacheType : class, CacheBase<CacheIdType, CacheKeyType>
     {
         public const int DEFAULT_INTERVAL_IN_MS = 10000;
         public const int STOP_TIMEOUT = 30000;

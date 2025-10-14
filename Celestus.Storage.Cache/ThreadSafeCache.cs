@@ -34,8 +34,6 @@ namespace Celestus.Storage.Cache
         public static TimeSpan DefaultTimeout { get; } = TimeSpan.FromMilliseconds(5000);
         public static TimeSpan DefaultCleanerInterval { get; } = TimeSpan.FromMilliseconds(60000);
 
-        private bool _disposed = false;
-
         private CacheBase<string, string>? _cache;
         internal CacheBase<string, string> Cache
         {
@@ -54,10 +52,9 @@ namespace Celestus.Storage.Cache
 
         readonly ReaderWriterLockSlim _lock = new();
 
-        public ThreadSafeCache(string id,
-                               CacheBase<string, string> cache,
+        public ThreadSafeCache(CacheBase<string, string> cache,
                                bool persistenceEnabled = false,
-                               string persistenceStorageLocation = "") : base(id)
+                               string persistenceStorageLocation = "")
         {
             // Not persistenceEnabled or no persistenceEnabled data loaded.
             // Base class constructor calls TryLoadFromFile(...) when persistence is enabled.
@@ -69,9 +66,11 @@ namespace Celestus.Storage.Cache
         }
 
         public ThreadSafeCache(string id, CacheCleanerBase<string, string> cleaner, bool persistenceEnabled = false, string persistenceStorageLocation = "") :
-            this(id, new Cache(cleaner,
-                               persistenceEnabled: persistenceEnabled,
-                               persistenceStorageLocation: persistenceStorageLocation))
+            this(new Cache(id,
+                           [],
+                           cleaner,
+                           persistenceEnabled: persistenceEnabled,
+                           persistenceStorageLocation: persistenceStorageLocation))
         {
         }
 
@@ -80,7 +79,7 @@ namespace Celestus.Storage.Cache
         {
         }
 
-        public ThreadSafeCache(string id) : this(id, new Cache())
+        public ThreadSafeCache(string id) : this(new Cache(id))
         {
         }
 
@@ -100,6 +99,11 @@ namespace Celestus.Storage.Cache
         public ThreadSafeCache(string id, bool persistenceEnabled, string persistenceStorageLocation = "") :
             this(id, DefaultCleanerInterval, persistenceEnabled: persistenceEnabled, persistenceStorageLocation: persistenceStorageLocation)
         {
+        }
+
+        public static ThreadSafeCache? TryCreateFromFile(FileInfo file)
+        {
+            return Serialize.TryCreateFromFile<ThreadSafeCache>(file);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -159,7 +163,7 @@ namespace Celestus.Storage.Cache
             }
         }
 
-        public bool TrySet<DataType>(string key, DataType value, TimeSpan? duration = null, TimeSpan? timeout = null)
+        public bool TrySet<DataType>(string key, DataType value, TimeSpan? duration, TimeSpan? timeout = null)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 
@@ -265,10 +269,13 @@ namespace Celestus.Storage.Cache
         }
 
         #region CacheBase<string, string>
+        public string Id => Cache.Id;
+
 
         [MemberNotNullWhen(true, nameof(PersistenceStorageFile))]
-        public override bool PersistenceEnabled { get => Cache?.PersistenceEnabled ?? false; }
-        public override FileInfo? PersistenceStorageFile
+        public bool PersistenceEnabled { get => Cache?.PersistenceEnabled ?? false; }
+
+        public FileInfo? PersistenceStorageFile
         {
             get => Cache?.PersistenceStorageFile ?? null;
             set
@@ -279,16 +286,16 @@ namespace Celestus.Storage.Cache
             }
         }
 
-        internal override CacheCleanerBase<string, string> Cleaner
+        public CacheCleanerBase<string, string> Cleaner
         {
             get => Cache.Cleaner;
             set => Cache.Cleaner = value;
         }
 
-        internal override Dictionary<string, CacheEntry> Storage { get => Cache.Storage; set => Cache.Storage = value; }
+        public Dictionary<string, CacheEntry> Storage { get => Cache.Storage; set => Cache.Storage = value; }
 
 
-        public override void Set<DataType>(string key, DataType value, TimeSpan? duration = null)
+        public void Set<DataType>(string key, DataType value, TimeSpan? duration = null)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 
@@ -297,7 +304,7 @@ namespace Celestus.Storage.Cache
             WriteLockException.ThrowIf(!result, "Could not acquire write lock.");
         }
 
-        public override DataType Get<DataType>(string key)
+        public DataType Get<DataType>(string key)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 
@@ -308,27 +315,27 @@ namespace Celestus.Storage.Cache
             return value;
         }
 
-        public override bool TryGet<DataType>(string key, [MaybeNullWhen(false)] out DataType data)
+        public bool TryGet<DataType>(string key, [MaybeNullWhen(false)] out DataType data)
         {
             return TryGet(key, out data, DefaultTimeout);
         }
 
-        public override bool TrySet<DataType>(string key, DataType value, TimeSpan? duration = null)
+        public bool TrySet<DataType>(string key, DataType value, TimeSpan? duration = null)
         {
             return TrySet(key, value, duration: duration, timeout: null);
         }
 
-        public override bool TryRemove(string[] keys)
+        public bool TryRemove(string[] keys)
         {
             return TryRemove(keys, timeout: null);
         }
 
-        public override bool TryRemove(string key)
+        public bool TryRemove(string key)
         {
             return TryRemove(key, timeout: null);
         }
 
-        public override bool TrySaveToFile(FileInfo file)
+        public bool TrySaveToFile(FileInfo file)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 
@@ -342,12 +349,7 @@ namespace Celestus.Storage.Cache
             }
         }
 
-        public static ThreadSafeCache? TryCreateFromFile(FileInfo file)
-        {
-            return Serialize.TryCreateFromFile<ThreadSafeCache>(file);
-        }
-
-        public override bool TryLoadFromFile(FileInfo file)
+        public bool TryLoadFromFile(FileInfo file)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 
@@ -380,7 +382,7 @@ namespace Celestus.Storage.Cache
             return DoWhileWriteLocked(TryLoad, out var result, DefaultTimeout) && result;
         }
 
-        internal override ImmutableDictionary<string, CacheEntry> GetEntries()
+        public ImmutableDictionary<string, CacheEntry> GetEntries()
         {
             var result = DoWhileReadLocked(() => Cache.GetEntries(), out var dictionary, DefaultTimeout);
 
@@ -391,7 +393,12 @@ namespace Celestus.Storage.Cache
         #endregion
 
         #region IDisposable
-        public override void Dispose()
+        private bool _disposed = false;
+
+
+        public bool IsDisposed => _disposed;
+
+        public void Dispose()
         {
             Dispose(true);
             GC.SuppressFinalize(this);
@@ -421,8 +428,6 @@ namespace Celestus.Storage.Cache
                 }
             }
         }
-
-        public override bool IsDisposed => _disposed;
         #endregion
 
         #region IEquatable
@@ -446,9 +451,9 @@ namespace Celestus.Storage.Cache
 
         #region ICloneable
         /// <returns>Shallow clone of the cache.</returns>
-        public override object Clone()
+        public object Clone()
         {
-            return new ThreadSafeCache(Id, (Cache)Cache.Clone(), PersistenceEnabled, PersistenceStorageFile?.FullName ?? string.Empty);
+            return new ThreadSafeCache((Cache)Cache.Clone(), PersistenceEnabled, PersistenceStorageFile?.FullName ?? string.Empty);
         }
         #endregion
     }

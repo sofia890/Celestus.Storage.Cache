@@ -13,7 +13,7 @@ namespace Celestus.Storage.Cache.Test
             const string KEY = "Sjö"; cache.TrySet(KEY, 1);
             var setResult = ThreadHelper.DoWhileLocked(
                 cache,
-                () => cache.TrySet(KEY, 0, timeout: CacheConstants.VeryShortDuration),
+                () => cache.TrySet(KEY, 0, duration: CacheConstants.VeryLongDuration, timeout: CacheConstants.VeryShortDuration),
                 CacheConstants.TimingDuration);
             Assert.IsFalse(setResult);
         }

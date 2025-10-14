@@ -19,12 +19,11 @@ namespace Celestus.Storage.Cache.Test
         {
             var json = $$"""
                 {
-                    "Id":"a",
                     "UnknownProperty":"value",
                     "Cache":{
                         "Type": "{{typeof(Cache).AssemblyQualifiedName}}",
                         "Content": {
-                            "Id":"",
+                            "Id":"a",
                             "Storage": {},
                             "Cleaner":{
                                 "Type":"{{typeof(CacheCleaner<string, string>).AssemblyQualifiedName}}",
@@ -44,21 +43,42 @@ namespace Celestus.Storage.Cache.Test
         {
             var json = """
                 {
-                    "Id":"a id"
                 }
                 """;
             Assert.ThrowsException<MissingValueJsonException>(() => SerializationHelper.Deserialize<ThreadSafeCacheJsonConverter, ThreadSafeCache>(json));
         }
 
+        /// <summary>
+        /// There used to be an ID property on the ThreadSafeCache itself. Test that it no longer is used.
+        /// </summary>
         [TestMethod]
-        public void VerifyThatMissingKeyCausesCrash()
+        public void VerifyThatInnerIdIsUsed()
         {
-            var json = """
+            const string INNER_ID = "";
+
+            var json = $$"""
                 {
-                    "Cache":{}
+                    "Id":"legacy-id",
+                    "Cache":{
+                        "Type": "{{typeof(Cache).AssemblyQualifiedName}}",
+                        "Content": {
+                            "Id":"{{INNER_ID}}",
+                            "Storage": {},
+                            "Cleaner":{
+                                "Type":"{{typeof(CacheCleaner<string, string>).AssemblyQualifiedName}}",
+                                "Content":{
+                                    "CleanupInterval": "00:00:00.5"
+                                }
+                            }
+                        }
+                    }
                 }
                 """;
-            Assert.ThrowsException<MissingValueJsonException>(() => SerializationHelper.Deserialize<ThreadSafeCacheJsonConverter, ThreadSafeCache>(json));
+
+            var cache = SerializationHelper.DeserializeAndReturn<ThreadSafeCacheJsonConverter, ThreadSafeCache>(json);
+
+            Assert.AreEqual(INNER_ID, cache.Id);
+            Assert.AreEqual(INNER_ID, cache.Cache.Id);
         }
     }
 }

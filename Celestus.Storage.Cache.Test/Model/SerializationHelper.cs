@@ -8,6 +8,12 @@ namespace Celestus.Storage.Cache.Test.Model
         public static void Deserialize<ConverterType, DataType>(string json)
             where ConverterType : JsonConverter<DataType>, new()
         {
+            _ = DeserializeAndReturn<ConverterType, DataType>(json);
+        }
+
+        public static DataType DeserializeAndReturn<ConverterType, DataType>(string json)
+            where ConverterType : JsonConverter<DataType>, new()
+        {
             JsonSerializerOptions _options = new()
             {
                 Converters = { new ConverterType() }
@@ -18,7 +24,7 @@ namespace Celestus.Storage.Cache.Test.Model
 
             reader.Read();
 
-            converter.Read(ref reader, typeof(DataType), _options);
+            return converter.Read(ref reader, typeof(DataType), _options)!;
         }
     }
 }

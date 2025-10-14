@@ -15,7 +15,7 @@ namespace Celestus.Storage.Cache
     public abstract class CacheManagerBase<CacheIdType, CacheKeyType, CacheType> : IDisposable, ICacheManager<CacheIdType, CacheType>
         where CacheIdType : class
         where CacheKeyType : class
-        where CacheType : CacheBase<CacheIdType, CacheKeyType>
+        where CacheType : class, CacheBase<CacheIdType, CacheKeyType>
     {
         private TimeSpan _lockTimeout = TimeSpan.FromMilliseconds(5000);
 
