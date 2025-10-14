@@ -378,7 +378,9 @@ namespace Celestus.Storage.Cache
                 }
             }
 
-            return true;
+            return Id == other.Id &&
+                   PersistenceEnabled == other.PersistenceEnabled &&
+                   PersistenceStorageFile == other.PersistenceStorageFile;
         }
 
         public override bool Equals(object? obj)

@@ -19,7 +19,7 @@ namespace Celestus.Storage.Cache.Test
             var oneDay = TimeSpan.FromDays(1);
 
             const string CACHE_KEY = nameof(VerifyThatPersistentCacheSavesOnDispose);
-            var cache = CacheHelper.Create(cacheTypeToTest, CACHE_KEY, persistenceEnabled: true, tempFile.Info.FullName);
+            var cache = CacheHelper.Create(cacheTypeToTest, CACHE_KEY, persistenceEnabled: true, tempFile.Info);
 
             const string KEY_A = "A";
             const int VALUE_A = 123;
@@ -40,7 +40,7 @@ namespace Celestus.Storage.Cache.Test
             //
             // Assert
             //
-            var loaded = CacheHelper.Create(cacheTypeToTest, CACHE_KEY, persistenceEnabled: true, tempFile.Info.FullName);
+            var loaded = CacheHelper.Create(cacheTypeToTest, CACHE_KEY, persistenceEnabled: true, tempFile.Info);
             Assert.AreEqual(VALUE_A, loaded.Get<int>(KEY_A));
             Assert.AreEqual(VALUE_B, loaded.Get<string>(KEY_B));
 

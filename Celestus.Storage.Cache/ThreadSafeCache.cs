@@ -453,7 +453,7 @@ namespace Celestus.Storage.Cache
         /// <returns>Shallow clone of the cache.</returns>
         public object Clone()
         {
-            return new ThreadSafeCache((Cache)Cache.Clone(), PersistenceEnabled, PersistenceStorageFile?.FullName ?? string.Empty);
+            return new ThreadSafeCache((CacheBase<string, string>)Cache.Clone(), PersistenceEnabled, PersistenceStorageFile?.FullName ?? string.Empty);
         }
         #endregion
     }
