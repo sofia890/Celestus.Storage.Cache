@@ -1,6 +1,5 @@
 using Celestus.Io;
 using Celestus.Storage.Cache.Test.Model;
-using Newtonsoft.Json.Linq;
 
 namespace Celestus.Storage.Cache.Test;
 
@@ -88,7 +87,7 @@ public class TestCaches
         const double VALUE_2 = 988.1234;
         cache.Set(KEY_2, VALUE_2);
 
-       var loaded = cache.TryLoadFromFile(tempFile.Info);
+        var loaded = cache.TryLoadFromFile(tempFile.Info);
 
         //
         // Assert

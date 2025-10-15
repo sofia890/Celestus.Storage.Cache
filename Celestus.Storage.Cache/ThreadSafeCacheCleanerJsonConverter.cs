@@ -9,7 +9,7 @@ namespace Celestus.Storage.Cache
 
         public override ThreadSafeCacheCleaner<string, string>? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            ThreadSafeCacheCleaner<string, string> ? cacheCleaner = null;
+            ThreadSafeCacheCleaner<string, string>? cacheCleaner = null;
 
             while (reader.Read())
             {

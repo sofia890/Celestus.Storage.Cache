@@ -1,5 +1,4 @@
 ﻿using Celestus.Exceptions;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Celestus.Storage.Cache

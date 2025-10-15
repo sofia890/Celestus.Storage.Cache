@@ -1,7 +1,6 @@
 using Celestus.Io;
 using Celestus.Serialization;
 using Celestus.Storage.Cache.Test.Model;
-using System.Text.Json;
 using static Celestus.Storage.Cache.CacheEntry;
 
 namespace Celestus.Storage.Cache.Test

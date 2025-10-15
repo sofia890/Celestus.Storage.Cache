@@ -1,6 +1,4 @@
-﻿using System.Text.Json;
-
-namespace Celestus.Storage.Cache
+﻿namespace Celestus.Storage.Cache
 {
     public abstract class CacheCleanerBase<CacheIdType, CacheKeyType> : IDisposable, ICloneable
         where CacheIdType : notnull

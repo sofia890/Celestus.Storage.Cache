@@ -146,7 +146,7 @@ namespace Celestus.Storage.Cache
             {
                 var innerResult = Cache.TryGet<DataType>(key, out var innerData);
 
-                return (innerResult, innerData!); 
+                return (innerResult, innerData!);
             }
 
             if (DoWhileReadLocked(() => TryGetLocal(), out var result, timeout) && result.success)
