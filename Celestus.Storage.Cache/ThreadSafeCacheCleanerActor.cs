@@ -34,7 +34,7 @@ namespace Celestus.Storage.Cache
             _signalHandlerTask = Task.Run(HandleSignals);
         }
 
-        private void HandleSignals()
+        private async void HandleSignals()
         {
             var cancelToken = cleanerLoopCancellationTokenSource.Token;
 
@@ -49,17 +49,19 @@ namespace Celestus.Storage.Cache
                 if (signalTask == null)
                 {
                     signalTask = reader.ReadAsync().AsTask();
+
+                    continue;
                 }
-                else if (signalTask.Wait(_cleanupInterval))
+                else if (await signalTask.WaitAsync(_cleanupInterval) is Signal rawSignal)
                 {
                     if (signalTask.IsCompletedSuccessfully)
                     {
-                        Signal rawSignal = signalTask.Result;
                         signalTask = null;
 
                         switch (rawSignal.SignalId)
                         {
                             default:
+                                // This should never happen, so crash hard to expose whatever bug caused it.
                                 throw new UnknownSignalException($"Unknown signal ID '{rawSignal.SignalId}' encountered.");
 
                             case CleanerProtocol.Stop:
@@ -83,14 +85,9 @@ namespace Celestus.Storage.Cache
                     {
                         signalTask = null;
                     }
-
-                    Prune(DateTime.UtcNow);
-
                 }
-                else
-                {
-                    Prune(DateTime.UtcNow);
-                }
+
+                Prune(DateTime.UtcNow);
             }
         }
 
