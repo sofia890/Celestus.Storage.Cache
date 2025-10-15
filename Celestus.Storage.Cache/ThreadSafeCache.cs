@@ -50,6 +50,7 @@ namespace Celestus.Storage.Cache
             }
         }
 
+        bool _shutdown = false; 
         readonly ReaderWriterLockSlim _lock = new();
 
         public ThreadSafeCache(CacheBase<string, string> cache,
@@ -395,7 +396,6 @@ namespace Celestus.Storage.Cache
         #region IDisposable
         private bool _disposed = false;
 
-
         public bool IsDisposed => _disposed;
 
         public void Dispose()
@@ -408,7 +408,7 @@ namespace Celestus.Storage.Cache
         {
             if (!_disposed)
             {
-                _ = DoWhileWriteLocked(
+                var result = DoWhileWriteLocked(
                     () =>
                     {
                         Factory.Remove(Id);
@@ -421,6 +421,8 @@ namespace Celestus.Storage.Cache
                         _disposed = true;
                     },
                     DefaultTimeout);
+
+                WriteLockException.ThrowIf(!result, "Could not acquire write lock while tearing object down.");
 
                 if (disposing)
                 {
