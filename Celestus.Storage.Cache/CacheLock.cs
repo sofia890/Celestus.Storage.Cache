@@ -22,7 +22,7 @@ namespace Celestus.Storage.Cache
 
         public static bool TryWriteLock(ReaderWriterLockSlim slimLock, TimeSpan timeout, [MaybeNullWhen(false)] out CacheLock cacheLock)
         {
-            return TryLock(slimLock.IsReadLockHeld, slimLock.TryEnterWriteLock, slimLock.ExitWriteLock, timeout, out cacheLock);
+            return TryLock(slimLock.IsWriteLockHeld, slimLock.TryEnterWriteLock, slimLock.ExitWriteLock, timeout, out cacheLock);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
