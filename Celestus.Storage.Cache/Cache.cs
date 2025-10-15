@@ -148,6 +148,50 @@ namespace Celestus.Storage.Cache
             }
         }
 
+        private void QueuePersistenceOnBackgroundThread()
+        {
+            if (!PersistenceEnabled || _persistenceEnabledHandled)
+            {
+                return;
+            }
+
+            // Copy reference needed inside thread (no locking here since object is unreachable except by finalizer).
+            var cache = this;
+
+            try
+            {
+                var thread = new Thread(() =>
+                {
+                    try
+                    {
+                        cache.HandlePersistenceEnabledFinalization();
+                    }
+                    catch
+                    {
+                        // Swallow exceptions in background persistence during finalization.
+                    }
+                })
+                {
+                    IsBackground = true,
+                    Name = "CachePersistenceFinalizer"
+                };
+
+                thread.Start();
+            }
+            catch
+            {
+                // If we cannot start a background thread, try to persist on the finalizer thread.
+                try
+                {
+                    cache.HandlePersistenceEnabledFinalization(); 
+                }
+                catch
+                {
+                    // Swallow exceptions in background persistence during finalization.
+                }
+            }
+        }
+
         private static FileInfo GetDefaultPersistencePath(string key)
         {
             string commonAppDataPath = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
@@ -338,7 +382,7 @@ namespace Celestus.Storage.Cache
 
         ~Cache()
         {
-            // Triggers persistence, saves state to file.
+            // Shift heavy persistence work off the finalizer thread.
             Dispose(false);
         }
 
@@ -346,12 +390,17 @@ namespace Celestus.Storage.Cache
         {
             if (!_disposed)
             {
-                HandlePersistenceEnabledFinalization();
-
                 if (disposing)
                 {
+                    // Perform persistence synchronously during explicit dispose so caller gets deterministic failure.
+                    HandlePersistenceEnabledFinalization();
+
                     Cleaner.Dispose();
                     Storage.Clear();
+                }
+                else
+                {
+                    QueuePersistenceOnBackgroundThread();
                 }
 
                 _disposed = true;
