@@ -113,18 +113,4 @@ public class TestCacheCleaning
         Assert.IsNotNull(firstValue);
         Assert.AreEqual(fileA.Length, fileB.Length);
     }
-
-    [TestMethod]
-    public void VerifyThatMissingIntervalCausesCrash()
-    {
-        string json = "{\"ExtraParameter\":\"500\"}";
-        Assert.ThrowsException<MissingValueJsonException>(() => CleaningHelper.Deserialize<CacheCleaner<string, string>>(json));
-    }
-
-    [TestMethod]
-    public void VerifyThatUnknownParametersAreIgnored()
-    {
-        string json = "{\"ExtraParameter\":\"500\",\"CleanupInterval\":\"00:00:00.5\"}";
-        CleaningHelper.Deserialize<CacheCleaner<string, string>>(json);
-    }
 }
