@@ -18,6 +18,7 @@ namespace Celestus.Storage.Cache
             string? persistenceStorageLocation = null;
             Dictionary<string, CacheEntry>? storage = null;
             CacheCleanerBase<string, string>? cleaner = null;
+            BlockedEntryBehavior blockedBehavior = options.GetBlockedEntryBehavior();
 
             while (reader.Read())
             {
@@ -67,6 +68,7 @@ namespace Celestus.Storage.Cache
             return new Cache(id,
                              storage,
                              cleaner,
+                             blockedEntryBehavior: blockedBehavior,
                              persistenceEnabled: persistenceEnabled,
                              persistenceStorageLocation: persistenceStorageLocation ?? "",
                              persistenceLoadWhenCreated: false);

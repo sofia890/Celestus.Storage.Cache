@@ -13,11 +13,10 @@ namespace Celestus.Storage.Cache
         public const int EXPECTED_MAX_CONCURRENT_SIGNALS = 10;
 
         TimeSpan _cleanupInterval;
-        DateTime _nextCleanupOpportunity;
-        WeakReference<CacheBase<CacheIdType, CacheKeyType>>? _cacheReference = null;
+        WeakReference<ICacheBase<CacheIdType, CacheKeyType>>? _cacheReference = null;
         private bool _disposed = false;
         private readonly Task _signalHandlerTask;
-        readonly CancellationTokenSource cleanerLoopCancellationTokenSource = new();
+        readonly CancellationTokenSource _cleanerLoopCancellationTokenSource = new();
 
         public Channel<Signal> CleanerPort { get; init; } = Channel.CreateBounded<Signal>(
             options: new BoundedChannelOptions(EXPECTED_MAX_CONCURRENT_SIGNALS)
@@ -30,85 +29,127 @@ namespace Celestus.Storage.Cache
         public ThreadSafeCacheCleanerActor(TimeSpan interval)
         {
             _cleanupInterval = interval;
-            _nextCleanupOpportunity = DateTime.UtcNow + _cleanupInterval;
             _signalHandlerTask = Task.Run(HandleSignals);
         }
 
-        private async void HandleSignals()
+        private async Task HandleSignals()
         {
-            var cancelToken = cleanerLoopCancellationTokenSource.Token;
+            var cancelToken = _cleanerLoopCancellationTokenSource.Token;
 
-            Task<Signal>? signalTask = null;
+            Task<Signal>? signalwaitTask = null;
+
+            Task? pruneIntervalTask = null;
+
+            CancellationTokenSource pruneCancellationTokenSource = new();
 
             var reader = CleanerPort.Reader;
 
             while (!reader.Completion.IsCompleted && !_disposed)
             {
+                if (cancelToken.IsCancellationRequested)
+                {
+                    CancelPruneTask(pruneIntervalTask, pruneCancellationTokenSource);
+                }
+
                 cancelToken.ThrowIfCancellationRequested();
 
-                if (signalTask == null)
+                signalwaitTask ??= reader.ReadAsync(cancelToken).AsTask();
+                pruneIntervalTask ??= Task.Delay(_cleanupInterval, pruneCancellationTokenSource.Token);
+
+                var completed = await Task.WhenAny(signalwaitTask, pruneIntervalTask);
+
+                if (completed == signalwaitTask && signalwaitTask.IsCompletedSuccessfully)
                 {
-                    signalTask = reader.ReadAsync().AsTask();
+                    var signal = signalwaitTask.Result;
 
-                    continue;
-                }
-                else if (await signalTask.WaitAsync(_cleanupInterval) is Signal rawSignal)
-                {
-                    if (signalTask.IsCompletedSuccessfully)
+                    signalwaitTask = null;
+
+                    switch (signal.SignalId)
                     {
-                        signalTask = null;
+                        default:
+                            throw new UnknownSignalException($"Unknown signal ID '{signal.SignalId}' encountered.");
 
-                        switch (rawSignal.SignalId)
-                        {
-                            default:
-                                // This should never happen, so crash hard to expose whatever bug caused it.
-                                throw new UnknownSignalException($"Unknown signal ID '{rawSignal.SignalId}' encountered.");
+                        case CleanerProtocol.Stop:
+                            return;
 
-                            case CleanerProtocol.Stop:
-                                return;
+                        case CleanerProtocol.RegisterCacheInd when signal is RegisterCacheInd<CacheIdType, CacheKeyType> payload:
+                            _cacheReference = payload.Cache;
+                            break;
 
-                            case CleanerProtocol.RegisterCacheInd when rawSignal is RegisterCacheInd<CacheIdType, CacheKeyType> payload:
-                                _cacheReference = payload.Cache;
-                                break;
+                        case CleanerProtocol.UnregisterCacheInd:
+                            _cacheReference = null;
+                            break;
 
-                            case CleanerProtocol.UnregisterCacheInd:
-                                _cacheReference = null;
-                                break;
+                        case CleanerProtocol.ResetInd when signal is ResetInd payload:
+                            _cleanupInterval = payload.CleanupInterval;
 
-                            case CleanerProtocol.ResetInd when rawSignal is ResetInd payload:
-                                _cleanupInterval = payload.CleanupInterval;
-                                _nextCleanupOpportunity = DateTime.UtcNow + _cleanupInterval;
-                                break;
-                        }
-                    }
-                    else
-                    {
-                        signalTask = null;
+                            CancelPruneTask(pruneIntervalTask, pruneCancellationTokenSource);
+                            pruneCancellationTokenSource.Dispose();
+                            pruneCancellationTokenSource = new();
+
+                            pruneIntervalTask = null;
+                            break;
                     }
                 }
+                else if (completed == signalwaitTask && signalwaitTask.IsFaulted)
+                {
+                    signalwaitTask = null;
+                }
+                else if (completed == pruneIntervalTask && pruneIntervalTask.IsCompletedSuccessfully)
+                {
+                    pruneIntervalTask = null;
 
-                Prune(DateTime.UtcNow);
+                    Prune(DateTime.UtcNow, cancelToken);
+                }
+                else if (completed == pruneIntervalTask && pruneIntervalTask.IsFaulted)
+                {
+                    pruneIntervalTask = null;
+                }
             }
         }
 
-        private void Prune(DateTime now)
+        private static void CancelPruneTask(Task? pruneIntervalTask, CancellationTokenSource pruneCancellationTokenSource)
+        {
+            if (pruneIntervalTask != null)
+            {
+                try
+                {
+                    pruneCancellationTokenSource.Cancel();
+                    pruneIntervalTask.Wait();
+                }
+                catch (AggregateException exception)
+                {
+                    var exceptionType = exception.InnerException?.GetType();
+
+                    if (exceptionType == typeof(TaskCanceledException) ||
+                        exceptionType == typeof(OperationCanceledException))
+                    {
+                        // Ignore this exception
+                    }
+                    else
+                    {
+                        throw;
+                    }
+                }
+                catch (OperationCanceledException)
+                {
+                    // Ignore this exception
+                }
+            }
+        }
+
+        private void Prune(DateTime now,  CancellationToken cancelToken)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 
-            if (_nextCleanupOpportunity > now)
-            {
-                return;
-            }
-            else if (_cacheReference == null ||
-                     !_cacheReference.TryGetTarget(out var cache))
+            if (_cacheReference == null ||
+                !_cacheReference.TryGetTarget(out var cache))
             {
                 // Wait for reference to be available.
                 return;
             }
             else
             {
-                var cancelToken = cleanerLoopCancellationTokenSource.Token;
-
                 List<CacheKeyType> expiredKeys = [];
 
                 var reader = CleanerPort.Reader;
@@ -132,20 +173,12 @@ namespace Celestus.Storage.Cache
                 {
                     _ = cache.TryRemove([.. expiredKeys]);
                 }
-
-                _nextCleanupOpportunity = now + _cleanupInterval;
             }
         }
 
-        public TimeSpan GetCleaningInterval()
-        {
-            return _cleanupInterval;
-        }
+        public TimeSpan GetCleaningInterval() => _cleanupInterval;
 
-        public void SetCleaningInterval(TimeSpan interval)
-        {
-            _ = CleanerPort.Writer.TryWrite(new ResetInd(interval));
-        }
+        public void SetCleaningInterval(TimeSpan interval) => _ = CleanerPort.Writer.TryWrite(new ResetInd(interval));
 
         #region IDisposable
         public void Dispose()
@@ -161,13 +194,16 @@ namespace Celestus.Storage.Cache
                 if (disposing)
                 {
                     CleanerPort.Writer.TryWrite(new StopInd());
-                    CleanerPort.Writer.Complete();
 
                     if (!_signalHandlerTask.Wait(STOP_TIMEOUT))
                     {
                         try
                         {
-                            cleanerLoopCancellationTokenSource.Cancel();
+                            _cleanerLoopCancellationTokenSource.Cancel();
+
+                            CleanerPort.Writer.TryWrite(new StopInd());
+                            CleanerPort.Writer.Complete();
+
                             _signalHandlerTask.Wait();
                         }
                         catch (AggregateException exception)
@@ -192,7 +228,7 @@ namespace Celestus.Storage.Cache
 
                     _signalHandlerTask.Dispose();
 
-                    cleanerLoopCancellationTokenSource.Dispose();
+                    _cleanerLoopCancellationTokenSource.Dispose();
                 }
 
                 _disposed = true;

@@ -4,6 +4,7 @@ using Celestus.Serialization;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace Celestus.Storage.Cache
@@ -12,19 +13,25 @@ namespace Celestus.Storage.Cache
     /// Single threaded cache implementation with optional persistence to file.
     /// </summary>
     [JsonConverter(typeof(CacheJsonConverter))]
-    public partial class Cache : CacheBase<string, string>, IDisposable
+    public partial class Cache : ICacheBase<string, string>, IDisposable
     {
         private bool _persistenceEnabledHandled;
+
+        public BlockedEntryBehavior BlockedEntryBehavior { get; set; } = BlockedEntryBehavior.Throw;
+
+        public CacheTypeRegister TypeRegister { get; set; } = new();
 
         public Cache(
             string id,
             Dictionary<string, CacheEntry> storage,
             CacheCleanerBase<string, string> cleaner,
+            BlockedEntryBehavior blockedEntryBehavior = BlockedEntryBehavior.Throw,
             bool persistenceEnabled = false,
             string persistenceStorageLocation = "",
             bool persistenceLoadWhenCreated = true)
         {
             Id = id;
+            BlockedEntryBehavior = blockedEntryBehavior;
 
             HandlePersistenceEnabledInitialization(persistenceEnabled, persistenceStorageLocation, persistenceLoadWhenCreated);
 
@@ -36,8 +43,23 @@ namespace Celestus.Storage.Cache
             Cleaner = cleaner;
         }
 
+        public Cache(
+            string id,
+            Dictionary<string, CacheEntry> storage,
+            CacheCleanerBase<string, string> cleaner,
+            bool persistenceEnabled,
+            string persistenceStorageLocation,
+            bool persistenceLoadWhenCreated) : this(id, storage, cleaner, BlockedEntryBehavior.Throw, persistenceEnabled, persistenceStorageLocation, persistenceLoadWhenCreated)
+        {
+        }
+
         public Cache(string id, bool persistenceEnabled = false, string persistenceStorageLocation = "") :
-            this(id, [], new CacheCleaner<string, string>(), persistenceEnabled: persistenceEnabled, persistenceStorageLocation: persistenceStorageLocation)
+            this(id, [], new CacheCleaner<string, string>(), BlockedEntryBehavior.Throw, persistenceEnabled: persistenceEnabled, persistenceStorageLocation: persistenceStorageLocation)
+        {
+        }
+
+        public Cache(string id, bool persistenceEnabled, string persistenceStorageLocation, BlockedEntryBehavior blockedEntryBehavior) :
+            this(id, [], new CacheCleaner<string, string>(), blockedEntryBehavior, persistenceEnabled: persistenceEnabled, persistenceStorageLocation: persistenceStorageLocation)
         {
         }
 
@@ -45,13 +67,24 @@ namespace Celestus.Storage.Cache
             this(string.Empty,
                 [],
                 new CacheCleaner<string, string>(),
+                BlockedEntryBehavior.Throw,
                 persistenceEnabled: false,
                 persistenceStorageLocation: "")
         {
         }
 
-        public Cache(CacheCleanerBase<string, string> cleaner, bool persistenceEnabled = false, string persistenceStorageLocation = "") :
-            this(string.Empty, [], cleaner, persistenceEnabled: persistenceEnabled, persistenceStorageLocation: persistenceStorageLocation)
+        public Cache(BlockedEntryBehavior blockedEntryBehavior) :
+            this(string.Empty,
+                [],
+                new CacheCleaner<string, string>(),
+                blockedEntryBehavior,
+                persistenceEnabled: false,
+                persistenceStorageLocation: "")
+        {
+        }
+
+        public Cache(CacheCleanerBase<string, string> cleaner, bool persistenceEnabled = false, string persistenceStorageLocation = "", BlockedEntryBehavior blockedEntryBehavior = BlockedEntryBehavior.Throw) :
+            this(string.Empty, [], cleaner, blockedEntryBehavior, persistenceEnabled: persistenceEnabled, persistenceStorageLocation: persistenceStorageLocation)
         {
         }
 
@@ -87,9 +120,18 @@ namespace Celestus.Storage.Cache
             return expiration;
         }
 
-        public static Cache? TryCreateFromFile(FileInfo file)
+        public static Cache? TryCreateFromFile(FileInfo file,
+                                               BlockedEntryBehavior behaviourMode = BlockedEntryBehavior.Throw,
+                                               CacheTypeFilterMode filterMode = CacheTypeFilterMode.Blacklist,
+                                               IEnumerable<Type>? types = null)
         {
-            return Serialize.TryCreateFromFile<Cache>(file);
+            var options = new JsonSerializerOptions();
+            options.SetBlockedEntryBehavior(behaviourMode);
+            options.SetCacheTypeRegister(new(filterMode, types ?? []));
+
+            var loaded = Serialize.TryCreateFromFile<Cache>(file);
+
+            return loaded;
         }
 
         /// <returns>Shallow clone of the cache.</returns>
@@ -98,7 +140,10 @@ namespace Celestus.Storage.Cache
             var clone = new Cache(Id)
             {
                 Storage = Storage.ToDictionary(),
-                Cleaner = (CacheCleanerBase<string, string>)Cleaner.Clone()
+                Cleaner = (CacheCleanerBase<string, string>)Cleaner.Clone(),
+                BlockedEntryBehavior = BlockedEntryBehavior,
+                TypeRegister = (CacheTypeRegister)TypeRegister.Clone(),
+                PersistenceStorageFile = PersistenceStorageFile
             };
 
             return clone;
@@ -183,7 +228,7 @@ namespace Celestus.Storage.Cache
                 // If we cannot start a background thread, try to persist on the finalizer thread.
                 try
                 {
-                    cache.HandlePersistenceEnabledFinalization(); 
+                    cache.HandlePersistenceEnabledFinalization();
                 }
                 catch
                 {
@@ -213,14 +258,12 @@ namespace Celestus.Storage.Cache
 
                 filePath = new(Path.Combine([commonAppDataPath, appName, assemblyName, $"{key}.json"]));
 
-                if (!CanWrite.Test(filePath))
+                if (!CanWrite.Test(filePath) && file.DirectoryName != null)
                 {
-                    if (file.DirectoryName != null)
-                    {
-                        filePath = new(Path.Combine([file.DirectoryName, assemblyName, $"{key}.json"]));
-                    }
+                    filePath = new(Path.Combine([file.DirectoryName, assemblyName, $"{key}.json"]));
                 }
             }
+
 
             NoPersistencePathException.ThrowIf(!CanWrite.Test(filePath), "Could not find any writeable path for application.");
 
@@ -349,7 +392,11 @@ namespace Celestus.Storage.Cache
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 
-            var loadedData = Serialize.TryCreateFromFile<Cache>(file);
+            var options = new JsonSerializerOptions();
+            options.SetBlockedEntryBehavior(BlockedEntryBehavior);
+            options.SetCacheTypeRegister(TypeRegister);
+
+            var loadedData = Serialize.TryCreateFromFile<Cache>(file, options);
 
             if (loadedData == null)
             {
@@ -363,38 +410,27 @@ namespace Celestus.Storage.Cache
             }
         }
 
-        public ImmutableDictionary<string, CacheEntry> GetEntries()
-        {
-            return Storage.ToImmutableDictionary();
-        }
+        public ImmutableDictionary<string, CacheEntry> GetEntries() => Storage.ToImmutableDictionary();
+
         #endregion
 
         #region IDisposable
         private bool _disposed = false;
-
         public bool IsDisposed => _disposed;
-
         public void Dispose()
         {
             Dispose(true);
             GC.SuppressFinalize(this);
         }
 
-        ~Cache()
-        {
-            // Shift heavy persistence work off the finalizer thread.
-            Dispose(false);
-        }
-
+        ~Cache() => Dispose(false);
         protected virtual void Dispose(bool disposing)
         {
             if (!_disposed)
             {
                 if (disposing)
                 {
-                    // Perform persistence synchronously during explicit dispose so caller gets deterministic failure.
                     HandlePersistenceEnabledFinalization();
-
                     Cleaner.Dispose();
                     Storage.Clear();
                 }
@@ -406,8 +442,7 @@ namespace Celestus.Storage.Cache
                 _disposed = true;
             }
         }
-
-        CacheCleanerBase<string, string> CacheBase<string, string>.Cleaner { get => Cleaner; set => Cleaner = value; }
+        CacheCleanerBase<string, string> ICacheBase<string, string>.Cleaner { get => Cleaner; set => Cleaner = value; }
         #endregion
 
         #region IEquatable
@@ -429,17 +464,16 @@ namespace Celestus.Storage.Cache
 
             return Id == other.Id &&
                    PersistenceEnabled == other.PersistenceEnabled &&
-                   PersistenceStorageFile == other.PersistenceStorageFile;
+                   PersistenceStorageFile == other.PersistenceStorageFile &&
+                   BlockedEntryBehavior == other.BlockedEntryBehavior;
         }
 
-        public override bool Equals(object? obj)
-        {
-            return Equals(obj as Cache);
-        }
+        public override bool Equals(object? obj) => Equals(obj as Cache);
 
         public override int GetHashCode()
         {
             var hash = new HashCode();
+            hash.Add(BlockedEntryBehavior);
 
             foreach (var kvp in Storage.OrderBy(x => x.Key))
             {
@@ -453,10 +487,7 @@ namespace Celestus.Storage.Cache
 
         #region ICloneable
         /// <returns>Shallow clone of the cache.</returns>
-        public object Clone()
-        {
-            return ToCache();
-        }
+        public object Clone() => ToCache();
         #endregion
     }
 }

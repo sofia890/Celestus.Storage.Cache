@@ -2,7 +2,7 @@ namespace Celestus.Storage.Cache.Test.Model
 {
     public static class CacheHelper
     {
-        public static CacheBase<string, string> GetOrCreateShared(Type cacheType, string id, bool persistenceEnabled = false, string persistenceStorageLocation = "")
+        public static ICacheBase<string, string> GetOrCreateShared(Type cacheType, string id, bool persistenceEnabled = false, string persistenceStorageLocation = "")
         {
             if (typeof(ThreadSafeCache) == cacheType)
             {
@@ -14,7 +14,7 @@ namespace Celestus.Storage.Cache.Test.Model
             }
         }
 
-        public static CacheBase<string, string>? TryCreateFromFile(Type cacheType, FileInfo file)
+        public static ICacheBase<string, string>? TryCreateFromFile(Type cacheType, FileInfo file)
         {
             if (typeof(ThreadSafeCache) == cacheType)
             {
@@ -26,9 +26,9 @@ namespace Celestus.Storage.Cache.Test.Model
             }
         }
 
-        public static CacheBase<string, string> Create(Type cacheType, string id, bool persistenceEnabled = false, FileInfo? persistenceStorageLocation = null)
+        public static ICacheBase<string, string> Create(Type cacheType, string id, bool persistenceEnabled = false, FileInfo? persistenceStorageLocation = null)
         {
-            return (CacheBase<string, string>)Activator.CreateInstance(cacheType, [id, persistenceEnabled, persistenceStorageLocation?.FullName ?? string.Empty])!;
+            return (ICacheBase<string, string>)Activator.CreateInstance(cacheType, [id, persistenceEnabled, persistenceStorageLocation?.FullName ?? string.Empty])!;
         }
     }
 }

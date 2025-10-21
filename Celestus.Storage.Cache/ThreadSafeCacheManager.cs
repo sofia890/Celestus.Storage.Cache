@@ -10,9 +10,13 @@ namespace Celestus.Storage.Cache
 
             #region CacheManagerBase
 
-            protected override ThreadSafeCache? TryCreateFromFile(FileInfo file)
+            protected override ThreadSafeCache? TryCreateFromFile(
+                FileInfo file,
+                BlockedEntryBehavior behaviourMode = BlockedEntryBehavior.Throw,
+                CacheTypeFilterMode filterMode = CacheTypeFilterMode.Blacklist,
+                IEnumerable<Type>? types = null)
             {
-                return ThreadSafeCache.TryCreateFromFile(file);
+                return ThreadSafeCache.TryCreateFromFile(file, behaviourMode, filterMode, types);
             }
 
             protected override bool Update(ThreadSafeCache from, ThreadSafeCache to, TimeSpan? timeout)
@@ -23,7 +27,7 @@ namespace Celestus.Storage.Cache
                 {
                     using (cacheLock)
                     {
-                        return to.TrySetCache((CacheBase<string, string>)from.Cache.Clone(), timeout ?? DefaultTimeout);
+                        return to.TrySetCache((ICacheBase<string, string>)from.Cache.Clone(), timeout ?? DefaultTimeout);
                     }
                 }
                 else

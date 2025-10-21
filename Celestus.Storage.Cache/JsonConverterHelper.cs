@@ -17,6 +17,8 @@ namespace Celestus.Storage.Cache
 
             Type? objectType = null;
             ObjectType? objectInstance = null;
+            var register = options.GetCacheTypeRegister();
+            var blockedBehavior = options.GetBlockedEntryBehavior();
 
             while (reader.Read())
             {
@@ -41,9 +43,25 @@ namespace Celestus.Storage.Cache
                                 {
                                     throw new ValueTypeJsonException(TYPE_PROPERTY_NAME, JsonTokenType.String, reader.TokenType);
                                 }
-                                else if (Type.GetType(typeString) is not Type parsedObjectType)
+                                else if (register.Resolve(typeString, out var allowed) is not Type parsedObjectType)
                                 {
                                     throw new NotObjectTypeJsonException(TYPE_PROPERTY_NAME, typeString);
+                                }
+                                else if (!allowed)
+                                {
+                                    if (blockedBehavior == BlockedEntryBehavior.Throw)
+                                    {
+                                        throw new BlockedCacheTypeException(parsedObjectType, "entry deserialization");
+                                    }
+                                    else
+                                    {
+                                        // Ignore whole entry: skip remaining tokens and return a sentinel that caller will drop.
+                                        while (reader.Read() && reader.TokenType != JsonTokenType.EndObject)
+                                        {
+                                        }
+
+                                        return null;
+                                    }
                                 }
                                 else
                                 {

@@ -10,7 +10,7 @@ namespace Celestus.Storage.Cache
         {
             const string TYPE_PROPERTY_NAME = "Type";
 
-            public override CacheEntry Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            public override CacheEntry? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
             {
                 Condition.ThrowIf<JsonException>(reader.TokenType != JsonTokenType.StartObject,
                                                  $"Invalid JSON for {nameof(CacheEntry)}.");
@@ -19,6 +19,9 @@ namespace Celestus.Storage.Cache
                 DateTime? expiration = null;
                 bool dataSet = false;
                 object? data = null;
+
+                var register = options.GetCacheTypeRegister();
+                var blockedBehavior = options.GetBlockedEntryBehavior();
 
                 while (reader.Read())
                 {
@@ -40,9 +43,22 @@ namespace Celestus.Storage.Cache
                                     {
                                         throw new ValueTypeJsonException(TYPE_PROPERTY_NAME, JsonTokenType.String, reader.TokenType);
                                     }
-                                    else if (Type.GetType(typeString) is not Type parsedType)
+                                    else if (register.Resolve(typeString, out var allowed) is not Type parsedType)
                                     {
                                         throw new NotObjectTypeJsonException(TYPE_PROPERTY_NAME, typeString);
+                                    }
+                                    else if (!allowed)
+                                    {
+                                        if (blockedBehavior == BlockedEntryBehavior.Throw)
+                                        {
+                                            throw new BlockedCacheTypeException(parsedType, "entry deserialization");
+                                        }
+                                        else
+                                        {
+                                            while (reader.Read() && reader.TokenType != JsonTokenType.EndObject) { }
+
+                                            return null;
+                                        }
                                     }
                                     else
                                     {

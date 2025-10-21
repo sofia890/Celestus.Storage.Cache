@@ -14,7 +14,7 @@ public class TestCachesEquitable
         //
         // Arrange & Act
         //
-        using CacheBase<string, string> cache = CacheHelper.Create(cacheType, string.Empty);
+        using ICacheBase<string, string> cache = CacheHelper.Create(cacheType, string.Empty);
 
         //
         // Assert
@@ -32,8 +32,8 @@ public class TestCachesEquitable
         //
         const string ID_A = "A";
         const string ID_B = "B";
-        using CacheBase<string, string> cacheA = CacheHelper.Create(cacheType, ID_A);
-        using CacheBase<string, string> cacheB = CacheHelper.Create(cacheType, ID_B);
+        using ICacheBase<string, string> cacheA = CacheHelper.Create(cacheType, ID_A);
+        using ICacheBase<string, string> cacheB = CacheHelper.Create(cacheType, ID_B);
 
         //
         // Assert
@@ -50,8 +50,8 @@ public class TestCachesEquitable
         // Arrange & Act
         //
         const string ID = "A";
-        using CacheBase<string, string> cacheA = CacheHelper.Create(cacheType, ID);
-        using CacheBase<string, string> cacheB = CacheHelper.Create(cacheType, ID);
+        using ICacheBase<string, string> cacheA = CacheHelper.Create(cacheType, ID);
+        using ICacheBase<string, string> cacheB = CacheHelper.Create(cacheType, ID);
 
         //
         // Assert
@@ -69,8 +69,8 @@ public class TestCachesEquitable
         //
         const string ID = "A";
         using var tempFileA = new TempFile();
-        using CacheBase<string, string> cacheA = CacheHelper.Create(cacheType, ID, true, tempFileA.Info);
-        using CacheBase<string, string> cacheB = CacheHelper.Create(cacheType, ID, false);
+        using ICacheBase<string, string> cacheA = CacheHelper.Create(cacheType, ID, true, tempFileA.Info);
+        using ICacheBase<string, string> cacheB = CacheHelper.Create(cacheType, ID, false);
 
         //
         // Assert
@@ -88,10 +88,10 @@ public class TestCachesEquitable
         //
         const string ID = "A";
         using var tempFileA = new TempFile();
-        using CacheBase<string, string> cacheA = CacheHelper.Create(cacheType, ID, true, tempFileA.Info);
+        using ICacheBase<string, string> cacheA = CacheHelper.Create(cacheType, ID, true, tempFileA.Info);
 
         using var tempFileB = new TempFile();
-        using CacheBase<string, string> cacheB = CacheHelper.Create(cacheType, ID, true, tempFileB.Info);
+        using ICacheBase<string, string> cacheB = CacheHelper.Create(cacheType, ID, true, tempFileB.Info);
 
         //
         // Assert
@@ -108,10 +108,10 @@ public class TestCachesEquitable
         // Arrange
         //
         const string ID_A = "A";
-        using CacheBase<string, string> cacheA = CacheHelper.Create(cacheType, ID_A);
+        using ICacheBase<string, string> cacheA = CacheHelper.Create(cacheType, ID_A);
 
         const string ID_B = "A";
-        using CacheBase<string, string> cacheB = CacheHelper.Create(cacheType, ID_B);
+        using ICacheBase<string, string> cacheB = CacheHelper.Create(cacheType, ID_B);
 
         //
         // Act
@@ -136,10 +136,10 @@ public class TestCachesEquitable
         // Arrange
         //
         const string ID_A = "A";
-        using CacheBase<string, string> cacheA = CacheHelper.Create(cacheType, ID_A);
+        using ICacheBase<string, string> cacheA = CacheHelper.Create(cacheType, ID_A);
 
         const string ID_B = "A";
-        using CacheBase<string, string> cacheB = CacheHelper.Create(cacheType, ID_B);
+        using ICacheBase<string, string> cacheB = CacheHelper.Create(cacheType, ID_B);
 
         //
         // Act
@@ -166,10 +166,10 @@ public class TestCachesEquitable
         // Arrange
         //
         const string ID_A = "A";
-        using CacheBase<string, string> cacheA = CacheHelper.Create(cacheType, ID_A);
+        using ICacheBase<string, string> cacheA = CacheHelper.Create(cacheType, ID_A);
 
         const string ID_B = "A";
-        using CacheBase<string, string> cacheB = CacheHelper.Create(cacheType, ID_B);
+        using ICacheBase<string, string> cacheB = CacheHelper.Create(cacheType, ID_B);
 
         //
         // Act

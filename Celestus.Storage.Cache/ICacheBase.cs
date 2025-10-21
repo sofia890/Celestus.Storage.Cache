@@ -17,7 +17,7 @@ namespace Celestus.Storage.Cache
     public class NoPersistencePathException(string message) : CacheIoException(message);
     public class PersistencePathNotWriteableException(string message) : CacheIoException(message);
 
-    public interface CacheBase<CacheIdType, CacheKeyType> : IDisposable, ICloneable
+    public interface ICacheBase<CacheIdType, CacheKeyType> : IDisposable, ICloneable
         where CacheIdType : notnull
         where CacheKeyType : notnull
     {
@@ -27,6 +27,10 @@ namespace Celestus.Storage.Cache
         public abstract CacheCleanerBase<CacheIdType, CacheKeyType> Cleaner { get; set; }
         public abstract bool IsDisposed { get; }
         internal abstract Dictionary<CacheKeyType, CacheEntry> Storage { get; set; }
+
+        public abstract BlockedEntryBehavior BlockedEntryBehavior { get; set; }
+
+        public abstract CacheTypeRegister TypeRegister { get; set; }
 
         [MemberNotNullWhen(true, nameof(PersistenceStorageFile))]
         public abstract bool PersistenceEnabled { get; }

@@ -12,7 +12,10 @@ namespace Celestus.Storage.Cache
                 reader.TokenType != JsonTokenType.StartObject,
                 parameters: [reader.TokenType, JsonTokenType.StartObject]);
 
-            CacheBase<string, string>? cache = null;
+            ICacheBase<string, string>? cache = null;
+
+            var blockedBehavior = options.GetBlockedEntryBehavior();
+            var register = options.GetCacheTypeRegister();
 
             while (reader.Read())
             {
@@ -30,7 +33,7 @@ namespace Celestus.Storage.Cache
                         {
                             case nameof(ThreadSafeCache.Cache):
                                 _ = reader.Read();
-                                cache = JsonConverterHelper.DeserializeTypedObject<CacheBase<string, string>>(ref reader, options);
+                                cache = JsonConverterHelper.DeserializeTypedObject<ICacheBase<string, string>>(ref reader, options);
                                 break;
 
                             default:
@@ -49,6 +52,23 @@ namespace Celestus.Storage.Cache
             }
             else
             {
+                if (cache is Cache concreteCache)
+                {
+                    concreteCache.BlockedEntryBehavior = blockedBehavior;
+
+                    if (blockedBehavior == BlockedEntryBehavior.Throw)
+                    {
+                        foreach (var e in concreteCache.Storage)
+                        {
+                            var dataType = e.Value.Data?.GetType();
+                            if (dataType != null && !register.IsAllowed(dataType))
+                            {
+                                throw new BlockedCacheTypeException(dataType, "thread-safe cache deserialization");
+                            }
+                        }
+                    }
+                }
+
                 return new ThreadSafeCache(cache);
             }
         }

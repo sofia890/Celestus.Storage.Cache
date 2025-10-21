@@ -15,7 +15,7 @@
 
         public abstract void EntryAccessed(ref CacheEntry entry, CacheKeyType key, DateTime when);
 
-        public abstract void RegisterCache(WeakReference<CacheBase<CacheIdType, CacheKeyType>> cache);
+        public abstract void RegisterCache(WeakReference<ICacheBase<CacheIdType, CacheKeyType>> cache);
 
         public abstract void UnregisterCache();
 

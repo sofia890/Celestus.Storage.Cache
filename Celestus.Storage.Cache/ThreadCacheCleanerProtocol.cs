@@ -11,7 +11,7 @@
 
     internal record Signal(CleanerProtocol SignalId);
 
-    internal record RegisterCacheInd<CacheIdType, CacheKeyType>(WeakReference<CacheBase<CacheIdType, CacheKeyType>> Cache) : Signal(CleanerProtocol.RegisterCacheInd)
+    internal record RegisterCacheInd<CacheIdType, CacheKeyType>(WeakReference<ICacheBase<CacheIdType, CacheKeyType>> Cache) : Signal(CleanerProtocol.RegisterCacheInd)
         where CacheIdType : notnull
         where CacheKeyType : notnull;
 

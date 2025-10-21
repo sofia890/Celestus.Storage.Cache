@@ -4,7 +4,7 @@ namespace Celestus.Serialization
 {
     public static class Serialize
     {
-        public static void SaveToFile<DataType>(DataType data, FileInfo file)
+        public static void SaveToFile<DataType>(DataType data, FileInfo file, JsonSerializerOptions? options = null)
         {
             var filePath = file.FullName;
             var directory = Path.GetDirectoryName(filePath);
@@ -14,17 +14,17 @@ namespace Celestus.Serialization
                 Directory.CreateDirectory(directory);
             }
 
-            var serializedData = JsonSerializer.Serialize(data);
+            var serializedData = JsonSerializer.Serialize(data, options ?? new());
             File.WriteAllText(filePath, serializedData);
         }
 
-        public static DataType? TryCreateFromFile<DataType>(FileInfo file)
+        public static DataType? TryCreateFromFile<DataType>(FileInfo file, JsonSerializerOptions? options = null)
             where DataType : class
         {
             try
             {
                 var serializedData = File.ReadAllText(file.FullName);
-                return JsonSerializer.Deserialize<DataType>(serializedData);
+                return JsonSerializer.Deserialize<DataType>(serializedData, options ?? new());
             }
             catch (FileNotFoundException)
             {

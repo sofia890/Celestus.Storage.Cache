@@ -43,7 +43,6 @@ namespace Celestus.Storage.Cache.Test
             //
             var manager = new Cache.CacheManager();
 
-            // Create a valid test file
             using var tempFile = new TempFile();
             using (var cache = new Cache("test-key"))
             {
@@ -112,7 +111,6 @@ namespace Celestus.Storage.Cache.Test
             //
             var manager = new ThreadSafeCache.ThreadSafeCacheManager();
 
-            // Create a valid test file
             using var tempFile = new TempFile();
             using var cache = new ThreadSafeCache("test-key");
 

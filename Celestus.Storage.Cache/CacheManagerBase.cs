@@ -14,7 +14,7 @@ namespace Celestus.Storage.Cache
     public abstract class CacheManagerBase<CacheIdType, CacheKeyType, CacheType> : IDisposable, ICacheManager<CacheIdType, CacheType>
         where CacheIdType : class
         where CacheKeyType : class
-        where CacheType : class, CacheBase<CacheIdType, CacheKeyType>
+        where CacheType : class, ICacheBase<CacheIdType, CacheKeyType>
     {
         private TimeSpan _lockTimeout = TimeSpan.FromMilliseconds(5000);
 
@@ -99,11 +99,11 @@ namespace Celestus.Storage.Cache
             }
         }
 
-        public CacheType? UpdateOrLoadSharedFromFile(FileInfo file, TimeSpan? timeout = null)
+        public CacheType? UpdateOrLoadSharedFromFile(FileInfo file, BlockedEntryBehavior behaviourMode = BlockedEntryBehavior.Throw, CacheTypeFilterMode filterMode = CacheTypeFilterMode.Blacklist, IEnumerable<Type>? types = null, TimeSpan? timeout = null)
         {
             ObjectDisposedException.ThrowIf(_isDisposed, this);
 
-            if (TryCreateFromFile(file) is not CacheType loadedCache)
+            if (TryCreateFromFile(file, behaviourMode, filterMode, types) is not CacheType loadedCache)
             {
                 return null;
             }
@@ -194,7 +194,7 @@ namespace Celestus.Storage.Cache
             return false;
         }
 
-        protected abstract CacheType? TryCreateFromFile(FileInfo file);
+        protected abstract CacheType? TryCreateFromFile(FileInfo file, BlockedEntryBehavior behaviourMode = BlockedEntryBehavior.Throw, CacheTypeFilterMode filterMode = CacheTypeFilterMode.Blacklist, IEnumerable<Type>? types = null);
 
         protected abstract bool Update(CacheType from, CacheType to, TimeSpan? timeout);
 

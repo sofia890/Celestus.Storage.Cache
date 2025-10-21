@@ -14,7 +14,7 @@ namespace Celestus.Storage.Cache
 
         TimeSpan _cleanupInterval = interval;
         DateTime _nextCleanupOpportunity;
-        WeakReference<CacheBase<CacheIdType, CacheKeyType>>? _cacheReference;
+        WeakReference<ICacheBase<CacheIdType, CacheKeyType>>? _cacheReference;
 
         public CacheCleaner() : this(interval: TimeSpan.FromMilliseconds(DEFAULT_INTERVAL))
         {
@@ -69,7 +69,7 @@ namespace Celestus.Storage.Cache
             Prune(when);
         }
 
-        public override void RegisterCache(WeakReference<CacheBase<CacheIdType, CacheKeyType>> cache)
+        public override void RegisterCache(WeakReference<ICacheBase<CacheIdType, CacheKeyType>> cache)
         {
             _cacheReference = cache;
         }

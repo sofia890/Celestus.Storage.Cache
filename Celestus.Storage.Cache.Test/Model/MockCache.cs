@@ -3,13 +3,11 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Celestus.Storage.Cache.Test.Model
 {
-    internal class MockCache() : CacheBase<string, string>
+    internal class MockCache() : ICacheBase<string, string>
     {
         public AutoResetEvent EntryRemoved { get; private set; } = new(false);
 
         public List<string> RemovedKeys { get; private set; } = [];
-
-
 
         #region CacheBase<string, string>
         private bool _disposed = false;
@@ -25,6 +23,18 @@ namespace Celestus.Storage.Cache.Test.Model
             set => _cleaner = value;
         }
 
+        public BlockedEntryBehavior BlockedEntryBehavior
+        {
+            get => throw new NotImplementedException();
+            set => throw new NotImplementedException(); 
+        }
+
+        public CacheTypeRegister TypeRegister
+        { 
+            get => throw new NotImplementedException();
+            set => throw new NotImplementedException();
+        }
+
         public FileInfo? PersistenceStorageFile
         {
             get => null;
@@ -33,7 +43,7 @@ namespace Celestus.Storage.Cache.Test.Model
 
         public string Id => throw new NotImplementedException();
 
-        CacheCleanerBase<string, string> CacheBase<string, string>.Cleaner { get => Cleaner; set => Cleaner = value; }
+        CacheCleanerBase<string, string> ICacheBase<string, string>.Cleaner { get => Cleaner; set => Cleaner = value; }
 
         public bool PersistenceEnabled => throw new NotImplementedException();
 
@@ -93,7 +103,7 @@ namespace Celestus.Storage.Cache.Test.Model
             throw new NotImplementedException();
         }
 
-        ImmutableDictionary<string, CacheEntry> CacheBase<string, string>.GetEntries()
+        ImmutableDictionary<string, CacheEntry> ICacheBase<string, string>.GetEntries()
         {
             return GetEntries();
         }

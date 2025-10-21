@@ -17,7 +17,7 @@ namespace Celestus.Storage.Cache.Test.Model
 
         public Guid Guid { get; set; } = Guid.NewGuid();
 
-        WeakReference<CacheBase<string, string>>? _cacheReference;
+        WeakReference<ICacheBase<string, string>>? _cacheReference;
 
         public CacheCleanerTester() : base()
         {
@@ -47,7 +47,7 @@ namespace Celestus.Storage.Cache.Test.Model
             AccessedKeys.Add(key);
         }
 
-        public override void RegisterCache(WeakReference<CacheBase<string, string>> cache)
+        public override void RegisterCache(WeakReference<ICacheBase<string, string>> cache)
         {
             if (IsDisposed)
             {

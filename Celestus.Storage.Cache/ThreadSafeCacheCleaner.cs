@@ -30,7 +30,7 @@ namespace Celestus.Storage.Cache
             ObjectDisposedException.ThrowIf(IsDisposed, this);
         }
 
-        public override void RegisterCache(WeakReference<CacheBase<CacheIdType, CacheKeyType>> cache)
+        public override void RegisterCache(WeakReference<ICacheBase<CacheIdType, CacheKeyType>> cache)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 

@@ -20,7 +20,7 @@ namespace Celestus.Storage.Cache.Test
             //
             // Act
             //
-            using var clonedCache = (CacheBase<string, string>)originalCache.Clone();
+            using var clonedCache = (ICacheBase<string, string>)originalCache.Clone();
 
             //
             // Assert
@@ -44,7 +44,7 @@ namespace Celestus.Storage.Cache.Test
             const string SHARED_ORIGINAL_VALUE = "original";
             originalCache.Set(SHARED_KEY, SHARED_ORIGINAL_VALUE);
 
-            using var clonedCache = (CacheBase<string, string>)originalCache.Clone();
+            using var clonedCache = (ICacheBase<string, string>)originalCache.Clone();
 
             //
             // Act
@@ -97,7 +97,7 @@ namespace Celestus.Storage.Cache.Test
             //
             Assert.AreEqual(cacheType, clonedObject.GetType());
 
-            var clonedCache = (CacheBase<string, string>)clonedObject;
+            var clonedCache = (ICacheBase<string, string>)clonedObject;
             Assert.AreEqual(originalCache, clonedCache);
             Assert.AreNotSame(originalCache, clonedCache);
 
@@ -120,7 +120,7 @@ namespace Celestus.Storage.Cache.Test
             const string KEY_2 = "Key2";
             originalCache.Set(KEY_2, 2);
 
-            using var clonedCache = (CacheBase<string, string>)originalCache.Clone();
+            using var clonedCache = (ICacheBase<string, string>)originalCache.Clone();
 
             //
             // Act
@@ -157,7 +157,7 @@ namespace Celestus.Storage.Cache.Test
             //
             // Act
             //
-            using var clonedCache = (CacheBase<string, string>)originalCache.Clone();
+            using var clonedCache = (ICacheBase<string, string>)originalCache.Clone();
 
             //
             // Assert
