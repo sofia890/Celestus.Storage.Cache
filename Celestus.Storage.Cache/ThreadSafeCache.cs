@@ -446,6 +446,11 @@ namespace Celestus.Storage.Cache
         {
             if (!_disposed)
             {
+                if (Id != null)
+                {
+                    Factory.Remove(Id);
+                }
+
                 var result = DoWhileWriteLocked(
                     () =>
                 {

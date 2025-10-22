@@ -430,6 +430,11 @@ namespace Celestus.Storage.Cache
             {
                 if (disposing)
                 {
+                    if (Id != null)
+                    {
+                        Factory.Remove(Id);
+                    }
+
                     HandlePersistenceEnabledFinalization();
                     Cleaner.Dispose();
                     Storage.Clear();
