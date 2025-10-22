@@ -305,7 +305,7 @@ namespace Celestus.Storage.Cache
             get => Cache?.PersistenceStorageFile ?? null;
             set
             {
-                Condition.ThrowIf<InvalidOperationException>(value == null, "Cannot set persistence storage path before cache is set.");
+                Condition.ThrowIf<InvalidOperationException>(Cache == null, "Cannot set persistence storage path before cache is set.");
                 
                 Cache.PersistenceStorageFile = value;
             }
