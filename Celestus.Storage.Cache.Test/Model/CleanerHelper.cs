@@ -2,19 +2,19 @@
 {
     internal static class CleanerHelper
     {
-        public static void AddEntryToCache(string key, DateTime expiration, MockCache cache, out CacheEntry entry)
+        public static void AddEntryToCache(string key, TimeSpan duration, MockCache cache, out CacheEntry entry)
         {
-            entry = new(expiration, null);
-
             lock (cache)
             {
-                cache.Storage.Add(key, new(expiration, new()));
+                cache.Set<object?>(key, null, duration);
+
+                entry = cache.GetEntry(key);
             }
         }
 
-        public static void AddEntryToCache(string key, DateTime expiration, MockCache cache)
+        public static void AddEntryToCache(string key, TimeSpan duration, MockCache cache)
         {
-            AddEntryToCache(key, expiration, cache, out var _);
+            AddEntryToCache(key, duration, cache, out var _);
         }
     }
 }

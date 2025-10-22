@@ -333,7 +333,17 @@ namespace Celestus.Storage.Cache
             }
         }
 
-        public Dictionary<string, CacheEntry> Storage { get => Cache.Storage; set => Cache.Storage = value; }
+        public ImmutableDictionary<string, CacheEntry> Storage
+        {
+            get
+            {
+                var result = DoWhileReadLocked(() => Cache.Storage, out var dict, DefaultTimeout);
+
+                WriteLockException.ThrowIf(!result, "Could not acquire read lock.");
+
+                return dict;
+            }
+        }
         
         public void Set<DataType>(string key, DataType value, TimeSpan? duration = null)
         {
@@ -453,16 +463,14 @@ namespace Celestus.Storage.Cache
 
                 var result = DoWhileWriteLocked(
                     () =>
-                {
-                    Factory.Remove(Id);
-
-                    if (disposing)
                     {
-                        Cache.Dispose();
-                    }
+                        if (disposing)
+                        {
+                            Cache.Dispose();
+                        }
 
-                    _disposed = true;
-                },
+                        _disposed = true;
+                    },
                     DefaultTimeout);
 
                 WriteLockException.ThrowIf(!result, "Could not acquire write lock while tearing object down.");

@@ -9,11 +9,14 @@ namespace Celestus.Storage.Cache.Test.Model
 
         public List<string> RemovedKeys { get; private set; } = [];
 
+        // Added backing storage so tests can insert entries that the cleaner actor will see.
+        private readonly Dictionary<string, CacheEntry> _storage = new();
+
         #region CacheBase<string, string>
         private bool _disposed = false;
         public bool IsDisposed => _disposed;
 
-        public Dictionary<string, CacheEntry> Storage { get; set; } = [];
+        public ImmutableDictionary<string, CacheEntry> Storage { get => _storage.ToImmutableDictionary(); }
 
         private CacheCleanerBase<string, string>? _cleaner;
 
@@ -53,10 +56,16 @@ namespace Celestus.Storage.Cache.Test.Model
             EntryRemoved.Dispose();
         }
 
+        public CacheEntry GetEntry(string key)
+        {
+            return _storage[key];
+        }
+
         public DataType Get<DataType>(string key)
         {
             throw new NotImplementedException();
         }
+
         public bool TryGet<DataType>(string key, [MaybeNullWhen(false)] out DataType data)
         {
             data = default;
@@ -66,7 +75,9 @@ namespace Celestus.Storage.Cache.Test.Model
 
         public void Set<DataType>(string key, DataType value, TimeSpan? duration = null)
         {
-            throw new NotImplementedException();
+            var expiration = DateTime.UtcNow.Add(duration ?? TimeSpan.FromDays(2));
+
+            _storage.Add(key, new CacheEntry(expiration, value));
         }
 
         public bool TrySet<DataType>(string key, DataType value, TimeSpan? duration = null)
@@ -81,9 +92,18 @@ namespace Celestus.Storage.Cache.Test.Model
 
         public bool TryRemove(string[] keys)
         {
-            RemovedKeys.AddRange(keys);
+            foreach (var k in keys)
+            {
+                if (_storage.Remove(k))
+                {
+                    RemovedKeys.Add(k);
+                }
+            }
 
-            EntryRemoved.Set();
+            if (RemovedKeys.Count >0)
+            {
+                EntryRemoved.Set();
+            }
 
             return true;
         }

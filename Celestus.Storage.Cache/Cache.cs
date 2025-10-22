@@ -35,9 +35,9 @@ namespace Celestus.Storage.Cache
 
             HandlePersistenceEnabledInitialization(persistenceEnabled, persistenceStorageLocation, persistenceLoadWhenCreated);
 
-            if (!PersistenceEnabled || Storage == null)
+            if (!PersistenceEnabled || _storage == null)
             {
-                Storage = storage;
+                _storage = storage;
             }
 
             Cleaner = cleaner;
@@ -98,7 +98,7 @@ namespace Celestus.Storage.Cache
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 
             entry = new CacheEntry(expiration, value);
-            Storage[key] = entry;
+            _storage[key] = entry;
 
             Cleaner.EntryAccessed(ref entry, key);
         }
@@ -139,7 +139,7 @@ namespace Celestus.Storage.Cache
         {
             var clone = new Cache(Id)
             {
-                Storage = Storage.ToDictionary(),
+                _storage = _storage.ToDictionary(),
                 Cleaner = (CacheCleanerBase<string, string>)Cleaner.Clone(),
                 BlockedEntryBehavior = BlockedEntryBehavior,
                 TypeRegister = (CacheTypeRegister)TypeRegister.Clone(),
@@ -273,7 +273,8 @@ namespace Celestus.Storage.Cache
         #region CacheBase<string, string>
         public string Id { get; init; }
 
-        public Dictionary<string, CacheEntry> Storage { get; set; }
+        private Dictionary<string, CacheEntry> _storage;
+        public ImmutableDictionary<string, CacheEntry> Storage { get => _storage.ToImmutableDictionary(); }
 
         [MemberNotNullWhen(true, nameof(PersistenceStorageFile))]
         public bool PersistenceEnabled { get => PersistenceStorageFile != null; }
@@ -331,7 +332,7 @@ namespace Celestus.Storage.Cache
             bool found = false;
             value = default;
 
-            if (Storage.TryGetValue(key, out var entry))
+            if (_storage.TryGetValue(key, out var entry))
             {
                 var currentTime = DateTime.UtcNow;
                 found = entry.Expiration > currentTime;
@@ -359,7 +360,7 @@ namespace Celestus.Storage.Cache
 
             for (int i = 0; i < keys.Length; i++)
             {
-                anyRemoved |= Storage.Remove(keys[i]);
+                anyRemoved |= _storage.Remove(keys[i]);
             }
 
             return anyRemoved;
@@ -369,7 +370,7 @@ namespace Celestus.Storage.Cache
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 
-            return Storage.Remove(key);
+            return _storage.Remove(key);
         }
 
         public bool TrySaveToFile(FileInfo file)
@@ -404,13 +405,13 @@ namespace Celestus.Storage.Cache
             }
             else
             {
-                Storage = loadedData.Storage.ToDictionary();
+                _storage = loadedData._storage.ToDictionary();
 
                 return true;
             }
         }
 
-        public ImmutableDictionary<string, CacheEntry> GetEntries() => Storage.ToImmutableDictionary();
+        public ImmutableDictionary<string, CacheEntry> GetEntries() => _storage.ToImmutableDictionary();
 
         #endregion
 
@@ -437,7 +438,7 @@ namespace Celestus.Storage.Cache
 
                     HandlePersistenceEnabledFinalization();
                     Cleaner.Dispose();
-                    Storage.Clear();
+                    _storage.Clear();
                 }
                 else
                 {
@@ -453,14 +454,14 @@ namespace Celestus.Storage.Cache
         #region IEquatable
         public bool Equals(Cache? other)
         {
-            if (other == null || Storage.Count != other.Storage.Count)
+            if (other == null || _storage.Count != other._storage.Count)
             {
                 return false;
             }
 
-            foreach (var kvp in Storage)
+            foreach (var kvp in _storage)
             {
-                if (!other.Storage.TryGetValue(kvp.Key, out var otherValue) ||
+                if (!other._storage.TryGetValue(kvp.Key, out var otherValue) ||
                     !kvp.Value.Equals(otherValue))
                 {
                     return false;
@@ -480,7 +481,7 @@ namespace Celestus.Storage.Cache
             var hash = new HashCode();
             hash.Add(BlockedEntryBehavior);
 
-            foreach (var kvp in Storage.OrderBy(x => x.Key))
+            foreach (var kvp in _storage.OrderBy(x => x.Key))
             {
                 hash.Add(kvp.Key);
                 hash.Add(kvp.Value);

@@ -16,7 +16,7 @@ public class TestThreadSafeCacheCleaner
         cleaner.RegisterCache(new(cache));
 
         const string KEY_1 = "Key1";
-        CleanerHelper.AddEntryToCache(KEY_1, DateTime.UtcNow, cache);
+        CleanerHelper.AddEntryToCache(KEY_1, TimeSpan.Zero, cache);
 
         Assert.IsFalse(cache.EntryRemoved.WaitOne(interval / 2));
         Assert.IsTrue(cache.EntryRemoved.WaitOne(interval * 2));

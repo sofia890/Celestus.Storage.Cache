@@ -19,7 +19,7 @@
             protected override bool Update(Cache from, Cache to, TimeSpan? timeout)
             {
                 // Make a copy to sever any direct connection.
-                to.Storage = from.Storage.ToDictionary();
+                to._storage = from._storage.ToDictionary();
                 to.BlockedEntryBehavior = from.BlockedEntryBehavior;
                 to.TypeRegister = (CacheTypeRegister)from.TypeRegister.Clone();
 

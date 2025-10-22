@@ -26,7 +26,7 @@ namespace Celestus.Storage.Cache
         public abstract CacheIdType Id { get; }
         public abstract CacheCleanerBase<CacheIdType, CacheKeyType> Cleaner { get; set; }
         public abstract bool IsDisposed { get; }
-        internal abstract Dictionary<CacheKeyType, CacheEntry> Storage { get; set; }
+        internal abstract ImmutableDictionary<CacheKeyType, CacheEntry> Storage { get; }
 
         public abstract BlockedEntryBehavior BlockedEntryBehavior { get; set; }
 
