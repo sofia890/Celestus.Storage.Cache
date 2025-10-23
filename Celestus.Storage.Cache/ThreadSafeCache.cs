@@ -339,7 +339,7 @@ namespace Celestus.Storage.Cache
             {
                 var result = DoWhileReadLocked(() => Cache.Storage, out var dict, DefaultTimeout);
 
-                WriteLockException.ThrowIf(!result, "Could not acquire read lock.");
+                ReadLockException.ThrowIf(!result, "Could not acquire read lock.");
 
                 return dict;
             }
