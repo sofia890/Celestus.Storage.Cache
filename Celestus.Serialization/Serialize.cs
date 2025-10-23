@@ -18,28 +18,50 @@ namespace Celestus.Serialization
             File.WriteAllText(filePath, serializedData);
         }
 
+        public static bool TrySaveToFile<DataType>(DataType data, FileInfo file, JsonSerializerOptions? options = null)
+        {
+            return TrySaveToFile(data, file, out _, options);
+        }
+
+        public static bool TrySaveToFile<DataType>(DataType data, FileInfo file, out Exception? error, JsonSerializerOptions? options = null)
+        {
+            try
+            {
+                SaveToFile(data, file, options);
+
+                error = null;
+
+                return true;
+            }
+            catch (Exception exception)
+            {
+                error = exception;
+
+                return false;
+            }
+        }
+
         public static DataType? TryCreateFromFile<DataType>(FileInfo file, JsonSerializerOptions? options = null)
+            where DataType : class
+        {
+            return TryCreateFromFile<DataType>(file, out _, options);
+        }
+
+        public static DataType? TryCreateFromFile<DataType>(FileInfo file, out Exception? error, JsonSerializerOptions? options = null)
             where DataType : class
         {
             try
             {
+                error = null;
+
                 var serializedData = File.ReadAllText(file.FullName);
+
                 return JsonSerializer.Deserialize<DataType>(serializedData, options ?? new());
             }
-            catch (FileNotFoundException)
+            catch (Exception ex)
             {
-                return null;
-            }
-            catch (DirectoryNotFoundException)
-            {
-                return null;
-            }
-            catch (JsonException)
-            {
-                return null;
-            }
-            catch (UnauthorizedAccessException)
-            {
+                error = ex;
+
                 return null;
             }
         }

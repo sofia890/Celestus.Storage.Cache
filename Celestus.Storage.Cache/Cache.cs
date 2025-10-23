@@ -373,7 +373,13 @@ namespace Celestus.Storage.Cache
             return _storage.Remove(key);
         }
 
+
         public bool TrySaveToFile(FileInfo file)
+        {
+            return TrySaveToFile(file, out _);
+        }
+
+        public bool TrySaveToFile(FileInfo file, out Exception? error)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 
@@ -381,34 +387,53 @@ namespace Celestus.Storage.Cache
             {
                 Serialize.SaveToFile(this, file);
 
+                error = null;
+
                 return true;
             }
-            catch
+            catch (Exception exception)
             {
-                return false;
+                error = exception;
             }
+
+            return false;
         }
+
 
         public bool TryLoadFromFile(FileInfo file)
         {
+            return TryLoadFromFile(file, out _);
+        }
+
+        public bool TryLoadFromFile(FileInfo file, out Exception? error)
+        {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 
-            var options = new JsonSerializerOptions();
-            options.SetBlockedEntryBehavior(BlockedEntryBehavior);
-            options.SetCacheTypeRegister(TypeRegister);
 
-            var loadedData = Serialize.TryCreateFromFile<Cache>(file, options);
+            try
+            {
+                var options = new JsonSerializerOptions();
+                options.SetBlockedEntryBehavior(BlockedEntryBehavior);
+                options.SetCacheTypeRegister(TypeRegister);
 
-            if (loadedData == null)
-            {
-                return false;
-            }
-            else
-            {
+                var loadedData = Serialize.TryCreateFromFile<Cache>(file, options);
+
+                error = null;
+
+                if (loadedData == null)
+                {
+                    return false;
+                }
+
                 _storage = loadedData._storage.ToDictionary();
-
                 return true;
             }
+            catch (Exception exception)
+            {
+                error = exception;
+            }
+
+            return false;
         }
 
         public ImmutableDictionary<string, CacheEntry> GetEntries() => _storage.ToImmutableDictionary();
