@@ -73,6 +73,9 @@ namespace Celestus.Storage.Cache
             }
         }
 
+        /// <summary>
+        /// Currently not thread safe, but acceptable for serialization?
+        /// </summary>
         public override void Write(Utf8JsonWriter writer, ThreadSafeCache value, JsonSerializerOptions options)
         {
             writer.WriteStartObject();
@@ -86,6 +89,7 @@ namespace Celestus.Storage.Cache
             }
 
             writer.WritePropertyName(nameof(ThreadSafeCache.Cache));
+
             JsonConverterHelper.SerializeTypedObject(writer, value.Cache, options);
 
             writer.WriteEndObject();

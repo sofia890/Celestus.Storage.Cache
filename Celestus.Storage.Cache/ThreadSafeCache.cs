@@ -8,35 +8,68 @@ using System.Text.Json.Serialization;
 
 namespace Celestus.Storage.Cache
 {
-    class LockException(string message) : Exception(message);
+    class CacheException(string message) : Exception(message);
+
+    class LockException(string message) : CacheException(message);
+
     class ReadLockException(string message) : LockException(message)
     {
         public static void ThrowIf(bool condition, string message) => Condition.ThrowIf<ReadLockException>(condition, message);
     }
+
     class WriteLockException(string message) : LockException(message)
     {
         public static void ThrowIf(bool condition, string message) => Condition.ThrowIf<WriteLockException>(condition, message);
+    }
+
+    class CacheNotSetException(string message) : CacheException(message)
+    {
+        public static void ThrowIf([DoesNotReturnIf(true)] bool condition, string message) => Condition.ThrowIf<CacheNotSetException>(condition, message);
+    }
+
+    class CacheNullException(string message) : CacheException(message)
+    {
+        public static void ThrowIf([DoesNotReturnIf(true)] bool condition, string message) => Condition.ThrowIf<CacheNullException>(condition, message);
     }
 
     [JsonConverter(typeof(ThreadSafeCacheJsonConverter))]
     public partial class ThreadSafeCache : ICacheBase<string, string>, IDisposable
     {
         public static TimeSpan DefaultTimeout { get; } = TimeSpan.FromMilliseconds(5000);
+
         public static TimeSpan DefaultCleanerInterval { get; } = TimeSpan.FromMilliseconds(60000);
 
         private ICacheBase<string, string>? _cache;
         internal ICacheBase<string, string> Cache
         {
-            get => _cache!;
+            get
+            {
+                var success = DoWhileReadLocked(() => _cache, out var cache, DefaultTimeout);
+
+                ReadLockException.ThrowIf(!success, "Could not acquire read lock.");
+                CacheNullException.ThrowIf(cache == null, "Cache is null.");
+
+                return cache;
+            }
+            
             private set
             {
-                if (_cache != value)
-                {
-                    _cache?.Cleaner.UnregisterCache();
+                ObjectDisposedException.ThrowIf(IsDisposed, this);
 
-                    _cache = value;
-                    _cache.Cleaner.RegisterCache(new(this));
+                void set()
+                {
+                    if (_cache != value)
+                    {
+                        _cache?.Cleaner.UnregisterCache();
+
+                        _cache = value;
+                        _cache.Cleaner.RegisterCache(new(this));
+                    }
                 }
+
+                var lockAquired = DoWhileWriteLocked(() => set(), DefaultTimeout);
+
+                WriteLockException.ThrowIf(!lockAquired, "Could not acquire write lock while setting underlying cache reference.");
             }
         }
 
@@ -102,55 +135,55 @@ namespace Celestus.Storage.Cache
                                BlockedEntryBehavior blockedEntryBehavior = BlockedEntryBehavior.Throw,
                                CacheTypeRegister? typeRegister = null)
         {
-            if (!persistenceEnabled || Cache == null)
+            if (!persistenceEnabled || _cache == null)
             {
-                Cache = cache;
+                _cache = cache;
             }
 
-            Cache.BlockedEntryBehavior = blockedEntryBehavior;
+            _cache.BlockedEntryBehavior = blockedEntryBehavior;
 
             if (typeRegister != null)
             {
-                Cache.TypeRegister = typeRegister;
+                _cache.TypeRegister = typeRegister;
             }
         }
 
         public ThreadSafeCache(string id,
-        CacheCleanerBase<string, string> cleaner,
-        bool persistenceEnabled,
-        string persistenceStorageLocation,
-        BlockedEntryBehavior blockedEntryBehavior)
-        : this(new Cache(id,
-        [],
-        cleaner,
-        blockedEntryBehavior: blockedEntryBehavior,
-        persistenceEnabled: persistenceEnabled,
-        persistenceStorageLocation: persistenceStorageLocation),
-        persistenceEnabled: persistenceEnabled,
-        persistenceStorageLocation: persistenceStorageLocation,
-        blockedEntryBehavior: blockedEntryBehavior)
+                               CacheCleanerBase<string, string> cleaner,
+                               bool persistenceEnabled,
+                               string persistenceStorageLocation,
+                               BlockedEntryBehavior blockedEntryBehavior)
+            : this(new Cache(id,
+                             [],
+                             cleaner,
+                             blockedEntryBehavior: blockedEntryBehavior,
+                             persistenceEnabled: persistenceEnabled,
+                             persistenceStorageLocation: persistenceStorageLocation),
+                             persistenceEnabled: persistenceEnabled,
+                             persistenceStorageLocation: persistenceStorageLocation,
+                             blockedEntryBehavior: blockedEntryBehavior)
         { }
 
         public ThreadSafeCache(string id,
-        TimeSpan? cleaningInterval,
-        bool persistenceEnabled,
-        string persistenceStorageLocation,
-        BlockedEntryBehavior blockedEntryBehavior)
-        : this(id,
-        cleaner: new ThreadSafeCacheCleaner<string, string>(cleaningInterval ?? DefaultCleanerInterval),
-        persistenceEnabled: persistenceEnabled,
-        persistenceStorageLocation: persistenceStorageLocation,
-        blockedEntryBehavior: blockedEntryBehavior)
+                               TimeSpan? cleaningInterval,
+                               bool persistenceEnabled,
+                               string persistenceStorageLocation,
+                               BlockedEntryBehavior blockedEntryBehavior)
+            : this(id,
+                   cleaner: new ThreadSafeCacheCleaner<string, string>(cleaningInterval ?? DefaultCleanerInterval),
+                   persistenceEnabled: persistenceEnabled,
+                   persistenceStorageLocation: persistenceStorageLocation,
+                   blockedEntryBehavior: blockedEntryBehavior)
         { }
 
         public ThreadSafeCache(string id,
-        TimeSpan? cleaningInterval,
-        BlockedEntryBehavior blockedEntryBehavior = BlockedEntryBehavior.Throw)
-        : this(id,
-        cleaningInterval,
-        persistenceEnabled: false,
-        persistenceStorageLocation: string.Empty,
-        blockedEntryBehavior: blockedEntryBehavior)
+                               TimeSpan? cleaningInterval,
+                               BlockedEntryBehavior blockedEntryBehavior = BlockedEntryBehavior.Throw)
+            : this(id,
+                   cleaningInterval,
+                   persistenceEnabled: false,
+                   persistenceStorageLocation: string.Empty,
+                   blockedEntryBehavior: blockedEntryBehavior)
         { }
 
         public ThreadSafeCache() : this(string.Empty) { }
@@ -158,7 +191,11 @@ namespace Celestus.Storage.Cache
         /// <summary>
         /// Tries to create a thread-safe cache from a persistence file. Applies a fresh type register context.
         /// </summary>
-        public static ThreadSafeCache? TryCreateFromFile(FileInfo file, BlockedEntryBehavior behaviourMode = BlockedEntryBehavior.Throw, CacheTypeFilterMode filterMode = CacheTypeFilterMode.Blacklist, IEnumerable<Type>? types = null)
+        public static ThreadSafeCache? TryCreateFromFile(
+            FileInfo file,
+            BlockedEntryBehavior behaviourMode = BlockedEntryBehavior.Throw,
+            CacheTypeFilterMode filterMode = CacheTypeFilterMode.Blacklist,
+            IEnumerable<Type>? types = null)
         {
             var options = new JsonSerializerOptions();
             options.SetBlockedEntryBehavior(behaviourMode);
@@ -173,18 +210,15 @@ namespace Celestus.Storage.Cache
         public bool TryGetWriteLock([MaybeNullWhen(false)] out CacheLock cacheLock, TimeSpan? timeout = null)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
+
             return CacheLock.TryWriteLock(_lock, GetTimeout(timeout), out cacheLock);
         }
+
         public bool TryGetReadLock([MaybeNullWhen(false)] out CacheLock cacheLock, TimeSpan? timeout = null)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
-            return CacheLock.TryReadLock(_lock, GetTimeout(timeout), out cacheLock);
-        }
 
-        internal bool TrySetCache(ICacheBase<string, string> newCache, TimeSpan timeout)
-        {
-            ObjectDisposedException.ThrowIf(IsDisposed, this);
-            return DoWhileWriteLocked(() => ReplaceCache(newCache), timeout);
+            return CacheLock.TryReadLock(_lock, GetTimeout(timeout), out cacheLock);
         }
 
         public bool TryGet<DataType>(string key, [MaybeNullWhen(false)] out DataType data, TimeSpan? timeout = null)
@@ -193,7 +227,7 @@ namespace Celestus.Storage.Cache
 
             (bool success, DataType value) TryGetLocal()
             {
-                var innerResult = Cache.TryGet<DataType>(key, out var innerData);
+                var innerResult = _cache.TryGet<DataType>(key, out var innerData);
 
                 return (innerResult, innerData!);
             }
@@ -216,23 +250,40 @@ namespace Celestus.Storage.Cache
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 
-            return DoWhileWriteLocked(() => Cache.TrySet(key, value, duration),
-            out var result,
-            GetTimeout(timeout)) && result;
+            return DoWhileWriteLocked(() => _cache.TrySet(key, value, duration),
+                                      out var result,
+                                      GetTimeout(timeout)) && result;
         }
 
         public bool TryRemove(string[] keys, TimeSpan? timeout = null)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 
-            return DoWhileWriteLocked(() => Cache.TryRemove(keys), out var result, GetTimeout(timeout)) && result;
+            return DoWhileWriteLocked(() => _cache.TryRemove(keys), out var result, GetTimeout(timeout)) && result;
         }
 
         public bool TryRemove(string key, TimeSpan? timeout = null)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 
-            return DoWhileWriteLocked(() => Cache.TryRemove(key), out var result, GetTimeout(timeout)) && result;
+            return DoWhileWriteLocked(() => _cache.TryRemove(key), out var result, GetTimeout(timeout)) && result;
+        }
+
+        private bool DoWhileReadLocked(Action act, TimeSpan? timeout)
+        {
+            if (TryGetReadLock(out var cacheLock, GetTimeout(timeout)))
+            {
+                using (cacheLock)
+                {
+                    act();
+
+                    return true;
+                }
+            }
+            else
+            {
+                return false;
+            }
         }
 
         private bool DoWhileReadLocked<ReturnType>(Func<ReturnType> act, out ReturnType result, TimeSpan? timeout)
@@ -250,22 +301,6 @@ namespace Celestus.Storage.Cache
             {
                 result = default!;
 
-                return false;
-            }
-        }
-        private bool DoWhileReadLocked(Action act, TimeSpan? timeout)
-        {
-            if (TryGetReadLock(out var cacheLock, GetTimeout(timeout)))
-            {
-                using (cacheLock)
-                {
-                    act();
-
-                    return true;
-                }
-            }
-            else
-            {
                 return false;
             }
         }
@@ -306,53 +341,161 @@ namespace Celestus.Storage.Cache
             }
         }
 
-        private void ReplaceCache(ICacheBase<string, string> newCache)
+        private bool TrySetCache(ICacheBase<string, string> newCache, TimeSpan? timeout = null)
         {
-            var oldCache = Cache;
+            void replace()
+            {
+                var oldCache = _cache;
 
-            Cache = newCache;
-            Cache.BlockedEntryBehavior = oldCache.BlockedEntryBehavior;
-            Cache.TypeRegister = oldCache.TypeRegister;
+                _cache = newCache;
 
-            oldCache?.Dispose();
+                if (oldCache != null)
+                {
+                    _cache.BlockedEntryBehavior = oldCache.BlockedEntryBehavior;
+                    _cache.TypeRegister = oldCache.TypeRegister;
+                }
+
+                oldCache?.Dispose();
+            }
+
+            return DoWhileWriteLocked(replace, timeout ?? DefaultTimeout);
         }
 
         #region CacheBase<string, string>
-        public string Id => Cache.Id;
+        public string Id
+        {
+            get
+            {
+                var success = DoWhileReadLocked(() => _cache!.Id, out var id, DefaultTimeout);
+
+                ReadLockException.ThrowIf(!success, "Could not acquire read lock for Id.");
+
+                return id;
+            }
+        }
 
         [MemberNotNullWhen(true, nameof(PersistenceStorageFile))]
-        public bool PersistenceEnabled => (Cache?.PersistenceEnabled ?? false) && (Cache.PersistenceStorageFile != null);
+        public bool PersistenceEnabled
+        {
+            get
+            {
+                bool get()
+                {
+                    return (_cache?.PersistenceEnabled ?? false) && (_cache?.PersistenceStorageFile != null);
+                }
+
+                var success = DoWhileReadLocked(get, out var enabled, DefaultTimeout);
+                
+                ReadLockException.ThrowIf(!success, "Could not acquire read lock.");
+                
+                return enabled;
+            }
+        }
 
         public FileInfo? PersistenceStorageFile
         {
-            get => Cache?.PersistenceStorageFile ?? null;
+            get
+            {
+                FileInfo? get()
+                {
+                    return _cache?.PersistenceStorageFile;
+                }
+
+                var success = DoWhileReadLocked(get, out var file, DefaultTimeout);
+
+                ReadLockException.ThrowIf(!success, "Could not acquire read lock.");
+
+                return file;
+            }
+
             set
             {
-                Condition.ThrowIf<InvalidOperationException>(Cache == null, "Cannot set persistence storage path before cache is set.");
+                ObjectDisposedException.ThrowIf(IsDisposed, this);
 
-                Cache.PersistenceStorageFile = value;
+                void set()
+                {
+                    CacheNotSetException.ThrowIf(_cache is null, "Cannot set persistence storage path before cache is set.");
+                    _cache.PersistenceStorageFile = value;
+                }
+
+                var success = DoWhileWriteLocked(set, DefaultTimeout);
+
+                WriteLockException.ThrowIf(!success, "Could not acquire write lock for PersistenceStorageFile.");
             }
         }
 
         public CacheCleanerBase<string, string> Cleaner
         {
-            get => Cache.Cleaner;
-            set => Cache.Cleaner = value;
+            get
+            {
+                var success = DoWhileReadLocked(() => _cache!.Cleaner, out var cleaner, DefaultTimeout);
+                ReadLockException.ThrowIf(!success, "Could not acquire read lock for Cleaner.");
+                return cleaner;
+            }
+
+            set
+            {
+                ObjectDisposedException.ThrowIf(IsDisposed, this);
+                void setAction()
+                {
+                    CacheNotSetException.ThrowIf(_cache is null, "Cannot set cleaner before cache is set.");
+                    _cache.Cleaner = value;
+                }
+                var success = DoWhileWriteLocked(setAction, DefaultTimeout);
+                WriteLockException.ThrowIf(!success, "Could not acquire write lock for Cleaner.");
+            }
         }
 
         public CacheTypeRegister TypeRegister
         {
-            get => Cache.TypeRegister;
-            set => Cache.TypeRegister = value;
+            get
+            {
+                var success = DoWhileReadLocked(() => _cache!.TypeRegister, out var typeRegister, DefaultTimeout);
+
+                ReadLockException.ThrowIf(!success, "Could not acquire read lock for TypeRegister.");
+
+                return typeRegister;
+            }
+
+            set
+            {
+                ObjectDisposedException.ThrowIf(IsDisposed, this);
+                void setAction()
+                {
+                    CacheNotSetException.ThrowIf(_cache is null, "Cannot set type register before cache is set.");
+                    _cache.TypeRegister = value;
+                }
+                var success = DoWhileWriteLocked(setAction, DefaultTimeout);
+                WriteLockException.ThrowIf(!success, "Could not acquire write lock for TypeRegister.");
+            }
         }
 
         public BlockedEntryBehavior BlockedEntryBehavior
         {
-            get => Cache.BlockedEntryBehavior;
+            get
+            {
+                var success = DoWhileReadLocked(() => _cache!.BlockedEntryBehavior, out var behavior, DefaultTimeout);
+                ReadLockException.ThrowIf(!success, "Could not acquire read lock for BlockedEntryBehavior.");
+                return behavior;
+            }
 
             set
             {
-                Cache.BlockedEntryBehavior = value;
+                ObjectDisposedException.ThrowIf(IsDisposed, this);
+
+                void set()
+                {
+                    CacheNotSetException.ThrowIf(_cache == null, "Cannot set blocked type behaviour before cache is set.");
+
+                    if (_cache.BlockedEntryBehavior != value)
+                    {
+                        _cache.BlockedEntryBehavior = value;
+                    }
+                }
+
+                var lockAquired = DoWhileWriteLocked(set, DefaultTimeout);
+
+                WriteLockException.ThrowIf(!lockAquired, "Could not acquire write lock for BlockedEntryBehavior.");
             }
         }
 
@@ -360,7 +503,7 @@ namespace Celestus.Storage.Cache
         {
             get
             {
-                var result = DoWhileReadLocked(() => Cache.Storage, out var dict, DefaultTimeout);
+                var result = DoWhileReadLocked(() => _cache.Storage, out var dict, DefaultTimeout);
 
                 ReadLockException.ThrowIf(!result, "Could not acquire read lock.");
 
@@ -372,7 +515,7 @@ namespace Celestus.Storage.Cache
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 
-            var result = DoWhileWriteLocked(() => Cache.Set(key, value, duration), DefaultTimeout);
+            var result = DoWhileWriteLocked(() => _cache.Set(key, value, duration), DefaultTimeout);
 
             WriteLockException.ThrowIf(!result, "Could not acquire write lock.");
         }
@@ -381,7 +524,7 @@ namespace Celestus.Storage.Cache
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 
-            var result = DoWhileReadLocked(() => Cache.Get<DataType>(key), out var value, DefaultTimeout);
+            var result = DoWhileReadLocked(() => _cache.Get<DataType>(key), out var value, DefaultTimeout);
 
             ReadLockException.ThrowIf(!result, "Could not acquire read lock.");
 
@@ -470,8 +613,7 @@ namespace Celestus.Storage.Cache
                             return false;
                         }
 
-                        ReplaceCache(loadedData.Cache);
-                        success = true;
+                        success = TrySetCache(loadedData.Cache);
                     }
                 }
                 catch (Exception exception)
@@ -509,7 +651,7 @@ namespace Celestus.Storage.Cache
 
         public ImmutableDictionary<string, CacheEntry> GetEntries()
         {
-            var result = DoWhileReadLocked(() => Cache.GetEntries(), out var dictionary, DefaultTimeout);
+            var result = DoWhileReadLocked(_cache.GetEntries, out var dictionary, DefaultTimeout);
 
             ReadLockException.ThrowIf(!result, "Could not acquire read lock.");
 
@@ -542,7 +684,7 @@ namespace Celestus.Storage.Cache
 
                     if (disposing)
                     {
-                        Cache.Dispose();
+                        _cache?.Dispose();
                     }
 
                     _disposed = true;
@@ -562,25 +704,46 @@ namespace Celestus.Storage.Cache
         #region IEquatable
         public bool Equals(ThreadSafeCache? other)
         {
-            return other != null &&
-            Cache.Equals(other.Cache) &&
-            Id.Equals(other.Id);
+            bool equals()
+            {
+                bool innerEquals()
+                {
+                    return _cache.Equals(other._cache) &&
+                           _cache.Id.Equals(other._cache.Id);
+                }
+
+                return other != null &&
+                       _cache != null &&
+                       other.DoWhileReadLocked(innerEquals, out var innerAreEqual, DefaultTimeout) &&
+                       innerAreEqual;
+            }
+
+            return DoWhileReadLocked(equals, out var areEqual, DefaultTimeout);
         }
 
         public override bool Equals(object? obj) => Equals(obj as ThreadSafeCache);
 
-        public override int GetHashCode() => HashCode.Combine(Cache.GetHashCode(), Id);
+        public override int GetHashCode() => HashCode.Combine(_cache.GetHashCode(), Id);
         #endregion
 
         #region ICloneable
 
         public object Clone()
         {
-            return new ThreadSafeCache((ICacheBase<string, string>)Cache.Clone(),
+            object clone()
+            {
+                return new ThreadSafeCache((ICacheBase<string, string>)_cache.Clone(),
                                        PersistenceEnabled,
                                        PersistenceStorageFile?.FullName ?? string.Empty,
                                        BlockedEntryBehavior,
                                        (CacheTypeRegister)TypeRegister.Clone());
+            }
+
+            var lockAquired = DoWhileReadLocked(clone, out var cache, DefaultTimeout);
+
+            ReadLockException.ThrowIf(!lockAquired, "Could not acquire read lock while cloning object.");
+
+            return cache;
         }
         #endregion
     }
