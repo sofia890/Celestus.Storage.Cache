@@ -26,12 +26,18 @@ namespace Celestus.Storage.Cache
             Dictionary<string, CacheEntry> storage,
             CacheCleanerBase<string, string> cleaner,
             BlockedEntryBehavior blockedEntryBehavior = BlockedEntryBehavior.Throw,
+            CacheTypeRegister? typeRegister = null,
             bool persistenceEnabled = false,
             string persistenceStorageLocation = "",
             bool persistenceLoadWhenCreated = true)
         {
             Id = id;
             BlockedEntryBehavior = blockedEntryBehavior;
+
+            if (typeRegister != null)
+            {
+                TypeRegister = typeRegister;
+            }
 
             HandlePersistenceEnabledInitialization(persistenceEnabled, persistenceStorageLocation, persistenceLoadWhenCreated);
 
@@ -43,23 +49,44 @@ namespace Celestus.Storage.Cache
             Cleaner = cleaner;
         }
 
-        public Cache(
-            string id,
-            Dictionary<string, CacheEntry> storage,
-            CacheCleanerBase<string, string> cleaner,
-            bool persistenceEnabled,
-            string persistenceStorageLocation,
-            bool persistenceLoadWhenCreated) : this(id, storage, cleaner, BlockedEntryBehavior.Throw, persistenceEnabled, persistenceStorageLocation, persistenceLoadWhenCreated)
+        public Cache(string id,
+                     Dictionary<string, CacheEntry> storage,
+                     CacheCleanerBase<string, string> cleaner,
+                     bool persistenceEnabled,
+                     string persistenceStorageLocation,
+                     bool persistenceLoadWhenCreated) : 
+            this(id,
+                 storage,
+                 cleaner,
+                 blockedEntryBehavior: BlockedEntryBehavior.Throw,
+                 persistenceEnabled: persistenceEnabled,
+                 persistenceStorageLocation: persistenceStorageLocation,
+                 persistenceLoadWhenCreated: persistenceLoadWhenCreated)
         {
         }
 
         public Cache(string id, bool persistenceEnabled = false, string persistenceStorageLocation = "") :
-            this(id, [], new CacheCleaner<string, string>(), BlockedEntryBehavior.Throw, persistenceEnabled: persistenceEnabled, persistenceStorageLocation: persistenceStorageLocation)
+            this(id,
+                 [],
+                 new CacheCleaner<string, string>(),
+                 blockedEntryBehavior: BlockedEntryBehavior.Throw,
+                 persistenceEnabled: persistenceEnabled,
+                 persistenceStorageLocation: persistenceStorageLocation)
         {
         }
 
-        public Cache(string id, bool persistenceEnabled, string persistenceStorageLocation, BlockedEntryBehavior blockedEntryBehavior) :
-            this(id, [], new CacheCleaner<string, string>(), blockedEntryBehavior, persistenceEnabled: persistenceEnabled, persistenceStorageLocation: persistenceStorageLocation)
+        public Cache(string id,
+                     bool persistenceEnabled,
+                     string persistenceStorageLocation,
+                     BlockedEntryBehavior blockedEntryBehavior,
+                     CacheTypeRegister typeRegister) :
+            this(id,
+                 [],
+                 new CacheCleaner<string, string>(),
+                 blockedEntryBehavior: blockedEntryBehavior,
+                 typeRegister: typeRegister,
+                 persistenceEnabled: persistenceEnabled,
+                 persistenceStorageLocation: persistenceStorageLocation)
         {
         }
 
@@ -75,16 +102,26 @@ namespace Celestus.Storage.Cache
 
         public Cache(BlockedEntryBehavior blockedEntryBehavior) :
             this(string.Empty,
-                [],
-                new CacheCleaner<string, string>(),
-                blockedEntryBehavior,
-                persistenceEnabled: false,
-                persistenceStorageLocation: "")
+                 [],
+                 new CacheCleaner<string, string>(),
+                 blockedEntryBehavior,
+                 persistenceEnabled: false,
+                 persistenceStorageLocation: "")
         {
         }
 
-        public Cache(CacheCleanerBase<string, string> cleaner, bool persistenceEnabled = false, string persistenceStorageLocation = "", BlockedEntryBehavior blockedEntryBehavior = BlockedEntryBehavior.Throw) :
-            this(string.Empty, [], cleaner, blockedEntryBehavior, persistenceEnabled: persistenceEnabled, persistenceStorageLocation: persistenceStorageLocation)
+        public Cache(CacheCleanerBase<string, string> cleaner,
+                     bool persistenceEnabled = false,
+                     string persistenceStorageLocation = "",
+                     BlockedEntryBehavior blockedEntryBehavior = BlockedEntryBehavior.Throw,
+                     CacheTypeRegister? typeRegister = null) :
+            this(string.Empty,
+                 [],
+                 cleaner,
+                 blockedEntryBehavior: blockedEntryBehavior,
+                 typeRegister: typeRegister,
+                 persistenceEnabled: persistenceEnabled,
+                 persistenceStorageLocation: persistenceStorageLocation)
         {
         }
 
@@ -137,16 +174,14 @@ namespace Celestus.Storage.Cache
         /// <returns>Shallow clone of the cache.</returns>
         public Cache ToCache()
         {
-            var clone = new Cache(Id)
-            {
-                _storage = _storage.ToDictionary(),
-                Cleaner = (CacheCleanerBase<string, string>)Cleaner.Clone(),
-                BlockedEntryBehavior = BlockedEntryBehavior,
-                TypeRegister = (CacheTypeRegister)TypeRegister.Clone(),
-                PersistenceStorageFile = PersistenceStorageFile
-            };
-
-            return clone;
+            return new Cache(Id,
+                             storage: _storage.ToDictionary(),
+                             cleaner: (CacheCleanerBase<string, string>)Cleaner.Clone(),
+                             blockedEntryBehavior: BlockedEntryBehavior,
+                             typeRegister: (CacheTypeRegister)TypeRegister.Clone(),
+                             persistenceEnabled: PersistenceEnabled,
+                             persistenceStorageLocation: PersistenceStorageFile?.FullName ?? "",
+                             false); 
         }
 
         public void HandlePersistenceEnabledInitialization(bool storeToFile, string? path, bool loadFromFile)

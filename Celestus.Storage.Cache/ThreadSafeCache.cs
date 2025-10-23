@@ -43,50 +43,64 @@ namespace Celestus.Storage.Cache
         private readonly ReaderWriterLockSlim _lock = new();
 
         public ThreadSafeCache(string id,
-        bool persistenceEnabled = false,
-        string persistenceStorageLocation = "",
-        BlockedEntryBehavior blockedEntryBehavior = BlockedEntryBehavior.Throw)
+                               bool persistenceEnabled = false,
+                               string persistenceStorageLocation = "",
+                               BlockedEntryBehavior blockedEntryBehavior = BlockedEntryBehavior.Throw,
+                               CacheTypeRegister? typeRegister = null)
         : this(new Cache(id,
-        [],
-        new CacheCleaner<string, string>(),
-        blockedEntryBehavior: blockedEntryBehavior,
-        persistenceEnabled: persistenceEnabled,
-        persistenceStorageLocation: persistenceStorageLocation),
-        persistenceEnabled: persistenceEnabled,
-        persistenceStorageLocation: persistenceStorageLocation,
-        blockedEntryBehavior: blockedEntryBehavior)
-        { }
+                         [],
+                         new CacheCleaner<string, string>(),
+                         blockedEntryBehavior: blockedEntryBehavior,
+                         persistenceEnabled: persistenceEnabled,
+                         persistenceStorageLocation: persistenceStorageLocation),
+                         persistenceEnabled: persistenceEnabled,
+                         persistenceStorageLocation: persistenceStorageLocation,
+                         blockedEntryBehavior: blockedEntryBehavior,
+                         typeRegister: typeRegister)
+        {
+        }
 
         public ThreadSafeCache(string id, bool persistenceEnabled, string persistenceStorageLocation)
-        : this(id, persistenceEnabled: persistenceEnabled, persistenceStorageLocation: persistenceStorageLocation, blockedEntryBehavior: BlockedEntryBehavior.Throw) { }
+        : this(id,
+              persistenceEnabled: persistenceEnabled,
+              persistenceStorageLocation: persistenceStorageLocation,
+              blockedEntryBehavior: BlockedEntryBehavior.Throw) { }
 
         public ThreadSafeCache(string id,
-        CacheCleanerBase<string, string> cleaner,
-        BlockedEntryBehavior blockedEntryBehavior = BlockedEntryBehavior.Throw)
-        : this(new Cache(id,
-        [],
-        cleaner,
-        blockedEntryBehavior: blockedEntryBehavior,
-        persistenceEnabled: false,
-        persistenceStorageLocation: ""),
-        persistenceEnabled: false,
-        persistenceStorageLocation: "",
-        blockedEntryBehavior: blockedEntryBehavior)
-        { }
+                               CacheCleanerBase<string, string> cleaner,
+                               BlockedEntryBehavior blockedEntryBehavior = BlockedEntryBehavior.Throw,
+                               CacheTypeRegister? typeRegister = null)
+            : this(new Cache(id,
+                             [],
+                             cleaner,
+                             blockedEntryBehavior: blockedEntryBehavior,
+                             persistenceEnabled: false,
+                             persistenceStorageLocation: ""),
+                             persistenceEnabled: false,
+                             persistenceStorageLocation: "",
+                             blockedEntryBehavior: blockedEntryBehavior,
+                             typeRegister: typeRegister)
+        { 
+        }
 
-        public ThreadSafeCache(CacheCleanerBase<string, string> cleaner, BlockedEntryBehavior blockedEntryBehavior = BlockedEntryBehavior.Throw)
-        : this(string.Empty, cleaner, blockedEntryBehavior) { }
+        public ThreadSafeCache(CacheCleanerBase<string, string> cleaner,
+                               BlockedEntryBehavior blockedEntryBehavior = BlockedEntryBehavior.Throw,
+                               CacheTypeRegister? typeRegister = null)
+        : this(string.Empty, cleaner, blockedEntryBehavior, typeRegister) { }
 
         public ThreadSafeCache(TimeSpan? cleaningInterval)
-        : this(string.Empty,
-        cleaner: new ThreadSafeCacheCleaner<string, string>(cleaningInterval ?? DefaultCleanerInterval),
-        blockedEntryBehavior: BlockedEntryBehavior.Throw)
-        { }
+            : this(string.Empty,
+                   cleaner: new ThreadSafeCacheCleaner<string, string>(cleaningInterval ?? DefaultCleanerInterval),
+                   blockedEntryBehavior: BlockedEntryBehavior.Throw,
+                   typeRegister: null)
+        {
+        }
 
         public ThreadSafeCache(ICacheBase<string, string> cache,
-        bool persistenceEnabled = false,
-        string persistenceStorageLocation = "",
-        BlockedEntryBehavior blockedEntryBehavior = BlockedEntryBehavior.Throw)
+                               bool persistenceEnabled = false,
+                               string persistenceStorageLocation = "",
+                               BlockedEntryBehavior blockedEntryBehavior = BlockedEntryBehavior.Throw,
+                               CacheTypeRegister? typeRegister = null)
         {
             if (!persistenceEnabled || Cache == null)
             {
@@ -94,6 +108,11 @@ namespace Celestus.Storage.Cache
             }
 
             Cache.BlockedEntryBehavior = blockedEntryBehavior;
+
+            if (typeRegister != null)
+            {
+                Cache.TypeRegister = typeRegister;
+            }
         }
 
         public ThreadSafeCache(string id,
@@ -292,6 +311,8 @@ namespace Celestus.Storage.Cache
             var oldCache = Cache;
 
             Cache = newCache;
+            Cache.BlockedEntryBehavior = oldCache.BlockedEntryBehavior;
+            Cache.TypeRegister = oldCache.TypeRegister;
 
             oldCache?.Dispose();
         }
@@ -556,8 +577,10 @@ namespace Celestus.Storage.Cache
         public object Clone()
         {
             return new ThreadSafeCache((ICacheBase<string, string>)Cache.Clone(),
-            PersistenceEnabled,
-            PersistenceStorageFile?.FullName ?? string.Empty);
+                                       PersistenceEnabled,
+                                       PersistenceStorageFile?.FullName ?? string.Empty,
+                                       BlockedEntryBehavior,
+                                       (CacheTypeRegister)TypeRegister.Clone());
         }
         #endregion
     }
