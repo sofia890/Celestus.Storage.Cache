@@ -298,8 +298,10 @@ namespace Celestus.Storage.Cache
 
         #region CacheBase<string, string>
         public string Id => Cache.Id;
+
         [MemberNotNullWhen(true, nameof(PersistenceStorageFile))]
-        public bool PersistenceEnabled => Cache?.PersistenceEnabled ?? false;
+        public bool PersistenceEnabled => (Cache?.PersistenceEnabled ?? false) && (Cache.PersistenceStorageFile != null);
+
         public FileInfo? PersistenceStorageFile
         {
             get => Cache?.PersistenceStorageFile ?? null;
@@ -459,10 +461,10 @@ namespace Celestus.Storage.Cache
                 var result = DoWhileWriteLocked(
                     () =>
                     {
-                if (Id != null)
-                {
-                    Factory.Remove(Id);
-                }
+                        if (Id != null)
+                        {
+                            Factory.Remove(Id);
+                        }
 
                         if (disposing)
                         {
