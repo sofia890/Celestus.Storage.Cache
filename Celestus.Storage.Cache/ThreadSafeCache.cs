@@ -456,14 +456,14 @@ namespace Celestus.Storage.Cache
         {
             if (!_disposed)
             {
+                var result = DoWhileWriteLocked(
+                    () =>
+                    {
                 if (Id != null)
                 {
                     Factory.Remove(Id);
                 }
 
-                var result = DoWhileWriteLocked(
-                    () =>
-                    {
                         if (disposing)
                         {
                             Cache.Dispose();
