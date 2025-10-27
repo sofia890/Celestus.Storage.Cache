@@ -721,7 +721,8 @@ namespace Celestus.Storage.Cache
             {
                 bool innerEquals()
                 {
-                    return _cache.Equals(other._cache) &&
+                    return other._cache!= null &&
+                           _cache.Equals(other._cache) &&
                            _cache.Id.Equals(other._cache.Id);
                 }
 
