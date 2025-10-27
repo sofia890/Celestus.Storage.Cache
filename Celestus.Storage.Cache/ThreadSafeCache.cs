@@ -388,7 +388,7 @@ namespace Celestus.Storage.Cache
             {
                 bool get()
                 {
-                    return (_cache?.PersistenceEnabled ?? false) && (_cache?.PersistenceStorageFile != null);
+                    return (_cache?.PersistenceEnabled ?? false);
                 }
 
                 var success = DoWhileReadLocked(get, out var enabled, DefaultTimeout);
