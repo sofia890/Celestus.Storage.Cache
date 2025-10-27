@@ -718,7 +718,7 @@ namespace Celestus.Storage.Cache
                        innerAreEqual;
             }
 
-            return DoWhileReadLocked(equals, out var areEqual, DefaultTimeout);
+            return DoWhileReadLocked(equals, out var areEqual, DefaultTimeout) && areEqual;
         }
 
         public override bool Equals(object? obj) => Equals(obj as ThreadSafeCache);
