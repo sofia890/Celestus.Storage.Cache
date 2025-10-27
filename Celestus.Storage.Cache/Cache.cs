@@ -54,7 +54,7 @@ namespace Celestus.Storage.Cache
                      CacheCleanerBase<string, string> cleaner,
                      bool persistenceEnabled,
                      string persistenceStorageLocation,
-                     bool persistenceLoadWhenCreated) : 
+                     bool persistenceLoadWhenCreated) :
             this(id,
                  storage,
                  cleaner,
@@ -181,7 +181,7 @@ namespace Celestus.Storage.Cache
                              typeRegister: (CacheTypeRegister)TypeRegister.Clone(),
                              persistenceEnabled: PersistenceEnabled,
                              persistenceStorageLocation: PersistenceStorageFile?.FullName ?? "",
-                             false); 
+                             false);
         }
 
         public void HandlePersistenceEnabledInitialization(bool storeToFile, string? path, bool loadFromFile)

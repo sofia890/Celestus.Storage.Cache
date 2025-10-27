@@ -138,7 +138,7 @@ namespace Celestus.Storage.Cache
             }
         }
 
-        private void Prune(DateTime now,  CancellationToken cancelToken)
+        private void Prune(DateTime now, CancellationToken cancelToken)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 

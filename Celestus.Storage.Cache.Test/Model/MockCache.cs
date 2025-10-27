@@ -10,7 +10,7 @@ namespace Celestus.Storage.Cache.Test.Model
         public List<string> RemovedKeys { get; private set; } = [];
 
         // Added backing storage so tests can insert entries that the cleaner actor will see.
-        private readonly Dictionary<string, CacheEntry> _storage = new();
+        private readonly Dictionary<string, CacheEntry> _storage = [];
 
         #region CacheBase<string, string>
         private bool _disposed = false;
@@ -29,11 +29,11 @@ namespace Celestus.Storage.Cache.Test.Model
         public BlockedEntryBehavior BlockedEntryBehavior
         {
             get => throw new NotImplementedException();
-            set => throw new NotImplementedException(); 
+            set => throw new NotImplementedException();
         }
 
         public CacheTypeRegister TypeRegister
-        { 
+        {
             get => throw new NotImplementedException();
             set => throw new NotImplementedException();
         }
@@ -100,7 +100,7 @@ namespace Celestus.Storage.Cache.Test.Model
                 }
             }
 
-            if (RemovedKeys.Count >0)
+            if (RemovedKeys.Count > 0)
             {
                 EntryRemoved.Set();
             }
@@ -115,7 +115,7 @@ namespace Celestus.Storage.Cache.Test.Model
 
         internal ImmutableDictionary<string, CacheEntry> GetEntries()
         {
-            return Storage.ToImmutableDictionary();
+            return Storage;
         }
 
         public bool TryRemove(string key)

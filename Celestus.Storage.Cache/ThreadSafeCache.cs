@@ -51,7 +51,7 @@ namespace Celestus.Storage.Cache
 
                 return cache;
             }
-            
+
             private set
             {
                 ObjectDisposedException.ThrowIf(IsDisposed, this);
@@ -97,7 +97,8 @@ namespace Celestus.Storage.Cache
         : this(id,
               persistenceEnabled: persistenceEnabled,
               persistenceStorageLocation: persistenceStorageLocation,
-              blockedEntryBehavior: BlockedEntryBehavior.Throw) { }
+              blockedEntryBehavior: BlockedEntryBehavior.Throw)
+        { }
 
         public ThreadSafeCache(string id,
                                CacheCleanerBase<string, string> cleaner,
@@ -113,7 +114,7 @@ namespace Celestus.Storage.Cache
                              persistenceStorageLocation: "",
                              blockedEntryBehavior: blockedEntryBehavior,
                              typeRegister: typeRegister)
-        { 
+        {
         }
 
         public ThreadSafeCache(CacheCleanerBase<string, string> cleaner,
@@ -141,6 +142,11 @@ namespace Celestus.Storage.Cache
             }
 
             _cache.BlockedEntryBehavior = blockedEntryBehavior;
+
+            if (persistenceEnabled)
+            {
+                _cache.PersistenceStorageFile = new FileInfo(persistenceStorageLocation);
+            }
 
             if (typeRegister != null)
             {
@@ -205,7 +211,7 @@ namespace Celestus.Storage.Cache
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private TimeSpan GetTimeout(TimeSpan? timeout = null) => timeout ?? DefaultTimeout;
+        private static TimeSpan GetTimeout(TimeSpan? timeout = null) => timeout ?? DefaultTimeout;
 
         public bool TryGetWriteLock([MaybeNullWhen(false)] out CacheLock cacheLock, TimeSpan? timeout = null)
         {
@@ -224,6 +230,7 @@ namespace Celestus.Storage.Cache
         public bool TryGet<DataType>(string key, [MaybeNullWhen(false)] out DataType data, TimeSpan? timeout = null)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
+            CacheNullException.ThrowIf(_cache == null, "Cache not set.");
 
             (bool success, DataType value) TryGetLocal()
             {
@@ -250,7 +257,7 @@ namespace Celestus.Storage.Cache
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 
-            return DoWhileWriteLocked(() => _cache.TrySet(key, value, duration),
+            return DoWhileWriteLocked(() => _cache?.TrySet(key, value, duration) ?? false,
                                       out var result,
                                       GetTimeout(timeout)) && result;
         }
@@ -259,14 +266,14 @@ namespace Celestus.Storage.Cache
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 
-            return DoWhileWriteLocked(() => _cache.TryRemove(keys), out var result, GetTimeout(timeout)) && result;
+            return DoWhileWriteLocked(() => _cache?.TryRemove(keys) ?? false, out var result, GetTimeout(timeout)) && result;
         }
 
         public bool TryRemove(string key, TimeSpan? timeout = null)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
 
-            return DoWhileWriteLocked(() => _cache.TryRemove(key), out var result, GetTimeout(timeout)) && result;
+            return DoWhileWriteLocked(() => _cache?.TryRemove(key) ?? false, out var result, GetTimeout(timeout)) && result;
         }
 
         private bool DoWhileReadLocked(Action act, TimeSpan? timeout)
@@ -385,9 +392,9 @@ namespace Celestus.Storage.Cache
                 }
 
                 var success = DoWhileReadLocked(get, out var enabled, DefaultTimeout);
-                
+
                 ReadLockException.ThrowIf(!success, "Could not acquire read lock.");
-                
+
                 return enabled;
             }
         }
@@ -503,6 +510,8 @@ namespace Celestus.Storage.Cache
         {
             get
             {
+                CacheNullException.ThrowIf(_cache == null, "Cache not set.");
+
                 var result = DoWhileReadLocked(() => _cache.Storage, out var dict, DefaultTimeout);
 
                 ReadLockException.ThrowIf(!result, "Could not acquire read lock.");
@@ -514,8 +523,9 @@ namespace Celestus.Storage.Cache
         public void Set<DataType>(string key, DataType value, TimeSpan? duration = null)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
+            CacheNullException.ThrowIf(_cache == null, "Cache not set.");
 
-            var result = DoWhileWriteLocked(() => _cache.Set(key, value, duration), DefaultTimeout);
+            var result = DoWhileWriteLocked(() => _cache?.Set(key, value, duration), DefaultTimeout);
 
             WriteLockException.ThrowIf(!result, "Could not acquire write lock.");
         }
@@ -523,6 +533,7 @@ namespace Celestus.Storage.Cache
         public DataType Get<DataType>(string key)
         {
             ObjectDisposedException.ThrowIf(IsDisposed, this);
+            CacheNullException.ThrowIf(_cache == null, "Cache not set.");
 
             var result = DoWhileReadLocked(() => _cache.Get<DataType>(key), out var value, DefaultTimeout);
 
@@ -562,7 +573,7 @@ namespace Celestus.Storage.Cache
             try
             {
                 var success = DoWhileReadLocked(save, out var result, DefaultTimeout) && result;
-                
+
                 if (!success && capturedError != null)
                 {
                     error = capturedError;
@@ -629,7 +640,7 @@ namespace Celestus.Storage.Cache
             try
             {
                 var lockAcquired = DoWhileWriteLocked(TryLoad, out var success, DefaultTimeout);
-                
+
                 if (!lockAcquired || !success)
                 {
                     error = capturedError;
@@ -651,6 +662,8 @@ namespace Celestus.Storage.Cache
 
         public ImmutableDictionary<string, CacheEntry> GetEntries()
         {
+            CacheNullException.ThrowIf(_cache == null, "Cache not set.");
+
             var result = DoWhileReadLocked(_cache.GetEntries, out var dictionary, DefaultTimeout);
 
             ReadLockException.ThrowIf(!result, "Could not acquire read lock.");
@@ -723,7 +736,7 @@ namespace Celestus.Storage.Cache
 
         public override bool Equals(object? obj) => Equals(obj as ThreadSafeCache);
 
-        public override int GetHashCode() => HashCode.Combine(_cache.GetHashCode(), Id);
+        public override int GetHashCode() => HashCode.Combine(_cache?.GetHashCode(), Id);
         #endregion
 
         #region ICloneable
