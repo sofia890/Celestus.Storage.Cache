@@ -730,13 +730,15 @@ namespace Celestus.Storage.Cache
 
         public object Clone()
         {
+            CacheNullException.ThrowIf(_cache == null, "Cannot clone a parially initialzied cache.");
+
             object clone()
             {
                 return new ThreadSafeCache((ICacheBase<string, string>)_cache.Clone(),
-                                       PersistenceEnabled,
-                                       PersistenceStorageFile?.FullName ?? string.Empty,
-                                       BlockedEntryBehavior,
-                                       (CacheTypeRegister)TypeRegister.Clone());
+                                           PersistenceEnabled,
+                                           PersistenceStorageFile?.FullName ?? string.Empty,
+                                           BlockedEntryBehavior,
+                                           (CacheTypeRegister)TypeRegister.Clone());
             }
 
             var lockAquired = DoWhileReadLocked(clone, out var cache, DefaultTimeout);
