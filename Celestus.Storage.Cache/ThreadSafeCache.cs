@@ -276,7 +276,7 @@ namespace Celestus.Storage.Cache
             return DoWhileWriteLocked(() => _cache?.TryRemove(key) ?? false, out var result, GetTimeout(timeout)) && result;
         }
 
-        private bool DoWhileReadLocked(Action act, TimeSpan? timeout)
+        internal bool DoWhileReadLocked(Action act, TimeSpan? timeout)
         {
             if (TryGetReadLock(out var cacheLock, GetTimeout(timeout)))
             {
@@ -293,7 +293,7 @@ namespace Celestus.Storage.Cache
             }
         }
 
-        private bool DoWhileReadLocked<ReturnType>(Func<ReturnType> act, out ReturnType result, TimeSpan? timeout)
+        internal bool DoWhileReadLocked<ReturnType>(Func<ReturnType> act, out ReturnType result, TimeSpan? timeout)
         {
             if (TryGetReadLock(out var cacheLock, GetTimeout(timeout)))
             {
@@ -312,7 +312,7 @@ namespace Celestus.Storage.Cache
             }
         }
 
-        private bool DoWhileWriteLocked<ReturnType>(Func<ReturnType> act, out ReturnType result, TimeSpan? timeout)
+        internal bool DoWhileWriteLocked<ReturnType>(Func<ReturnType> act, out ReturnType result, TimeSpan? timeout)
         {
             if (TryGetWriteLock(out var cacheLock, GetTimeout(timeout)))
             {
@@ -331,7 +331,7 @@ namespace Celestus.Storage.Cache
             }
         }
 
-        private bool DoWhileWriteLocked(Action act, TimeSpan? timeout)
+        internal bool DoWhileWriteLocked(Action act, TimeSpan? timeout)
         {
             if (TryGetWriteLock(out var cacheLock, GetTimeout(timeout)))
             {

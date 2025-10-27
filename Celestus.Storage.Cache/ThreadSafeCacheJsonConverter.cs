@@ -81,21 +81,29 @@ namespace Celestus.Storage.Cache
         /// </summary>
         public override void Write(Utf8JsonWriter writer, ThreadSafeCache value, JsonSerializerOptions options)
         {
-            writer.WriteStartObject();
-
-            writer.WriteBoolean(nameof(ThreadSafeCache.PersistenceEnabled), value.PersistenceEnabled);
-
-            if (value.PersistenceStorageFile != null)
+            void write()
             {
-                writer.WriteString(nameof(ThreadSafeCache.PersistenceStorageFile),
-                                   value.PersistenceStorageFile.FullName);
+                writer.WriteStartObject();
+
+                writer.WriteBoolean(nameof(ThreadSafeCache.PersistenceEnabled), value.PersistenceEnabled);
+
+                if (value.PersistenceStorageFile != null)
+                {
+                    writer.WriteString(nameof(ThreadSafeCache.PersistenceStorageFile),
+                                       value.PersistenceStorageFile.FullName);
+                }
+
+                writer.WritePropertyName(nameof(ThreadSafeCache.Cache));
+
+                JsonConverterHelper.SerializeTypedObject(writer, value.Cache, options);
+
+                writer.WriteEndObject();
             }
 
-            writer.WritePropertyName(nameof(ThreadSafeCache.Cache));
+            var lockAquired = value.DoWhileReadLocked(write, ThreadSafeCache.DefaultTimeout);
 
-            JsonConverterHelper.SerializeTypedObject(writer, value.Cache, options);
 
-            writer.WriteEndObject();
+            ReadLockException.ThrowIf(!lockAquired, "Could not acquire read lock when serializng cache.");
         }
     }
 }
