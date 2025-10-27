@@ -35,6 +35,7 @@ namespace Celestus.Storage.Cache
                         break;
 
                     default:
+                        reader.Skip();
                         break;
                 }
             }

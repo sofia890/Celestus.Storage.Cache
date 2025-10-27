@@ -24,7 +24,6 @@ namespace Celestus.Storage.Cache
             {
                 switch (reader.TokenType)
                 {
-                    default:
                     case JsonTokenType.EndObject:
                         goto End;
 
@@ -58,6 +57,10 @@ namespace Celestus.Storage.Cache
                                 reader.Skip();
                                 break;
                         }
+                        break;
+
+                    default:
+                        reader.Skip();
                         break;
                 }
             }
